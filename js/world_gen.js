@@ -1,51 +1,28 @@
-// Kontener: Generator Świata i Populacji Zawodników
+// Plik: js/world_gen.js
+
 async function initWorld() {
-    // Sprawdzenie języka dla komunikatu potwierdzenia
-    const confirmMsg = currentLang === 'pl' 
-        ? "Czy na pewno chcesz wygenerować ligę i 60 nowych zawodników? Obecne dane zostaną nadpisane." 
-        : "Are you sure you want to generate the league and 60 new players? Existing data will be overwritten.";
+    // Ta funkcja teraz służy tylko do generowania puli zawodników (Draft Pool)
+    await generateDraftPool();
+}
+
+async function generateDraftPool() {
+    const confirmed = confirm(currentLang === 'pl' ? "Generować nową pulę draftu (60 zawodników)?" : "Generate new draft pool (60 players)?");
+    if(!confirmed) return;
+
+    console.log("Generowanie zawodników do draftu...");
+
+    const playersToInsert = [];
+    for (let i = 0; i < 60; i++) {
+        playersToInsert.push(generatePlayer(null)); // null = zawodnik wolny/do wzięcia
+    }
+
+    const { error } = await _supabase.from('players').insert(playersToInsert);
     
-    if(!confirm(confirmMsg)) return;
-
-    console.log("Inicjalizacja generowania świata...");
-
-    const startingTeams = [
-        { name: "Warsaw Eagles", city: "Warszawa" },
-        { name: "Cracow Bulls", city: "Kraków" },
-        { name: "Wrocław Sharks", city: "Wrocław" },
-        { name: "Poznań Stars", city: "Poznań" },
-        { name: "Gdańsk Sailors", city: "Gdańsk" }
-    ];
-
-    try {
-        for (const t of startingTeams) {
-            // 1. Dodanie drużyny
-            const { data: teamData, error: tError } = await _supabase.from('teams').insert([{
-                team_name: t.name,
-                country: "Poland",
-                balance: 1000000
-            }]).select();
-
-            if (tError) throw tError;
-
-            const teamId = teamData[0].id;
-
-            // 2. Generowanie 12 zawodników dla każdej drużyny
-            const playersToInsert = [];
-            for (let i = 0; i < 12; i++) {
-                playersToInsert.push(generatePlayer(teamId));
-            }
-
-            const { error: pError } = await _supabase.from('players').insert(playersToInsert);
-            if (pError) throw pError;
-        }
-
-        alert(currentLang === 'pl' ? "Świat wygenerowany pomyślnie!" : "World generated successfully!");
-        location.reload();
-
-    } catch (err) {
-        console.error("Błąd krytyczny:", err);
-        alert("Błąd: " + err.message);
+    if (error) {
+        console.error("Błąd zapisu w Supabase:", error);
+        alert(currentLang === 'pl' ? "Błąd: " + error.message : "Error: " + error.message);
+    } else {
+        alert(currentLang === 'pl' ? "Pula draftu gotowa!" : "Draft pool ready!");
     }
 }
 
@@ -55,17 +32,18 @@ function generatePlayer(teamId) {
     
     const fullName = names[Math.floor(Math.random()*names.length)] + " " + surnames[Math.floor(Math.random()*surnames.length)];
     
-    // Seed dla awatara (unikalna twarz)
+    // Unikalny Seed dla twarzy (DiceBear)
     const avatarSeed = Math.random().toString(36).substring(7);
     const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
     return {
-        team_id: teamId,
+        team_id: teamId, // Będzie NULL dla draftu
         name: fullName,
-        age: 18 + Math.floor(Math.random() * 15),
+        country: "Poland", // Domyślnie, można to też losować
+        age: 18 + Math.floor(Math.random() * 4), // Draftowicze zazwyczaj 18-21 lat
         height: 180 + Math.floor(Math.random() * 40),
         avatar_url: avatarUrl,
-        // Skille w skali 1-20
+        // Atrybuty (Skala 1-20 jak w BuzzerBeater)
         jump_shot: 3 + Math.floor(Math.random() * 7),
         jump_range: 3 + Math.floor(Math.random() * 7),
         outside_defense: 3 + Math.floor(Math.random() * 7),
