@@ -44,24 +44,27 @@ async function checkUser() {
             if(admin) admin.style.display = 'block';
         }
 
-        // Dane drużyny
+        // Dane drużyny z tabeli "Teams" (duża litera)
         try {
-            let { data: teamData } = await _supabase
-                .from('teams')
+            let { data: teamData, error: fetchError } = await _supabase
+                .from('Teams')
                 .select('*')
-                .eq('manager_id', user.id)
+                .eq('owner_id', user.id) // Używamy owner_id zgodnie ze screenem
                 .maybeSingle();
 
-            if (!teamData) {
-                const { data: newTeam } = await _supabase
-                    .from('teams')
+            if (!teamData && !fetchError) {
+                // Tworzenie nowej drużyny jeśli nie istnieje
+                const { data: newTeam, error: insertError } = await _supabase
+                    .from('Teams')
                     .insert([{ 
-                        manager_id: user.id, 
+                        owner_id: user.id, 
                         team_name: `Team ${user.email.split('@')[0]}`,
-                        balance: 500000
+                        balance: 500000,
+                        country: "Poland"
                     }])
                     .select().single();
-                teamData = newTeam;
+                
+                if(!insertError) teamData = newTeam;
             }
 
             if(userDisplay) {
@@ -69,7 +72,7 @@ async function checkUser() {
                 userDisplay.innerText = `${user.email} / ${status}`;
             }
         } catch (e) {
-            console.log("Team fetch info:", e);
+            console.log("Błąd pobierania danych drużyny:", e);
         }
     } else {
         if(landing) landing.style.display = 'block';
@@ -82,5 +85,5 @@ async function logout() {
     location.reload(); 
 }
 
-// Inicjalizacja
+// Inicjalizacja przy każdym odświeżeniu
 checkUser();
