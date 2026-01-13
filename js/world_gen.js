@@ -64,41 +64,62 @@ function generatePlayer(teamId) {
 }
 
 /**
- * SEKCJA: PANEL ADMINISTRATORA - ZMIANA ZDJĘĆ HERO
+ * SEKCJA: PANEL ADMINISTRATORA - ZMIANA ZDJĘĆ HERO I LOGO
  */
 
-function updateHeroImages() {
+function adminUpdateMedia() {
     const img1 = document.getElementById('hero-img-1-url').value;
     const img2 = document.getElementById('hero-img-2-url').value;
+    const newLogo = document.getElementById('logo-url-input').value;
 
-    // Pobieramy elementy obrazków z sekcji landing-page
     const heroElements = document.querySelectorAll('.hero-img');
+    const logoElement = document.getElementById('main-logo-img');
 
+    let updated = false;
+
+    // Aktualizacja Hero Image 1
     if (img1 && heroElements[0]) {
         heroElements[0].src = img1;
         localStorage.setItem('ebl_hero_1', img1);
+        updated = true;
     }
+    // Aktualizacja Hero Image 2
     if (img2 && heroElements[1]) {
         heroElements[1].src = img2;
         localStorage.setItem('ebl_hero_2', img2);
+        updated = true;
+    }
+    // Aktualizacja Logo
+    if (newLogo && logoElement) {
+        logoElement.src = newLogo;
+        localStorage.setItem('ebl_logo', newLogo);
+        updated = true;
     }
 
-    if (img1 || img2) {
-        alert(currentLang === 'pl' ? "Zdjęcia zaktualizowane!" : "Images updated!");
+    if (updated) {
+        alert(currentLang === 'pl' ? "Media zostały zaktualizowane!" : "Media updated!");
+        // Opcjonalnie czyścimy pola po zapisie
+        document.getElementById('hero-img-1-url').value = '';
+        document.getElementById('hero-img-2-url').value = '';
+        document.getElementById('logo-url-input').value = '';
     } else {
-        alert(currentLang === 'pl' ? "Wklej link do zdjęcia!" : "Paste an image URL!");
+        alert(currentLang === 'pl' ? "Wklej przynajmniej jeden link!" : "Paste at least one URL!");
     }
 }
 
-// Wczytywanie zapisanych zdjęć przy ładowaniu strony
-function loadHeroImages() {
+// Funkcja wczytująca wszystkie zapisane media (wywoływana przy starcie)
+function loadSavedMedia() {
     const saved1 = localStorage.getItem('ebl_hero_1');
     const saved2 = localStorage.getItem('ebl_hero_2');
+    const savedLogo = localStorage.getItem('ebl_logo');
+    
     const heroElements = document.querySelectorAll('.hero-img');
+    const logoElement = document.getElementById('main-logo-img');
     
     if (saved1 && heroElements[0]) heroElements[0].src = saved1;
     if (saved2 && heroElements[1]) heroElements[1].src = saved2;
+    if (savedLogo && logoElement) logoElement.src = savedLogo;
 }
 
-// Automatyczne wczytanie przy starcie
-document.addEventListener('DOMContentLoaded', loadHeroImages);
+// Automatyczne wczytanie przy starcie strony
+document.addEventListener('DOMContentLoaded', loadSavedMedia);
