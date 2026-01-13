@@ -47,16 +47,16 @@ function calculatePosition(s) {
  */
 function drawPotential() {
     const rand = Math.random() * 100;
-    if (rand > 98) return 10; // Legenda (2%)
-    if (rand > 93) return 9;  // MVP
-    if (rand > 85) return 8;  
-    if (rand > 75) return 7;
-    if (rand > 60) return 6;
-    if (rand > 45) return 5;  // Średniak
-    if (rand > 30) return 4;
-    if (rand > 15) return 3;
-    if (rand > 5)  return 2;
-    return 1;                 // Dziura bez dna
+    if (rand > 99) return 10; // Legenda (1%)
+    if (rand > 96) return 9;  // Historyczny (3%)
+    if (rand > 91) return 8;  // MVP (5%)
+    if (rand > 84) return 7;  // Supergwiazda
+    if (rand > 74) return 6;  // Gwiazda
+    if (rand > 60) return 5;  // Starter
+    if (rand > 45) return 4;  // 6th Man
+    if (rand > 25) return 3;  // Solidny
+    if (rand > 10) return 2;  // Ręczniki
+    return 1;                 // Dziura
 }
 
 function generatePlayer(teamId) {
