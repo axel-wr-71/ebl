@@ -41,47 +41,35 @@
     <header>
         <div class="header-left">
             <div class="logo-container">
-                <img src="logo_EBL.png" alt="Logo" class="main-logo">
+                <img src="logo_EBL.png" alt="Logo" class="main-logo" id="main-logo-img">
             </div>
-            <div style="font-weight:bold; color:var(--nba-blue)" data-i18n="welcome_title">ELITE BUZZER LEAGUE</div>
+            <div class="league-name-text" style="font-weight:bold; color:var(--nba-blue)" data-i18n="welcome_title">ELITE BUZZER LEAGUE</div>
         </div>
         
         <div class="header-right">
-            <div id="user-display"></div>
+            <div id="user-display" style="font-weight: bold; font-size: 14px;"></div>
             <button onclick="logout()" class="btn-logout" data-i18n="logout">Wyloguj</button>
         </div>
     </header>
     
-    <div id="admin-panel" style="display:none; padding:20px; background:#fff3e0; margin:20px; border-radius:10px; border: 1px solid #ffe0b2;">
-        <h3 data-i18n="admin_panel">Panel Administratora</h3>
+    <div id="admin-panel" style="display:none;">
         
-        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 250px;">
-                <button class="btn" onclick="initWorld()" data-i18n="gen_world">GENERUJ ŚWIAT I LIGI</button>
-            </div>
+        <div class="admin-section" style="padding:20px; background:#fff3e0; margin:20px; border-radius:10px; border: 1px solid #ffe0b2;">
+            <h3 data-i18n="admin_panel" style="margin-top:0; color:#e65100;">Panel Administratora</h3>
+            <p style="font-size: 14px;" data-i18n="admin_desc">Witaj, Szefie. Wygeneruj zawodników do Draftu.</p>
+            <button class="btn" onclick="initWorld()" style="max-width:300px;" data-i18n="gen_world">GENERUJ ŚWIAT I LIGI</button>
+        </div>
 
-            <div style="flex: 1; min-width: 250px; background: #fff; padding: 15px; border-radius: 8px;">
-                <h4>Zmień zdjęcia na stronie głównej</h4>
-                <input type="text" id="hero-img-1-url" placeholder="Link do zdjęcia 1">
-                <input type="text" id="hero-img-2-url" placeholder="Link do zdjęcia 2">
-                <button class="btn" style="margin-top:10px; background: #333;" onclick="updateHeroImages()">ZAPISZ ZDJĘCIA</button>
+        <div class="admin-section photo-manager" style="padding:20px; background:#f5f5f5; margin:20px; border-radius:10px; border: 1px solid #ddd;">
+            <h4 style="margin-top:0;">Zarządzanie wizualne (Logo & Hero)</h4>
+            <div style="display: flex; flex-direction: column; gap: 10px; max-width: 500px;">
+                <input type="text" id="hero-img-1-url" placeholder="Link do zdjęcia Hero 1">
+                <input type="text" id="hero-img-2-url" placeholder="Link do zdjęcia Hero 2">
+                <input type="text" id="logo-url-input" placeholder="Link do Twojego Logo">
+                <button class="btn" style="background: #333;" onclick="adminUpdateMedia()">ZAPISZ ZMIANY MEDIÓW</button>
             </div>
         </div>
-    </div>
-
-    <div id="main-content" style="padding:20px;"></div>
-</div>
-
-        <div style="font-weight:bold; color:var(--nba-blue)" data-i18n="welcome_title">ELITE BUZZER LEAGUE</div>
         
-        <div id="user-display" style="font-size: 13px; font-weight: bold;"></div>
-        <button onclick="logout()" class="btn-logout" data-i18n="logout">Wyloguj</button>
-    </header>
-    
-    <div id="admin-panel" style="display:none; padding:20px; background:#fff3e0; margin:20px; border-radius:10px; border: 1px solid #ffe0b2;">
-        <h3 style="margin-top:0; color:#e65100;" data-i18n="admin_panel">Panel Administratora</h3>
-        <p style="font-size: 14px;" data-i18n="admin_desc">Witaj, Szefie. Użyj poniższego przycisku, aby powołać do życia ligę i wygenerować zawodników z unikalnymi twarzami.</p>
-        <button class="btn" onclick="initWorld()" style="max-width:300px;" data-i18n="gen_world">GENERUJ ŚWIAT I LIGI</button>
     </div>
 
     <div id="main-content" style="padding:20px;"></div>
@@ -92,5 +80,6 @@
 <script src="js/world_gen.js"></script>
 <script src="js/setup_team.js"></script> 
 <script src="js/roster.js"></script>
+
 </body>
 </html>
