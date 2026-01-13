@@ -20,6 +20,44 @@
         .admin-table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; }
         .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 13px; }
         .admin-table th { background: #f2f2f2; }
+
+        /* DRAFT LOTTERY STYLES */
+        #draft-lottery-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, #1a237e 0%, #000010 100%);
+            z-index: 9999;
+            color: white;
+            overflow-y: auto;
+            padding: 40px 20px;
+        }
+        .lottery-container { max-width: 900px; margin: 0 auto; text-align: center; }
+        .machine-ball {
+            width: 120px; height: 120px; background: #ff6d00; border-radius: 50%;
+            margin: 20px auto; display: flex; align-items: center; justify-content: center;
+            font-size: 50px; box-shadow: 0 0 30px rgba(255,109,0,0.5);
+            animation: bounce 0.5s infinite alternate;
+        }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+        
+        .results-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px; margin-top: 30px;
+        }
+        .envelope {
+            background: #283593; border: 2px solid #3f51b5; padding: 15px;
+            border-radius: 5px; font-weight: bold; transition: all 0.5s;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .envelope.revealed {
+            background: white; color: #1a237e; border-color: #ff6d00;
+            transform: scale(1.05); box-shadow: 0 0 15px rgba(255,255,255,0.3);
+        }
+        .exit-lottery {
+            margin-top: 40px; padding: 10px 20px; background: transparent;
+            border: 1px solid white; color: white; cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -81,8 +119,11 @@
 
         <div id="admin-tab-gen" class="admin-tab-content active" style="padding:20px; background:#fff3e0; border: 1px solid #ffe0b2;">
             <h3 data-i18n="admin_panel" style="margin-top:0; color:#e65100;">Generator Świata</h3>
-            <p style="font-size: 14px;" data-i18n="admin_desc">Witaj, Szefie. Wygeneruj zawodników do Draftu.</p>
-            <button class="btn" onclick="initWorld()" style="max-width:300px;" data-i18n="gen_world">GENERUJ ŚWIAT I LIGI</button>
+            <p style="font-size: 14px;" data-i18n="admin_desc">Witaj, Szefie. Wygeneruj zawodników do Draftu lub uruchom loterię.</p>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" onclick="initWorld()" style="flex:1;">GENERUJ ŚWIAT I LIGI</button>
+                <button class="btn" onclick="startLotteryShow()" style="flex:1; background:#1a237e;">URUCHOM LOTERIĘ DRAFTU</button>
+            </div>
         </div>
 
         <div id="admin-tab-config" class="admin-tab-content" style="padding:20px; background:#e3f2fd; border: 1px solid #bbdefb;">
@@ -137,6 +178,28 @@
     <div id="main-content" style="padding:20px;"></div>
 </div>
 
+<div id="draft-lottery-screen">
+    <div class="lottery-container">
+        <h1 style="color:#ff6d00; margin-bottom:10px;">DRAFT LOTTERY STUDIO</h1>
+        <p id="lottery-status">Czekamy na oficjalne wyniki...</p>
+        
+        <div class="machine-ball">🏀</div>
+        
+        <div id="lottery-results" class="results-grid">
+            </div>
+
+        <div style="margin-top:40px;">
+            <button id="next-pick-btn" class="btn" style="background:#ff6d00; padding:15px 40px; font-size:18px;">
+                OTWÓRZ KOLEJNĄ KOPERTĘ
+            </button>
+        </div>
+        
+        <button class="exit-lottery" onclick="document.getElementById('draft-lottery-screen').style.display='none'">
+            ZAMKNIJ STUDIO (PO POWROCIE)
+        </button>
+    </div>
+</div>
+
 <script src="js/lang.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/world_gen.js"></script>
@@ -146,7 +209,6 @@
 <script src="js/draft.js"></script>
 
 <script>
-    // Prosta funkcja przełączania tabów (możesz ją przenieść do js/admin.js)
     function showAdminTab(tabName) {
         document.querySelectorAll('.admin-tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
@@ -154,6 +216,46 @@
         document.getElementById('admin-tab-' + tabName).classList.add('active');
         event.currentTarget.classList.add('active');
     }
+
+    // Funkcje UI dla Loterii (możesz przenieść do js/draft.js)
+    let currentDraftOrder = [];
+    let revealIndex = 0;
+
+    async function startLotteryShow() {
+        // 1. Pokaż ekran
+        document.getElementById('draft-lottery-screen').style.display = 'block';
+        const resultsContainer = document.getElementById('lottery-results');
+        resultsContainer.innerHTML = '<p>Losowanie kulek...</p>';
+        
+        // 2. Pobierz dane z draft.js
+        currentDraftOrder = await runLeagueLottery('PLK'); // Używamy Twojej funkcji z pkt 1
+        
+        // 3. Przygotuj "zamknięte" koperty (od 20 do 1)
+        resultsContainer.innerHTML = '';
+        revealIndex = currentDraftOrder.length - 1; // Zaczynamy od końca (Pick 20)
+
+        for(let i=0; i < currentDraftOrder.length; i++) {
+            resultsContainer.innerHTML += `<div id="env-${i}" class="envelope">Pick #${i+1}</div>`;
+        }
+        document.getElementById('lottery-status').innerText = "Wszystkie koperty są gotowe. Zaczynamy od Picku #20!";
+    }
+
+    document.getElementById('next-pick-btn').onclick = () => {
+        if(revealIndex < 0) {
+            alert("To był numer 1! Draft Lottery Sezonu zakończony.");
+            return;
+        }
+
+        const team = currentDraftOrder[revealIndex];
+        const env = document.getElementById(`env-${revealIndex}`);
+        
+        env.classList.add('revealed');
+        env.innerHTML = `<span>PICK #${revealIndex+1}</span><br><small>${team.name}</small>`;
+        
+        document.getElementById('lottery-status').innerText = `Odkryto Pick #${revealIndex+1}: ${team.name}`;
+        
+        revealIndex--;
+    };
 </script>
 
 </body>
