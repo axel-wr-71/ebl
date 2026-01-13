@@ -260,3 +260,51 @@ input {
     padding: 20px;
     border-radius: 12px;
 }
+
+/* Poprawka prawego kontenera w nagłówku */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Odstęp między info, językami i wylogowaniem */
+    flex-wrap: nowrap;
+}
+
+.user-info {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
+    white-space: nowrap;
+}
+
+/* Stylizacja dropdowna wewnątrz nagłówka */
+.lang-dropdown-header {
+    position: relative; /* Zmiana z fixed na relative, by siedział w headerze */
+    display: inline-block;
+}
+
+.dropbtn-header {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 15px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Ukrycie starego dropdowna, jeśli był ustawiony jako fixed */
+.lang-dropdown {
+    display: none; 
+}
+
+/* RWD: Na małych ekranach zmniejsz odstępy */
+@media (max-width: 768px) {
+    .header-right {
+        gap: 10px;
+    }
+    .user-info {
+        font-size: 12px;
+    }
+}
