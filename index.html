@@ -3,69 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NBA Manager PRO - 2026</title>
+    <title>Elite Buzzer League - 2026</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --red: #c9082a; --blue: #17408b; --dark: #0a0a0a; --card: #1a1a1a; --gold: #f5af19; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; }
+        :root { --red: #c9082a; --blue: #17408b; --dark: #0a0a0a; --card: #1a1a1a; --gold: #f5af19; --green: #27ae60; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--dark); color: white; margin: 0; }
         
-        /* Ekran logowania */
-        #auth-container { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80'); background-size: cover; }
-        .auth-box { background: var(--card); padding: 40px; border-radius: 10px; border-top: 5px solid var(--red); width: 320px; text-align: center; }
+        /* LOGOWANIE */
+        #auth-container { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80'); background-size: cover; }
+        .auth-box { background: var(--card); padding: 40px; border-radius: 10px; border-top: 5px solid var(--red); width: 320px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #333; background: #000; color: white; box-sizing: border-box; }
         
-        /* Interfejs gry */
+        /* INTERFEJS */
         #main-game { display: none; }
-        header { background: #000; padding: 15px; border-bottom: 3px solid var(--red); display: flex; justify-content: space-between; }
-        nav { display: flex; background: #111; justify-content: center; }
-        nav div { padding: 15px 20px; cursor: pointer; color: #888; font-weight: bold; }
-        nav div.active { color: white; border-bottom: 3px solid var(--red); }
-        .content { padding: 20px; max-width: 1000px; margin: 0 auto; }
-        .btn { background: var(--red); color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
-        .btn-gold { background: var(--gold); color: black; margin-top: 10px; }
+        header { background: #000; padding: 15px 25px; border-bottom: 3px solid var(--red); display: flex; justify-content: space-between; align-items: center; }
+        nav { display: flex; background: #111; justify-content: center; border-bottom: 1px solid #333; overflow-x: auto; }
+        nav div { padding: 15px 25px; cursor: pointer; color: #888; font-weight: bold; text-transform: uppercase; font-size: 12px; transition: 0.2s; white-space: nowrap; }
+        nav div:hover { color: #fff; }
+        nav div.active { color: white; border-bottom: 3px solid var(--red); background: #1a1a1a; }
+        
+        .content { padding: 25px; max-width: 1300px; margin: 0 auto; }
+        .card { background: var(--card); padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #222; position: relative; }
+        
+        /* PRZYCISKI */
+        .btn { background: var(--red); color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn:hover { background: #e60000; transform: translateY(-2px); }
+        .btn-gold { background: var(--gold); color: black; }
+        .btn-admin { background: #444; color: #ff9800; border: 1px solid #ff9800; font-size: 10px; padding: 5px 10px; margin-top: 20px; }
+
+        /* TABELA ZAWODNIKÓW */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+        th { background: #111; color: var(--gold); text-align: left; padding: 12px; border-bottom: 2px solid #333; text-transform: uppercase; font-size: 10px; }
+        td { padding: 12px; border-bottom: 1px solid #222; }
+        tr:hover { background: #222; }
+        .skill { font-weight: bold; text-align: center; }
+        .salary { color: var(--green); font-weight: bold; }
+
         .view { display: none; }
         .view.active { display: block; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #222; }
     </style>
 </head>
 <body>
 
 <div id="auth-container">
     <div class="auth-box">
-        <h1 style="margin-top:0">NBA <span style="color:var(--red)">MANAGER</span></h1>
-        <input type="email" id="email" placeholder="Email">
+        <h1 style="margin:0; font-size: 28px;">ELITE <span style="color:var(--red)">BUZZER</span></h1>
+        <p style="color:#666; font-size: 12px; margin-bottom: 20px;">Global Manager Pro 2026</p>
+        <input type="email" id="email" placeholder="Twój Email">
         <input type="password" id="password" placeholder="Hasło">
-        <button class="btn" onclick="signIn()">ZALOGUJ SIĘ</button>
-        <button class="btn btn-gold" onclick="signUp()">STWÓRZ KONTO</button>
-        <p id="msg" style="font-size:12px; color:var(--red)"></p>
+        <button class="btn" style="width:100%" onclick="signIn()">ZALOGUJ SIĘ</button>
+        <button class="btn btn-gold" style="width:100%; margin-top: 10px;" onclick="signUp()">ZAŁÓŻ KONTO</button>
+        <p id="msg" style="font-size:11px; margin-top: 15px;"></p>
     </div>
 </div>
 
 <div id="main-game">
     <header>
-        <div style="font-weight:bold; font-size:20px;">NBA MANAGER PRO</div>
-        <div id="user-display" style="font-size:12px; color:#888"></div>
+        <div style="font-weight:900; font-size:22px; letter-spacing: 1px;">EBL <span style="color:var(--red)">MANAGER</span></div>
+        <div id="user-display" style="font-size:12px; color:#888; background:#111; padding: 5px 15px; border-radius: 20px;"></div>
     </header>
+    
     <nav>
-        <div onclick="tab('office')" id="t-office" class="active">PULPIT</div>
-        <div onclick="tab('team')" id="t-team">SKŁAD</div>
-        <div onclick="logout()" style="color:var(--red)">WYLOGUJ</div>
+        <div onclick="tab('office')" id="t-office" class="active">Pulpit</div>
+        <div onclick="tab('team')" id="t-team">Skład Drużyny</div>
+        <div onclick="logout()" style="color:var(--red)">Wyloguj</div>
     </nav>
+
     <div class="content">
         <div id="office" class="view active">
-            <h2>Twoje Biuro</h2>
-            <div id="team-info" style="background:var(--card); padding:20px; border-radius:5px;">
-                Sprawdzanie Twojej drużyny...
+            <div class="card">
+                <h2 style="margin-top:0">Twoje Biuro</h2>
+                <div id="team-info" style="font-size: 18px;">Ładowanie danych klubu...</div>
+                
+                <div id="admin-panel" style="display:none; margin-top:40px; border-top: 1px dashed #444; padding-top: 20px;">
+                    <p style="color:var(--gold); font-size: 12px;">NARZĘDZIA DEWELOPERSKIE:</p>
+                    <button class="btn btn-admin" onclick="initWorld()">RESTART ŚWIATA (GENERUJ LIGI)</button>
+                </div>
             </div>
-            <button id="admin-btn" class="btn btn-gold" style="display:none; margin-top:20px;" onclick="initWorld()">ADMIN: GENERUJ ŚWIAT</button>
         </div>
+
         <div id="team" class="view">
-            <h2>Kadra zawodnicza</h2>
-            <table>
-                <thead><tr><th>Nazwisko</th><th>Kraj</th><th>Wzrost</th><th>Skille (JS/OD/RB)</th></tr></thead>
-                <tbody id="player-list"></tbody>
-            </table>
+            <div class="card">
+                <h2 style="margin-top:0">Kadra Zawodnicza</h2>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Zawodnik</th><th>Wiek</th><th>Wzrost</th>
+                                <th title="Jump Shot">JS</th><th title="Jump Range">JR</th><th title="Outside Def">OD</th>
+                                <th title="Handling">HA</th><th title="Driving">DR</th><th title="Passing">PS</th>
+                                <th title="Inside Shot">IS</th><th title="Inside Def">ID</th><th title="Rebounding">RB</th>
+                                <th title="Shot Blocking">SB</th><th title="Stamina">ST</th><th title="Free Throw">FT</th>
+                                <th>Pensja</th>
+                            </tr>
+                        </thead>
+                        <tbody id="player-list"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -75,18 +110,19 @@ const SUPABASE_URL = 'https://zzsscobtzwbwubchqjyx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wdrjVOU6jVHGVpsxcUygmg_kqPqz1aC';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// LOGOWANIE
 async function signUp() {
     const e = document.getElementById('email').value;
     const p = document.getElementById('password').value;
     const { error } = await _supabase.auth.signUp({email:e, password:p});
-    if(error) alert(error.message); else alert("Potwierdź email!");
+    if(error) alert(error.message); else alert("Konto utworzone! Jeśli wyłączyłeś Confirm Email w Supabase, możesz się zalogować.");
 }
 
 async function signIn() {
     const e = document.getElementById('email').value;
     const p = document.getElementById('password').value;
     const { error } = await _supabase.auth.signInWithPassword({email:e, password:p});
-    if(error) alert(error.message); else checkUser();
+    if(error) alert("Błąd: " + error.message); else checkUser();
 }
 
 async function logout() { await _supabase.auth.signOut(); location.reload(); }
@@ -96,38 +132,103 @@ async function checkUser() {
     if(user) {
         document.getElementById('auth-container').style.display = 'none';
         document.getElementById('main-game').style.display = 'block';
-        document.getElementById('user-display').innerText = user.email;
-        if(user.email === 'TWOJ_ADMIN_EMAIL@wp.pl') document.getElementById('admin-btn').style.display = 'block';
+        document.getElementById('user-display').innerText = "Zalogowany: " + user.email;
+        
+        // TWOJA ROLA JAKO ADMINA
+        if(user.email === 'strubbe23@gmail.com') { 
+            document.getElementById('admin-panel').style.display = 'block';
+        }
+        
         loadTeam();
     }
 }
 
+// DRUŻYNA I GRACZE
 async function loadTeam() {
     const { data: { user } } = await _supabase.auth.getUser();
     const { data: teams } = await _supabase.from('teams').select('*').eq('manager_id', user.id);
     
     const display = document.getElementById('team-info');
     if(teams && teams.length > 0) {
-        display.innerHTML = `<h3>Klub: ${teams[0].team_name}</h3><p>Kraj: ${teams[0].country}</p>`;
+        display.innerHTML = `
+            <div>Drużyna: <b style="color:var(--red)">${teams[0].team_name}</b></div>
+            <div style="font-size:14px; color:#888; margin-top:5px;">Lokalizacja: ${teams[0].country} | Fundusze: <span style="color:var(--gold)">$${teams[0].balance.toLocaleString()}</span></div>
+        `;
         loadPlayers(teams[0].id);
     } else {
-        display.innerHTML = `<p>Nie masz jeszcze drużyny.</p><button class="btn" onclick="getFreeTeam()">ODBIERZ WOLNY ZESPÓŁ</button>`;
+        display.innerHTML = `
+            <p style="font-size:14px;">Nie zarządzasz jeszcze żadnym klubem.</p>
+            <button class="btn" onclick="getFreeTeam()">PODPISZ KONTRAKT Z WOLNYM KLUBEM</button>
+        `;
     }
 }
 
 async function getFreeTeam() {
     const { data: { user } } = await _supabase.auth.getUser();
-    const { data: free } = await _supabase.from('teams').select('*').is('manager_id', null).limit(1);
-    if(free && free.length > 0) {
-        await _supabase.from('teams').update({ manager_id: user.id }).eq('id', free[0].id);
-        location.reload();
-    } else { alert("Brak wolnych drużyn!"); }
+    // Szukamy drużyny bez managera
+    const { data: freeTeams } = await _supabase.from('teams').select('*').is('manager_id', null).limit(1);
+    
+    if(freeTeams && freeTeams.length > 0) {
+        const { error } = await _supabase.from('teams').update({ manager_id: user.id }).eq('id', freeTeams[0].id);
+        if(!error) location.reload();
+    } else {
+        alert("Brak wolnych klubów! Admin musi wygenerować świat.");
+    }
 }
 
 async function loadPlayers(teamId) {
     const { data: p } = await _supabase.from('players').select('*').eq('team_id', teamId);
     const list = document.getElementById('player-list');
-    if(p) list.innerHTML = p.map(x => `<tr><td>${x.name}</td><td>${x.country}</td><td>${x.height}cm</td><td>${x.jump_shot}/${x.outside_defense}/${x.rebounding}</td></tr>`).join('');
+    if(p) {
+        list.innerHTML = p.map(x => {
+            const sal = (x.jump_shot + x.outside_defense + x.inside_defense + x.rebounding) * 180;
+            return `<tr>
+                <td><b>${x.name}</b></td><td>${x.age}</td><td>${x.height}cm</td>
+                <td class="skill">${x.jump_shot}</td><td class="skill">${x.jump_range}</td>
+                <td class="skill">${x.outside_defense}</td><td class="skill">${x.handling}</td>
+                <td class="skill">${x.driving}</td><td class="skill">${x.passing}</td>
+                <td class="skill">${x.inside_shot}</td><td class="skill">${x.inside_defense}</td>
+                <td class="skill">${x.rebounding}</td><td class="skill">${x.shot_blocking}</td>
+                <td class="skill">${x.stamina}</td><td class="skill">${x.free_throw}</td>
+                <td class="salary">$${sal.toLocaleString()}</td>
+            </tr>`;
+        }).join('');
+    }
+}
+
+// GENEROWANIE ŚWIATA (TYLKO TY)
+async function initWorld() {
+    const confirmed = confirm("Czy na pewno chcesz zresetować świat i stworzyć nowe drużyny?");
+    if(!confirmed) return;
+
+    const names = ["Warsaw Eagles", "Chicago Bulls", "Madrid Kings", "Berlin Stars", "Paris Lions"];
+    
+    for(let n of names) {
+        const { data: t } = await _supabase.from('teams').insert([{ team_name: n, country: "Global", balance: 1000000 }]).select();
+        if(t) {
+            for(let i=0; i<12; i++) {
+                await _supabase.from('players').insert([{
+                    team_id: t[0].id,
+                    name: "Zawodnik #" + Math.floor(1000 + Math.random() * 9000),
+                    age: 18 + Math.floor(Math.random() * 15),
+                    height: 185 + Math.floor(Math.random() * 30),
+                    jump_shot: 3+Math.floor(Math.random()*8),
+                    jump_range: 3+Math.floor(Math.random()*8),
+                    outside_defense: 3+Math.floor(Math.random()*8),
+                    handling: 3+Math.floor(Math.random()*8),
+                    driving: 3+Math.floor(Math.random()*8),
+                    passing: 3+Math.floor(Math.random()*8),
+                    inside_shot: 3+Math.floor(Math.random()*8),
+                    inside_defense: 3+Math.floor(Math.random()*8),
+                    rebounding: 3+Math.floor(Math.random()*8),
+                    shot_blocking: 3+Math.floor(Math.random()*8),
+                    stamina: 5, free_throw: 5
+                }]);
+            }
+        }
+    }
+    alert("Świat został stworzony! Możesz teraz odebrać klub.");
+    location.reload();
 }
 
 function tab(id) {
