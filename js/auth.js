@@ -44,21 +44,56 @@ async function checkUser() {
     const landing = document.getElementById('landing-page');
     const app = document.getElementById('game-app');
     const admin = document.getElementById('admin-panel');
+    // Używamy ID z Twojego HTML: user-info-display
+    const userDisplay = document.getElementById('user-info-display');
 
     if(user) {
-        // Logika dla zalogowanego użytkownika
         landing.style.display = 'none';
         app.style.display = 'block';
-        document.getElementById('user-display').innerText = user.email;
-        
-        // Pokazuje panel admina tylko dla konkretnego adresu
+
+        // 1. PANEL ADMINA - sprawdzany od razu
         if(user.email === 'strubbe23@gmail.com') {
-            admin.style.display = 'block';
+            if(admin) admin.style.display = 'block';
         } else {
-            admin.style.display = 'none';
+            if(admin) admin.style.display = 'none';
         }
+
+        // 2. AUTOMATYCZNA DRUŻYNA I WYŚWIETLANIE
+        try {
+            // Pobierz drużynę z bazy
+            let { data: teamData } = await _supabase
+                .from('teams')
+                .select('*')
+                .eq('manager_id', user.id)
+                .maybeSingle();
+
+            // Jeśli nie ma drużyny w bazie, stwórz ją
+            if (!teamData) {
+                const defaultName = `Team ${user.email.split('@')[0]}`;
+                const { data: newTeam } = await _supabase
+                    .from('teams')
+                    .insert([{ 
+                        manager_id: user.id, 
+                        team_name: defaultName,
+                        balance: 500000,
+                        country: "Poland"
+                    }])
+                    .select()
+                    .single();
+                teamData = newTeam;
+            }
+
+            // Aktualizacja tekstu w nagłówku (Email / Nazwa Drużyny)
+            if(userDisplay) {
+                const teamName = teamData ? teamData.team_name : "Manager";
+                userDisplay.innerText = `${user.email} / ${teamName}`;
+            }
+        } catch (err) {
+            console.error("Błąd drużyny:", err);
+            if(userDisplay) userDisplay.innerText = user.email;
+        }
+
     } else {
-        // Logika dla niezalogowanego (ekran startowy)
         landing.style.display = 'block';
         app.style.display = 'none';
     }
@@ -66,9 +101,8 @@ async function checkUser() {
 
 async function logout() { 
     await _supabase.auth.signOut(); 
-    // Po wylogowaniu czyścimy wszystko i przeładowujemy stronę
     location.reload(); 
 }
 
-// Uruchomienie sprawdzenia przy starcie
+// Sprawdź status przy starcie
 checkUser();
