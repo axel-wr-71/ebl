@@ -1,52 +1,32 @@
-// Plik: js/auth.js
-
 const SUPABASE_URL = 'https://zzsscobtzwbwubchqjyx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wdrjVOU6jVHGVpsxcUygmg_kqPqz1aC';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/**
- * Logowanie użytkownika
- */
 async function signIn() {
     const e = document.getElementById('email').value;
     const p = document.getElementById('password').value;
     
     if(!e || !p) {
-        alert(typeof currentLang !== 'undefined' && currentLang === 'pl' ? "Wypełnij wszystkie pola!" : "Fill all fields!");
+        alert("Wypełnij pola!");
         return;
     }
 
     const { error } = await _supabase.auth.signInWithPassword({email:e, password:p});
     if(error) {
-        alert(typeof currentLang !== 'undefined' && currentLang === 'pl' ? "Błąd logowania: " + error.message : "Login error: " + error.message);
+        alert("Błąd: " + error.message);
     } else {
         checkUser();
     }
 }
 
-/**
- * Rejestracja nowego konta
- */
 async function signUp() {
     const e = document.getElementById('email').value;
     const p = document.getElementById('password').value;
-    
-    if(!e || !p) {
-        alert(typeof currentLang !== 'undefined' && currentLang === 'pl' ? "Wypełnij wszystkie pola!" : "Fill all fields!");
-        return;
-    }
-
     const { error } = await _supabase.auth.signUp({email:e, password:p});
-    if(error) {
-        alert(typeof currentLang !== 'undefined' && currentLang === 'pl' ? "Błąd rejestracji: " + error.message : "Signup error: " + error.message);
-    } else {
-        alert(typeof currentLang !== 'undefined' && currentLang === 'pl' ? "Konto stworzone! Sprawdź e-mail." : "Account created! Check your email.");
-    }
+    if(error) alert(error.message);
+    else alert("Konto stworzone!");
 }
 
-/**
- * Główna funkcja sprawdzająca stan sesji i odświeżająca interfejs
- */
 async function checkUser() {
     const { data: { user } } = await _supabase.auth.getUser();
     
@@ -56,64 +36,51 @@ async function checkUser() {
     const userDisplay = document.getElementById('user-info-display');
 
     if(user) {
-        // 1. Przełączanie widoków
         if(landing) landing.style.display = 'none';
         if(app) app.style.display = 'block';
 
-        // 2. Obsługa Panelu Admina
+        // Panel Admina
         if(user.email === 'strubbe23@gmail.com') {
             if(admin) admin.style.display = 'block';
-        } else {
-            if(admin) admin.style.display = 'none';
         }
 
-        // 3. Obsługa danych drużyny
+        // Dane drużyny
         try {
-            let { data: teamData, error: fetchError } = await _supabase
+            let { data: teamData } = await _supabase
                 .from('teams')
                 .select('*')
                 .eq('manager_id', user.id)
                 .maybeSingle();
 
-            if (!teamData && !fetchError) {
-                const defaultName = `Team ${user.email.split('@')[0]}`;
-                const { data: newTeam, error: insertError } = await _supabase
+            if (!teamData) {
+                const { data: newTeam } = await _supabase
                     .from('teams')
                     .insert([{ 
                         manager_id: user.id, 
-                        team_name: defaultName,
-                        balance: 500000,
-                        country: "Poland"
+                        team_name: `Team ${user.email.split('@')[0]}`,
+                        balance: 500000
                     }])
-                    .select()
-                    .single();
-                
-                if(!insertError) teamData = newTeam;
+                    .select().single();
+                teamData = newTeam;
             }
 
             if(userDisplay) {
-                let statusText = (user.email === 'strubbe23@gmail.com') ? "Admin" : (teamData ? teamData.team_name : "New Manager");
-                userDisplay.innerText = `${user.email} / ${statusText}`;
+                let status = (user.email === 'strubbe23@gmail.com') ? "Admin" : (teamData ? teamData.team_name : "Manager");
+                userDisplay.innerText = `${user.email} / ${status}`;
             }
-        } catch (err) {
-            console.error("Błąd pobierania danych:", err);
-            if(userDisplay) userDisplay.innerText = user.email;
+        } catch (e) {
+            console.log("Team fetch info:", e);
         }
-
     } else {
-        // Użytkownik niezalogowany
         if(landing) landing.style.display = 'block';
         if(app) app.style.display = 'none';
     }
 }
 
-/**
- * Wylogowanie
- */
 async function logout() { 
     await _supabase.auth.signOut(); 
     location.reload(); 
 }
 
-// Start sprawdzania użytkownika
+// Inicjalizacja
 checkUser();
