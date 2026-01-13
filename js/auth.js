@@ -47,54 +47,56 @@ async function checkUser() {
     const userDisplay = document.getElementById('user-display');
 
     if(user) {
-        // 1. Natychmiastowe pokazanie aplikacji i ukrycie landing page
-        if(landing) landing.style.display = 'none';
-        if(app) app.style.display = 'block';
+        landing.style.display = 'none';
+        app.style.display = 'block';
         
-        // 2. Panel Administratora - SPRAWDZANE PIERWSZE (niezależnie od bazy)
-        if(user.email === 'strubbe23@gmail.com') {
-            if(admin) admin.style.display = 'block';
-        } else {
-            if(admin) admin.style.display = 'none';
-        }
+        // --- AUTOMATYCZNE GENEROWANIE DRUŻYNY ---
+        
+        // 1. Sprawdź, czy drużyna już istnieje
+        let { data: teamData } = await _supabase
+            .from('teams')
+            .select('*')
+            .eq('manager_id', user.id)
+            .maybeSingle();
 
-        // 3. Obsługa danych drużyny (w bloku try-catch, aby błędy nie blokowały reszty)
-        try {
-            let { data: teamData } = await _supabase
+        // 2. Jeśli nie istnieje, stwórz ją automatycznie
+        if (!teamData) {
+            console.log("Tworzenie automatycznej drużyny dla:", user.email);
+            const defaultName = `Team ${user.email.split('@')[0]}`;
+            
+            const { data: newTeam, error: createError } = await _supabase
                 .from('teams')
-                .select('*')
-                .eq('manager_id', user.id)
-                .maybeSingle();
-
-            if (!teamData) {
-                const defaultName = `Team ${user.email.split('@')[0]}`;
-                const { data: newTeam, error: createError } = await _supabase
-                    .from('teams')
-                    .insert([{ 
+                .insert([
+                    { 
                         manager_id: user.id, 
                         team_name: defaultName,
                         balance: 500000,
                         country: "Poland"
-                    }])
-                    .select()
-                    .single();
+                    }
+                ])
+                .select()
+                .single();
 
-                if (!createError) teamData = newTeam;
+            if (!createError) {
+                teamData = newTeam;
+            } else {
+                console.error("Błąd tworzenia drużyny:", createError);
             }
-
-            // Wyświetlanie danych w rogu
-            if(userDisplay) {
-                const teamName = teamData ? teamData.team_name : "...";
-                userDisplay.innerText = `${user.email} / ${teamName}`;
-            }
-        } catch (err) {
-            console.error("Błąd bazy danych (teams):", err);
-            if(userDisplay) userDisplay.innerText = user.email;
         }
 
+        // 3. Wyświetlanie: Email / Nazwa Drużyny
+        const teamName = teamData ? teamData.team_name : "...";
+        userDisplay.innerText = `${user.email} / ${teamName}`;
+        
+        // 4. Panel Administratora
+        if(user.email === 'strubbe23@gmail.com') {
+            admin.style.display = 'block';
+        } else {
+            admin.style.display = 'none';
+        }
     } else {
-        if(landing) landing.style.display = 'block';
-        if(app) app.style.display = 'none';
+        landing.style.display = 'block';
+        app.style.display = 'none';
     }
 }
 
@@ -103,5 +105,4 @@ async function logout() {
     location.reload(); 
 }
 
-// Uruchomienie sprawdzenia przy starcie
 checkUser();
