@@ -1,9 +1,14 @@
 // Kontener: Generator Świata i Populacji Zawodników
 async function initWorld() {
-    const confirmed = confirm("Czy na pewno chcesz wygenerować ligę i 60 nowych zawodników? Obecne dane (jeśli są) mogą zostać nadpisane.");
-    if(!confirmed) return;
+    // Sprawdzenie języka dla komunikatu potwierdzenia
+    const confirmMsg = currentLang === 'pl' 
+        ? "Czy na pewno chcesz wygenerować ligę i 60 nowych zawodników? Obecne dane zostaną nadpisane." 
+        : "Are you sure you want to generate the league and 60 new players? Existing data will be overwritten.";
+    
+    if(!confirm(confirmMsg)) return;
 
-    // Definicja startowych drużyn
+    console.log("Inicjalizacja generowania świata...");
+
     const startingTeams = [
         { name: "Warsaw Eagles", city: "Warszawa" },
         { name: "Cracow Bulls", city: "Kraków" },
@@ -12,32 +17,36 @@ async function initWorld() {
         { name: "Gdańsk Sailors", city: "Gdańsk" }
     ];
 
-    console.log("Rozpoczynam generowanie świata...");
+    try {
+        for (const t of startingTeams) {
+            // 1. Dodanie drużyny
+            const { data: teamData, error: tError } = await _supabase.from('teams').insert([{
+                team_name: t.name,
+                country: "Poland",
+                balance: 1000000
+            }]).select();
 
-    for (const t of startingTeams) {
-        // 1. Dodaj drużynę do bazy
-        const { data: teamData, error: tError } = await _supabase.from('teams').insert([{
-            team_name: t.name,
-            country: "Polska",
-            balance: 1000000
-        }]).select();
+            if (tError) throw tError;
 
-        if (tError) {
-            console.error("Błąd przy tworzeniu drużyny:", tError);
-            continue;
+            const teamId = teamData[0].id;
+
+            // 2. Generowanie 12 zawodników dla każdej drużyny
+            const playersToInsert = [];
+            for (let i = 0; i < 12; i++) {
+                playersToInsert.push(generatePlayer(teamId));
+            }
+
+            const { error: pError } = await _supabase.from('players').insert(playersToInsert);
+            if (pError) throw pError;
         }
 
-        const teamId = teamData[0].id;
+        alert(currentLang === 'pl' ? "Świat wygenerowany pomyślnie!" : "World generated successfully!");
+        location.reload();
 
-        // 2. Wygeneruj 12 zawodników dla tej drużyny
-        for (let i = 0; i < 12; i++) {
-            const newPlayer = generatePlayer(teamId);
-            await _supabase.from('players').insert([newPlayer]);
-        }
+    } catch (err) {
+        console.error("Błąd krytyczny:", err);
+        alert("Błąd: " + err.message);
     }
-
-    alert("Świat wygenerowany pomyślnie! Zawodnicy otrzymali unikalne profile i twarze.");
-    location.reload();
 }
 
 function generatePlayer(teamId) {
@@ -46,10 +55,8 @@ function generatePlayer(teamId) {
     
     const fullName = names[Math.floor(Math.random()*names.length)] + " " + surnames[Math.floor(Math.random()*surnames.length)];
     
-    // GENERATOR AWATARA (DiceBear)
-    // Tworzymy unikalny "seed" na podstawie nazwiska i losowej liczby
-    const avatarSeed = fullName.replace(/\s/g, '') + Math.floor(Math.random()*1000);
-    // Używamy stylu 'avataaars' - bardzo zbliżony do klimatu BuzzerBeatera
+    // Seed dla awatara (unikalna twarz)
+    const avatarSeed = Math.random().toString(36).substring(7);
     const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
     return {
@@ -57,8 +64,8 @@ function generatePlayer(teamId) {
         name: fullName,
         age: 18 + Math.floor(Math.random() * 15),
         height: 180 + Math.floor(Math.random() * 40),
-        avatar_url: avatarUrl, // Link do wygenerowanej twarzy
-        // Atrybuty (skala 1-20 jak w BB)
+        avatar_url: avatarUrl,
+        // Skille w skali 1-20
         jump_shot: 3 + Math.floor(Math.random() * 7),
         jump_range: 3 + Math.floor(Math.random() * 7),
         outside_defense: 3 + Math.floor(Math.random() * 7),
