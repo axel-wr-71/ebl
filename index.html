@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Manager PRO - Global Beta</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --nba-blue: #17408b;
+            --nba-red: #c9082a;
+            --dark: #0a0a0a;
+            --card: #1a1a1a;
+            --text: #ffffff;
+            --gray: #888;
+            --gold: #f5af19;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--dark);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background-color: #000;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--nba-red);
+        }
+
+        .nba-logo { font-weight: 900; font-size: 24px; letter-spacing: -1px; }
+        .nba-logo span { color: var(--nba-red); }
+
+        nav {
+            display: flex;
+            background: #111;
+            justify-content: center;
+            border-bottom: 1px solid #333;
+        }
+
+        nav div {
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: var(--gray);
+            transition: 0.3s;
+        }
+
+        nav div.active { color: #fff; border-bottom: 3px solid var(--nba-red); }
+
+        .container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        .card {
+            background: var(--card);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-top: 4px solid var(--nba-red);
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { text-align: left; color: var(--gray); padding: 8px; border-bottom: 2px solid #333; text-transform: uppercase; }
+        td { padding: 8px; border-bottom: 1px solid #2a2a2a; }
+
+        .scoreboard {
+            background: linear-gradient(to bottom, #051c2d, #000);
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px;
+        }
+
+        .score-num { font-size: 64px; font-weight: 900; font-family: monospace; color: var(--nba-red); }
+        .log-box {
+            background: #000;
+            height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 1px solid #333;
+            color: #00ff00;
+            margin-top: 20px;
+        }
+
+        .btn {
+            background: var(--nba-red);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        .btn-gold { background: var(--gold); color: black; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="nba-logo">NBA<span>MANAGER</span> PRO</div>
+    <div id="top-bar-info">BUDŻET: <span id="header-balance" style="color:#27ae60">$500,000</span></div>
+</header>
+
+<nav>
+    <div onclick="showView('office')" id="nav-office" class="active">Pulpit</div>
+    <div onclick="showView('roster')" id="nav-roster">Kadra (12 Atrybutów)</div>
+    <div onclick="showView('match')" id="nav-match">Mecz 48 MIN</div>
+</nav>
+
+<div class="container">
+    
+    <div id="office" class="view active">
+        <div class="card">
+            <h2>Centrum Zarządzania</h2>
+            <p>Status: Połączono z <b>Supabase Live Database</b>.</p>
+            <p>Kliknij poniższy przycisk, aby wygenerować pierwsze 5 krajów, zespoły i zawodników z uwzględnieniem wzrostu i 12 skilli.</p>
+            <button class="btn btn-gold" onclick="initializeGlobalWorld()">ZAINICJUJ ŚWIAT GRY</button>
+        </div>
+    </div>
+
+    <div id="roster" class="view">
+        <div class="card">
+            <h2>Zawodnicy (Dane z Bazy)</h2>
+            <table id="roster-table">
+                <thead>
+                    <tr>
+                        <th>Nazwisko</th><th>Kraj</th><th>Wzrost</th><th>Wiek</th><th>JS</th><th>JR</th><th>OD</th><th>HA</th><th>DR</th><th>PS</th><th>IS</th><th>ID</th><th>RB</th><th>SB</th><th>ST</th><th>FT</th>
+                    </tr>
+                </thead>
+                <tbody id="roster-body">
+                    <tr><td colspan="16">Ładowanie danych z serwera...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="match" class="view">
+        <div class="card">
+            <div class="scoreboard">
+                <div style="display:flex; justify-content: space-around; align-items: center;">
+                    <div><div id="home-name">GOSPODARZE</div><div class="score-num" id="home-score">0</div></div>
+                    <div style="font-size: 30px; color: #444;" id="q-label">Q1</div>
+                    <div><div id="away-name">GOŚCIE</div><div class="score-num" id="away-score">0</div></div>
+                </div>
+                <div id="game-clock" style="font-size: 24px; color: var(--gold);">12:00</div>
+            </div>
+            <button class="btn" style="margin-top:20px;" onclick="start48MinSimulation()">ROZEGRAJ MECZ 4x12 MIN</button>
+            <div class="log-box" id="match-log">Oczekiwanie na pierwszy gwizdek...</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// --- KONFIGURACJA SUPABASE ---
+const SUPABASE_URL = 'https://zzsscobtzwbwubchqjyx.supabase.co'; 
+const SUPABASE_KEY = 'sb_publishable_wdrjVOU6jVHGVpsxcUygmg_kqPqz1aC';
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Nawigacja
+function showView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('nav div').forEach(d => d.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('nav-'+id).classList.add('active');
+    if(id === 'roster') loadRoster();
+}
+
+// Generowanie świata w bazie danych
+async function initializeGlobalWorld() {
+    const countries = ["Polska", "USA", "Hiszpania", "Litwa", "Serbia"];
+    alert("Rozpoczynam tworzenie świata w Twojej bazie Supabase...");
+
+    for(let c of countries) {
+        const { data: team, error } = await _supabase.from('teams').insert([
+            { team_name: c + " Giants", country: c, league_level: 1, conference: 'Wschód', balance: 1000000 }
+        ]).select();
+
+        if(team && team[0]) {
+            for(let i=0; i<12; i++) {
+                await generatePlayer(team[0].id, c);
+            }
+        }
+    }
+    alert("Sukces! Baza została zaludniona.");
+    loadRoster();
+}
+
+// Tworzenie zawodnika z 12 skillami i wzrostem
+async function generatePlayer(teamId, country) {
+    const surnames = ["Nowak", "James", "Gasol", "Jokic", "Doncic", "Sabonis", "Ponitka", "Jordan"];
+    const height = Math.floor(Math.random() * 45) + 180; // 180-225 cm
+    
+    await _supabase.from('players').insert([{
+        team_id: teamId,
+        name: surnames[Math.floor(Math.random()*surnames.length)],
+        country: country,
+        height: height,
+        age: 18 + Math.floor(Math.random()*15),
+        jump_shot: 3 + Math.floor(Math.random()*6),
+        jump_range: 3 + Math.floor(Math.random()*6),
+        outside_defense: 3 + Math.floor(Math.random()*6),
+        handling: 3 + Math.floor(Math.random()*6),
+        driving: 3 + Math.floor(Math.random()*6),
+        passing: 3 + Math.floor(Math.random()*6),
+        inside_shot: 3 + Math.floor(Math.random()*6),
+        inside_defense: 3 + Math.floor(Math.random()*6),
+        rebounding: 3 + Math.floor(Math.random()*6),
+        shot_blocking: 3 + Math.floor(Math.random()*6),
+        stamina: 5,
+        free_throw: 5
+    }]);
+}
+
+// Pobieranie zawodników z bazy
+async function loadRoster() {
+    const rb = document.getElementById('roster-body');
+    const { data: players, error } = await _supabase.from('players').select('*').limit(50);
+    
+    if(players && players.length > 0) {
+        rb.innerHTML = players.map(p => `
+            <tr>
+                <td><b>${p.name}</b></td><td>${p.country}</td><td>${p.height}cm</td><td>${p.age}</td>
+                <td>${p.jump_shot}</td><td>${p.jump_range}</td><td>${p.outside_defense}</td>
+                <td>${p.handling}</td><td>${p.driving}</td><td>${p.passing}</td>
+                <td>${p.inside_shot}</td><td>${p.inside_defense}</td><td>${p.rebounding}</td>
+                <td>${p.shot_blocking}</td><td>${p.stamina}</td><td>${p.free_throw}</td>
+            </tr>
+        `).join('');
+    } else {
+        rb.innerHTML = "<tr><td colspan='16'>Baza danych jest pusta. Kliknij 'Zainicjuj Świat' w zakładce Pulpit.</td></tr>";
+    }
+}
+
+// Silnik meczu 4x12 minut
+async function start48MinSimulation() {
+    let hScore = 0; let aScore = 0;
+    const log = document.getElementById('match-log');
+    log.innerHTML = "<b>Początek meczu: Sędzia wyrzuca piłkę w górę!</b><br>";
+
+    for(let q=1; q<=4; q++) {
+        document.getElementById('q-label').innerText = "Kwadra " + q;
+        for(let min=11; min>=0; min--) {
+            for(let sec=50; sec>=0; sec-=10) {
+                document.getElementById('game-clock').innerText = `${min}:${sec === 0 ? '00' : sec}`;
+                
+                // Prosta szansa na punkty (później połączymy to ze skillami graczy)
+                if(Math.random() > 0.75) {
+                    hScore += (Math.random() > 0.8 ? 3 : 2);
+                    log.innerHTML = `[${min}:${sec}] Punktuje gospodarz!<br>` + log.innerHTML;
+                }
+                if(Math.random() > 0.75) aScore += (Math.random() > 0.8 ? 3 : 2);
+                
+                document.getElementById('home-score').innerText = hScore;
+                document.getElementById('away-score').innerText = aScore;
+                
+                await new Promise(r => setTimeout(r, 40)); // Szybkość symulacji
+            }
+        }
+        log.innerHTML = `<span style="color:var(--gold)">Koniec kwarty ${q}. Wynik: ${hScore}:${aScore}</span><br>` + log.innerHTML;
+    }
+    log.innerHTML = "<b>KONIEC MECZU. Dziękujemy za emocje!</b><br>" + log.innerHTML;
+}
+
+window.onload = loadRoster;
+</script>
+</body>
+</html>
