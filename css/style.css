@@ -1,32 +1,137 @@
 :root {
     --nba-orange: #f58426;
+    --nba-blue: #00471b;
     --bg-light: #f8f9fa;
     --text-dark: #333;
+    --danger: #e74c3c;
 }
 
-body { font-family: 'Inter', sans-serif; background: var(--bg-light); color: var(--text-dark); margin: 0; }
+body { 
+    font-family: 'Inter', sans-serif; 
+    background: var(--bg-light); 
+    color: var(--text-dark); 
+    margin: 0; 
+}
 
+/* NAGŁÓWEK - Wsparcie dla Logo i Języków */
 header { 
     background: white; 
-    padding: 20px; 
+    padding: 10px 25px; 
     border-bottom: 4px solid var(--nba-orange); 
     display: flex; 
     justify-content: space-between;
+    align-items: center;
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    min-height: 60px;
 }
 
+/* LOGO */
+.logo-container {
+    display: flex;
+    align-items: center;
+    height: 50px;
+}
+
+.main-logo {
+    height: 100%;
+    width: auto;
+    object-fit: contain;
+}
+
+/* HERO SECTION */
 .hero-container { display: flex; justify-content: center; gap: 20px; padding: 40px; }
 .hero-img { width: 250px; height: 180px; border-radius: 12px; object-fit: cover; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
 
+/* KARTA LOGOWANIA */
 .auth-card { 
     background: white; 
     max-width: 350px; 
-    margin: 0 auto; 
+    margin: 40px auto; 
     padding: 30px; 
     border-radius: 15px; 
     text-align: center;
     box-shadow: 0 10px 30px rgba(0,0,0,0.05);
 }
 
-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-.btn { background: var(--nba-orange); color: white; border: none; padding: 12px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
+input { 
+    width: 100%; 
+    padding: 12px; 
+    margin: 10px 0; 
+    border: 1px solid #ddd; 
+    border-radius: 8px; 
+    box-sizing: border-box; 
+    font-family: inherit;
+}
+
+/* PRZYCISKI */
+.btn { 
+    background: var(--nba-orange); 
+    color: white; 
+    border: none; 
+    padding: 12px 30px; 
+    border-radius: 8px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    width: 100%; 
+    transition: transform 0.1s, background 0.2s;
+}
+
+.btn:hover {
+    background: #e67616;
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-logout {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    transition: opacity 0.2s;
+}
+
+.btn-logout:hover {
+    opacity: 0.9;
+}
+
+/* PRZEŁĄCZNIK JĘZYKÓW */
+.lang-switcher {
+    position: fixed;
+    top: 75px; /* Tuż pod headerem */
+    right: 25px;
+    display: flex;
+    gap: 5px;
+    background: white;
+    padding: 5px;
+    border-radius: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+.lang-btn {
+    border: none;
+    background: none;
+    padding: 5px 10px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+    color: #777;
+}
+
+.lang-btn.active {
+    background: var(--nba-orange);
+    color: white;
+}
+
+/* PANEL ADMINA */
+#admin-panel {
+    border: 1px solid #ffe0b2;
+    transition: all 0.3s;
+}
