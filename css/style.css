@@ -1,0 +1,32 @@
+:root {
+    --nba-orange: #f58426;
+    --bg-light: #f8f9fa;
+    --text-dark: #333;
+}
+
+body { font-family: 'Inter', sans-serif; background: var(--bg-light); color: var(--text-dark); margin: 0; }
+
+header { 
+    background: white; 
+    padding: 20px; 
+    border-bottom: 4px solid var(--nba-orange); 
+    display: flex; 
+    justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.hero-container { display: flex; justify-content: center; gap: 20px; padding: 40px; }
+.hero-img { width: 250px; height: 180px; border-radius: 12px; object-fit: cover; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+.auth-card { 
+    background: white; 
+    max-width: 350px; 
+    margin: 0 auto; 
+    padding: 30px; 
+    border-radius: 15px; 
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+.btn { background: var(--nba-orange); color: white; border: none; padding: 12px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
