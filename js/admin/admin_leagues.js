@@ -1,12 +1,14 @@
 // js/admin/admin_leagues.js
+import { supabaseClient } from '../auth.js';
 
 export async function renderLeagueSettings() {
-    const container = document.getElementById('admin-players-table-container');
+    // Celujemy w kontener dla lig, a nie zawodników
+    const container = document.getElementById('admin-league-config-container');
     if (!container) return;
 
     container.innerHTML = "<div class='loading'>Ładowanie struktur ligowych...</div>";
 
-    const { data: leagues, error } = await supabase
+    const { data: leagues, error } = await supabaseClient
         .from('leagues')
         .select('*')
         .order('country_name', { ascending: true });
