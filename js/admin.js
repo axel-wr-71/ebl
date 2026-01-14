@@ -1,4 +1,5 @@
 // js/admin.js
+import { supabaseClient } from './auth.js'; // Import klienta, by utrzymać sesję
 import { renderAdminPlayers } from './admin/admin_players.js';
 import { renderLeagueSettings } from './admin/admin_leagues.js';
 import { renderMediaSettings } from './admin/admin_media.js';
@@ -28,7 +29,7 @@ window.switchAdminTab = async function(tabName) {
         }
     } catch (error) {
         console.error(`Błąd podczas ładowania zakładki ${tabName}:`, error);
-        // Informacja dla Ciebie na ekranie, że coś poszło nie tak
+        
         const containers = {
             'players': 'admin-players-table-container',
             'leagues': 'admin-league-config-container',
