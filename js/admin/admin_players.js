@@ -6,6 +6,7 @@ export async function renderAdminPlayers() {
     const container = document.getElementById('admin-players-table-container');
     if (!container) return;
 
+    // Pobieramy ligi do filtrów
     const { data: leagues, error: lError } = await supabaseClient
         .from('leagues')
         .select('country_name, league_name')
@@ -41,6 +42,9 @@ export async function renderAdminPlayers() {
         </div>
         <div id="player-profile-view" style="display:none;"></div>
     `;
+
+    // Automatyczne wyszukiwanie przy wejściu, aby tabela nie była pusta
+    setTimeout(() => { window.searchPlayers(); }, 100);
 }
 
 window.updateLeagueFilter = (selectedCountry) => {
@@ -61,7 +65,9 @@ window.searchPlayers = async () => {
 
     resultsContainer.innerHTML = "<div class='loading'>Pobieranie danych...</div>";
 
+    // Budujemy zapytanie - dołączamy relację teams, aby filtrować po lidze
     let query = supabaseClient.from('players').select(`*, teams (team_name, league_name)`);
+    
     if (country) query = query.eq('country', country);
 
     const { data: players, error } = await query;
@@ -70,10 +76,11 @@ window.searchPlayers = async () => {
         return;
     }
 
+    // Filtrowanie po lidze w JS (ponieważ liga jest w relacji)
     let filtered = league ? players.filter(p => p.teams?.league_name === league) : players;
 
     if (filtered.length === 0) {
-        resultsContainer.innerHTML = "<p>Brak zawodników.</p>";
+        resultsContainer.innerHTML = "<p>Brak zawodników spełniających kryteria.</p>";
         return;
     }
 
@@ -88,7 +95,10 @@ window.searchPlayers = async () => {
                 </tr>
             </thead>
             <tbody>
-                ${filtered.map(p => `
+                ${filtered.map(p => {
+                    // Przygotowujemy dane do przekazania w atrybucie onclick
+                    const pData = JSON.stringify(p).replace(/'/g, "&apos;");
+                    return `
                     <tr>
                         <td style="text-align:left;"><strong>${p.first_name || ''} ${p.last_name || ''}</strong></td>
                         <td style="text-align:left;">${p.teams?.team_name || "Wolny agent"}</td>
@@ -98,17 +108,48 @@ window.searchPlayers = async () => {
                         <td>${p.handling}</td><td>${p.driving}</td><td>${p.passing}</td>
                         <td>${p.inside_shot}</td><td>${p.inside_defense}</td><td>${p.rebounding}</td>
                         <td>${p.shot_blocking}</td><td>${p.stamina}</td><td>${p.free_throw}</td>
-                        <td><button class="btn-show" onclick='showDetails(${JSON.stringify(p)})'>PROFIL</button></td>
+                        <td><button class="btn-show" onclick='showDetails(${pData})'>PROFIL</button></td>
                     </tr>
-                `).join('')}
+                    `;
+                }).join('')}
             </tbody>
         </table>
     `;
 };
 
-window.showDetails = (p) => { renderPlayerProfile(p); };
+// Funkcja przełączająca widoki
+window.showDetails = (p) => { 
+    const mainView = document.getElementById('admin-main-view');
+    const profileView = document.getElementById('player-profile-view');
+    
+    if (mainView && profileView) {
+        mainView.style.display = 'none';
+        profileView.style.display = 'block';
+        renderPlayerProfile(p); 
+    }
+};
+
+// Funkcja powrotu (można ją wywołać z admin_player_profile.js)
+window.hidePlayerDetails = () => {
+    const mainView = document.getElementById('admin-main-view');
+    const profileView = document.getElementById('player-profile-view');
+    
+    if (mainView && profileView) {
+        mainView.style.display = 'block';
+        profileView.style.display = 'none';
+    }
+};
 
 function getFlagEmoji(country) {
-    const flags = { "Poland": "🇵🇱", "USA": "🇺🇸", "Spain": "🇪🇸", "France": "🇫🇷", "Germany": "🇩🇪" };
+    const flags = { 
+        "Poland": "🇵🇱", 
+        "USA": "🇺🇸", 
+        "Spain": "🇪🇸", 
+        "France": "🇫🇷", 
+        "Germany": "🇩🇪",
+        "Italy": "🇮🇹",
+        "Greece": "🇬🇷",
+        "Lithuania": "🇱🇹"
+    };
     return flags[country] || "🏳️";
 }
