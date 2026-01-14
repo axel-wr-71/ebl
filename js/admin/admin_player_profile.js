@@ -55,12 +55,86 @@ function generatePlayerSVG(config) {
     `;
 }
 
+// --- NOWA LOGIKA POTENCJAŁU (ROK 2026 UPDATE) ---
+function getEnhancedPotential(p) {
+    const weightsConfig = {
+        'PG': { core: ['skill_passing', 'skill_dribbling', 'skill_1on1_off'], marginal: ['skill_block', 'skill_rebound'] },
+        'SG': { core: ['skill_2pt', 'skill_3pt', 'skill_1on1_off'], marginal: ['skill_block', 'skill_rebound'] },
+        'SF': { core: ['skill_2pt', 'skill_3pt', 'skill_1on1_off', 'skill_1on1_def'], marginal: ['skill_passing', 'skill_dribbling'] },
+        'PF': { core: ['skill_rebound', 'skill_block', 'skill_2pt'], marginal: ['skill_3pt', 'skill_dribbling'] },
+        'C':  { core: ['skill_rebound', 'skill_block', 'skill_2pt'], marginal: ['skill_3pt', 'skill_dribbling', 'skill_ft'] }
+    };
+
+    const pos = p.position || 'SG';
+    const cfg = weightsConfig[pos] || weightsConfig['SG'];
+    const allSkillKeys = ['skill_2pt', 'skill_3pt', 'skill_dunk', 'skill_passing', 'skill_1on1_off', 'skill_dribbling', 'skill_rebound', 'skill_block', 'skill_steal', 'skill_1on1_def', 'skill_ft', 'skill_stamina'];
+
+    let weightedSum = 0;
+    let totalWeight = 0;
+
+    allSkillKeys.forEach(key => {
+        let w = 1.0;
+        if (cfg.core.includes(key)) w = 2.0;
+        if (cfg.marginal.includes(key)) w = 0.5;
+        weightedSum += (p[key] || 0) * w;
+        totalWeight += w;
+    });
+
+    const currentAvg = weightedSum / totalWeight; 
+    let basePotential = currentAvg * 5; 
+
+    // Age Modifier
+    let ageBonus = 0;
+    if (p.age <= 22) ageBonus = 20;
+    else if (p.age <= 25) ageBonus = 10;
+    else if (p.age <= 27) ageBonus = 5;
+    
+    // Top 5% Superstar Longevity Exception
+    if (currentAvg >= 16.5 && p.age >= 28 && p.age <= 32) ageBonus = 7;
+
+    // LOYALTY & CLUB EXPERIENCE
+    let loyaltyMultiplier = 1.0;
+    const totalGames = p.total_games_in_club || 0; // Założenie: pole w bazie
+
+    if (totalGames >= 230) { // 10 Seasons
+        if (p.age <= 33) loyaltyMultiplier += 0.15;
+    } else if (totalGames >= 161) { // 7 Seasons (23 * 7)
+        if (p.age <= 33) loyaltyMultiplier += 0.11;
+    } else if (totalGames >= 115) { // 5 Seasons
+        if (p.age <= 32) loyaltyMultiplier += 0.07;
+    } else if (totalGames >= 69) { // 3 Seasons
+        loyaltyMultiplier += 0.05; // Age independent as requested
+    }
+
+    // HOMEGROWN BONUS (DRAFT)
+    if (p.is_homegrown && p.seasons_with_16_games) {
+        // 0.5% for each season with min 16 games, until age 25
+        if (p.age <= 25) {
+            loyaltyMultiplier += (p.seasons_with_16_games * 0.005);
+        }
+    }
+
+    let finalValue = Math.round((basePotential + ageBonus) * loyaltyMultiplier);
+    finalValue = Math.min(99, Math.max(0, finalValue));
+
+    let tier = "PROSPECT";
+    if (finalValue >= 90) tier = `FRANCHISE ${pos}`;
+    else if (finalValue >= 80) tier = `ELITE ${pos}`;
+    else if (finalValue >= 70) tier = `SOLID ${pos}`;
+    else if (finalValue >= 55) tier = `ROTATION ${pos}`;
+    else tier = `BENCH ${pos}`;
+
+    return { value: finalValue, name: tier };
+}
+
 export function renderPlayerProfile(p) {
     const profileContainer = document.getElementById('player-profile-view');
     const mainView = document.getElementById('admin-main-view');
     if (!profileContainer || !mainView) return;
 
-    // 2. English skill names
+    // Pobierz dynamiczne dane potencjału
+    const dynPot = getEnhancedPotential(p);
+
     const skillList = [
         { key: "skill_2pt", label: "2pt Field Goals (2PT)" },
         { key: "skill_3pt", label: "3pt Field Goals (3PT)" },
@@ -79,12 +153,11 @@ export function renderPlayerProfile(p) {
     const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
     const salaryFormatted = (p.salary || 0).toLocaleString('en-US') + " $";
     
-    // Potential color logic
-    const potValue = p.potential || 0;
+    // Potential color based on new dynamic value
     let potColor = "#95a5a6"; 
-    if (potValue >= 80) potColor = "#f1c40f"; // Gold
-    else if (potValue >= 60) potColor = "#00d4ff"; // Bright Blue
-    else if (potValue >= 40) potColor = "#2ecc71"; // Green
+    if (dynPot.value >= 80) potColor = "#f1c40f"; 
+    else if (dynPot.value >= 60) potColor = "#00d4ff"; 
+    else if (dynPot.value >= 40) potColor = "#2ecc71"; 
 
     profileContainer.innerHTML = `
         <div class="profile-header-nav" style="margin-bottom: 20px;">
@@ -115,10 +188,10 @@ export function renderPlayerProfile(p) {
 
                 <div class="potential-column" style="flex: 0 0 250px; background: #1a1a1a; padding: 25px; border-radius: 20px; border: 1px solid #333; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: inset 0 0 20px rgba(0,0,0,0.3);">
                     <span style="font-size: 0.7em; color: #555; letter-spacing: 3px; font-weight: 800;">POTENTIAL</span>
-                    <div style="font-weight: 900; color: #fff; margin-top: 15px; text-transform: uppercase; letter-spacing: 1.5px; font-size: 1.1em;">${p.potential_name || 'PROSPECT'}</div>
-                    <div style="font-size: 4em; font-weight: 900; color: ${potColor}; margin-bottom: 10px; line-height: 1;">${potValue}</div>
+                    <div style="font-weight: 900; color: #fff; margin-top: 15px; text-transform: uppercase; letter-spacing: 1.5px; font-size: 1.1em;">${dynPot.name}</div>
+                    <div style="font-size: 4em; font-weight: 900; color: ${potColor}; margin-bottom: 10px; line-height: 1;">${dynPot.value}</div>
                     <div style="width: 100%; background: #333; height: 6px; border-radius: 10px; overflow: hidden;">
-                        <div style="width: ${potValue}%; height: 100%; background: ${potColor}; box-shadow: 0 0 15px ${potColor}aa;"></div>
+                        <div style="width: ${dynPot.value}%; height: 100%; background: ${potColor}; box-shadow: 0 0 15px ${potColor}aa;"></div>
                     </div>
                 </div>
             </div>
@@ -153,16 +226,15 @@ export function renderPlayerProfile(p) {
     `;
 }
 
-// 3. Dynamic color scale for statistics
 function renderSkillBar(s, p) {
     const val = p[s.key] || 0;
     const percent = (val / 20) * 100;
     
     let barColor;
-    if (val <= 5) barColor = "#ff4d4d";      // Red (Low)
-    else if (val <= 10) barColor = "#ffa64d"; // Orange (Average)
-    else if (val <= 15) barColor = "#2ecc71"; // Green (Good)
-    else barColor = "#00d4ff";                // Cyan/Blue (Elite)
+    if (val <= 5) barColor = "#ff4d4d"; 
+    else if (val <= 10) barColor = "#ffa64d"; 
+    else if (val <= 15) barColor = "#2ecc71"; 
+    else barColor = "#00d4ff"; 
 
     return `
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 4px;">
