@@ -106,6 +106,7 @@
             <button class="btn" onclick="startLotteryShow()" style="flex:1; background:#1a237e;">URUCHOM LOTERIĘ DRAFTU</button>
         </div>
     </div>
+    
     <div id="admin-tab-players" class="tab-content">
         <h3>Baza Zawodników (Globalna)</h3>
         <div id="admin-players-table-container"></div>
@@ -157,7 +158,8 @@
 <script src="js/manager.js"></script>
 
 <script>
-    // Uniwersalna funkcja przełączania zakładek
+    let currentUserRole = null;
+
     function switchTab(tabId) {
         // 1. Ukryj wszystkie sekcje i dezaktywuj przyciski
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -167,19 +169,30 @@
         const target = document.getElementById(tabId);
         if (target) target.classList.add('active');
         
-        // 3. Aktywuj odpowiedni przycisk (szukamy po atrybucie onclick)
+        // 3. Aktywuj odpowiedni przycisk
         const btn = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
         if (btn) btn.classList.add('active');
 
-        // 4. Wywołaj funkcje pobierania danych z js/manager.js
-        if (tabId === 'm-roster') renderRoster(); 
-        if (tabId === 'm-market') renderTransferMarket();
-        if (tabId === 'm-finances') renderFinances();
-        if (tabId === 'm-draft') renderDraftBoard();
+        // 4. Ładowanie danych zależnie od roli i zakładki
+        if (currentUserRole === 'manager') {
+            if (tabId === 'm-roster') renderRoster(); 
+            if (tabId === 'm-market') renderTransferMarket();
+            if (tabId === 'm-finances') renderFinances();
+            if (tabId === 'm-draft') renderDraftBoard();
+        }
+        
+        // Dodaj tutaj funkcje admina jeśli są potrzebne przy przełączaniu
+        if (currentUserRole === 'admin') {
+            if (tabId === 'admin-tab-players' && typeof fetchAdminPlayersList === 'function') {
+                fetchAdminPlayersList();
+            }
+        }
     }
 
-    // Funkcja wywoływana z auth.js po zalogowaniu
     async function setupUI(userRole) {
+        currentUserRole = userRole;
+        console.log("Inicjalizacja UI dla roli:", userRole);
+
         if (userRole === 'admin') {
             document.getElementById('admin-nav').style.display = 'flex';
             document.getElementById('manager-nav').style.display = 'none';
@@ -188,9 +201,13 @@
             document.getElementById('admin-nav').style.display = 'none';
             document.getElementById('manager-nav').style.display = 'flex';
             
-            // Inicjalizacja danych klubu i wejście w skład
-            await initManagerData(); 
-            switchTab('m-roster');
+            // Bezpieczne ładowanie danych managera
+            try {
+                await initManagerData(); 
+                switchTab('m-roster');
+            } catch (e) {
+                console.error("Błąd inicjalizacji managera:", e);
+            }
         }
     }
 </script>
