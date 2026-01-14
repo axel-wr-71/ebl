@@ -1,8 +1,14 @@
 const SUPABASE_URL = 'https://zzsscobtzwbwubchqjyx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wdrjVOU6jVHGVpsxcUygmg_kqPqz1aC';
+
+// Tworzymy klienta
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Eksportujemy klienta, żeby inne pliki (manager.js) widziały to samo połączenie
+// KLUCZOWE POPRAWKI:
+// 1. Eksportujemy dla modułów (np. admin.js, site_styles.js)
+export const supabaseClient = _supabase; 
+
+// 2. Przypisujemy do window dla starych skryptów (np. manager.js, world_gen.js)
 window.supabase = _supabase;
 
 async function signIn() {
@@ -30,16 +36,13 @@ async function checkUser() {
     const userDisplay = document.getElementById('user-info-display');
 
     if(user) {
-        // 1. Ukrywamy stronę logowania, pokazujemy aplikację
         if(landing) landing.style.display = 'none';
         if(app) app.style.display = 'block';
 
-        // 2. Ustalamy rolę (Twoja definicja ADMINA)
         const isAdmin = (user.email === 'strubbe23@gmail.com');
         const role = isAdmin ? 'admin' : 'manager';
 
         try {
-            // 3. Pobieranie lub tworzenie danych zespołu dla Managera
             let { data: teamData, error: fErr } = await _supabase
                 .from('teams')
                 .select('*')
@@ -47,7 +50,6 @@ async function checkUser() {
                 .maybeSingle();
 
             if (!teamData && !fErr && !isAdmin) {
-                // Tworzymy zespół tylko jeśli to nie jest admin i nie ma jeszcze zespołu
                 const { data: newTeam } = await _supabase
                     .from('teams')
                     .insert([{ 
@@ -59,14 +61,15 @@ async function checkUser() {
                 teamData = newTeam;
             }
 
-            // 4. Wyświetlanie info o użytkowniku w nagłówku
             if(userDisplay) {
                 let statusName = isAdmin ? "Admin" : (teamData ? teamData.team_name : "Manager");
                 userDisplay.innerText = `${user.email} (${statusName})`;
             }
 
-            // 5. KLUCZOWY MOMENT: Wywołanie funkcji z index.html, która pokazuje odpowiednie menu
-            if (typeof setupUI === 'function') {
+            // Wywołanie funkcji z index.html
+            if (typeof window.setupUI === 'function') {
+                window.setupUI(role);
+            } else if (typeof setupUI === 'function') {
                 setupUI(role);
             }
 
@@ -74,7 +77,6 @@ async function checkUser() {
             console.error("Błąd inicjalizacji użytkownika:", e); 
         }
     } else {
-        // Brak zalogowanego użytkownika
         if(landing) landing.style.display = 'block';
         if(app) app.style.display = 'none';
     }
@@ -84,6 +86,12 @@ async function logout() {
     await _supabase.auth.signOut(); 
     location.reload(); 
 }
+
+// Udostępniamy funkcje do HTML (onclick)
+window.signIn = signIn;
+window.signUp = signUp;
+window.logout = logout;
+window.checkUser = checkUser;
 
 // Sprawdź stan sesji przy załadowaniu strony
 checkUser();
