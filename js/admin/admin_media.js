@@ -47,6 +47,7 @@ async function uploadAndGetURL(fileInputId, fileNamePrefix) {
     const fileName = `${fileNamePrefix}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filePath = `public/${fileName}`;
 
+    // Wysyłka do Storage (bucket: 'media')
     const { error } = await supabaseClient.storage.from('media').upload(filePath, file);
     if (error) throw error;
 
@@ -63,13 +64,22 @@ window.handleUploadMainMedia = async () => {
         if (logoUrl) updates.push({ key: 'game_logo', value: logoUrl });
 
         if (updates.length > 0) {
-            const { error } = await supabaseClient.from('site_settings').upsert(updates);
+            // KLUCZOWA POPRAWKA: onConflict: 'key' rozwiązuje błędy RLS przy aktualizacji
+            const { error } = await supabaseClient
+                .from('site_settings')
+                .upsert(updates, { onConflict: 'key' });
+
             if (error) throw error;
             await applySiteSettings();
-            alert("Zaktualizowano!");
+            alert("Zaktualizowano grafiki główne!");
             renderMediaSettings();
+        } else {
+            alert("Wybierz plik do wysłania.");
         }
-    } catch (err) { alert(err.message); }
+    } catch (err) { 
+        console.error("Błąd Media:", err);
+        alert("Błąd: " + err.message); 
+    }
 };
 
 window.handleUploadGallery = async () => {
@@ -78,16 +88,26 @@ window.handleUploadGallery = async () => {
         const g1 = await uploadAndGetURL('up-gal-1', 'gal1');
         const g2 = await uploadAndGetURL('up-gal-2', 'gal2');
         const g3 = await uploadAndGetURL('up-gal-3', 'gal3');
+        
         if (g1) updates.push({ key: 'gal_1', value: g1 });
         if (g2) updates.push({ key: 'gal_2', value: g2 });
         if (g3) updates.push({ key: 'gal_3', value: g3 });
 
         if (updates.length > 0) {
-            const { error } = await supabaseClient.from('site_settings').upsert(updates);
+            // KLUCZOWA POPRAWKA: onConflict: 'key'
+            const { error } = await supabaseClient
+                .from('site_settings')
+                .upsert(updates, { onConflict: 'key' });
+
             if (error) throw error;
             await applySiteSettings();
             alert("Galeria zaktualizowana!");
             renderMediaSettings();
+        } else {
+            alert("Wybierz zdjęcia do galerii.");
         }
-    } catch (err) { alert(err.message); }
+    } catch (err) { 
+        console.error("Błąd Galerii:", err);
+        alert("Błąd: " + err.message); 
+    }
 };
