@@ -279,3 +279,57 @@ input, select {
 .admin-table tbody tr:hover {
     background-color: #fff9f4 !important; /* Delikatny pomarańczowy nalot */
 }
+
+.modern-profile-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.player-img-pro {
+    width: 150px;
+    height: 150px;
+    background: #f8f9fa;
+    border-radius: 50%; /* Okrągłe zdjęcia wyglądają profesjonalniej */
+    border: 3px solid #f58426;
+    object-fit: cover;
+}
+
+.potential-badge {
+    background: #1a237e;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.skill-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.skill-bar-bg {
+    flex-grow: 1;
+    background: #eee;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.skill-bar-fill {
+    background: linear-gradient(90deg, #f58426, #ffb74d);
+    height: 100%;
+}
+
+.skill-value {
+    width: 30px;
+    font-weight: bold;
+    text-align: right;
+}
+
+.txt-center { text-align: center; }
