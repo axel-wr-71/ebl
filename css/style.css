@@ -333,3 +333,96 @@ input, select {
 }
 
 .txt-center { text-align: center; }
+
+.modern-profile-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    border: 1px solid #eee;
+}
+
+.player-img-pro {
+    width: 180px;
+    height: 180px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 20px;
+    border: 4px solid #fff;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.avatar-wrapper { position: relative; }
+.pos-badge {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #e65100;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.bio-grid-modern {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 12px;
+}
+
+/* Stylizacja Potencjału */
+.potential-container-modern { margin-top: 20px; }
+.pot-label { font-size: 12px; font-weight: bold; color: #666; }
+.pot-bar-wrapper {
+    height: 24px;
+    background: #e0e0e0;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    margin-top: 5px;
+}
+.pot-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1a237e, #3949ab);
+    border-radius: 12px;
+}
+.pot-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 0;
+    line-height: 24px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Paski Umiejętności */
+.skill-row-new {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+.s-label { width: 40px; font-weight: bold; font-size: 13px; color: #444; }
+.s-bar-bg { flex: 1; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+.s-bar-fill { height: 100%; background: #f58426; }
+.s-value { width: 25px; text-align: right; font-weight: bold; color: #1a237e; }
+
+/* Modal Edytora */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+}
+.modal-content {
+    background: white; padding: 30px; border-radius: 15px; width: 500px;
+}
+.editor-layout { display: flex; gap: 20px; margin: 20px 0; }
