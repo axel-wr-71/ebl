@@ -14,7 +14,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: calc(100vh - 80px); /* Odjąć wysokość headera */
+            min-height: calc(100vh - 80px);
             padding: 20px;
             text-align: center;
         }
@@ -30,12 +30,12 @@
             height: auto;
             cursor: pointer;
             transition: 0.3s;
-            filter: grayscale(100%); /* Domyślnie wyszarzone */
+            filter: grayscale(100%);
             opacity: 0.6;
         }
 
         .lang-flag.active {
-            filter: grayscale(0%); /* Aktywna flaga w kolorze */
+            filter: grayscale(0%);
             opacity: 1;
             transform: scale(1.1);
         }
@@ -118,8 +118,8 @@
         <div class="auth-card" style="max-width: 400px; width: 100%; background: #f9f9f9; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
             <h2 data-i18n="login_header" style="margin-top:0; color: var(--nba-blue);">Panel Managera</h2>
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <input type="email" id="email" placeholder="Email" style="padding: 12px; border-radius: 6px; border: 1px solid #ddd;">
-                <input type="password" id="password" placeholder="Hasło" style="padding: 12px; border-radius: 6px; border: 1px solid #ddd;">
+                <input type="email" id="email" placeholder="Email" data-i18n="email_placeholder" style="padding: 12px; border-radius: 6px; border: 1px solid #ddd;">
+                <input type="password" id="password" placeholder="Hasło" data-i18n="password_placeholder" style="padding: 12px; border-radius: 6px; border: 1px solid #ddd;">
                 <button class="btn" onclick="signIn()" data-i18n="btn_login" style="padding: 12px;">ZALOGUJ SIĘ</button>
                 <button class="btn" style="background:#555; padding: 12px;" onclick="signUp()" data-i18n="btn_signup">ZAŁÓŻ KONTO</button>
             </div>
@@ -142,23 +142,23 @@
     </header>
 
     <div id="admin-nav" class="nav-container" style="display:none;">
-        <button class="btn-tab active" onclick="switchTab('admin-tab-gen')">Generowanie</button>
+        <button class="btn-tab active" onclick="switchTab('admin-tab-gen')" data-i18n="admin_panel">Generowanie</button>
         <button class="btn-tab" onclick="switchTab('admin-tab-players')">Baza Zawodników</button>
         <button class="btn-tab" onclick="switchTab('admin-tab-config')">Ustawienia Ligi</button>
     </div>
 
     <div id="manager-nav" class="nav-container" style="display:none;">
-        <button class="btn-tab active" onclick="switchTab('m-roster')">ZAWODNICY</button>
-        <button class="btn-tab" onclick="switchTab('m-market')">RYNEK</button>
-        <button class="btn-tab" onclick="switchTab('m-schedule')">TERMINARZ</button>
-        <button class="btn-tab" onclick="switchTab('m-draft')">DRAFT</button>
-        <button class="btn-tab" onclick="switchTab('m-finances')">FINANSE</button>
+        <button class="btn-tab active" onclick="switchTab('m-roster')" data-i18n="m_roster">ZAWODNICY</button>
+        <button class="btn-tab" onclick="switchTab('m-market')" data-i18n="m_market">RYNEK</button>
+        <button class="btn-tab" onclick="switchTab('m-schedule')" data-i18n="m_schedule">TERMINARZ</button>
+        <button class="btn-tab" onclick="switchTab('m-draft')" data-i18n="m_draft">DRAFT</button>
+        <button class="btn-tab" onclick="switchTab('m-finances')" data-i18n="m_finances">FINANSE</button>
     </div>
 
     <div id="admin-tab-gen" class="tab-content">
-        <h3>Generator Świata</h3>
+        <h3 data-i18n="admin_panel">Generator Świata</h3>
         <div style="display:flex; gap:10px;">
-            <button class="btn" onclick="initWorld()" style="flex:1;">GENERUJ ŚWIAT I LIGI</button>
+            <button class="btn" onclick="initWorld()" style="flex:1;" data-i18n="gen_world">GENERUJ ŚWIAT I LIGI</button>
             <button class="btn" onclick="startLotteryShow()" style="flex:1; background:#1a237e;">URUCHOM LOTERIĘ DRAFTU</button>
         </div>
     </div>
@@ -174,27 +174,27 @@
     </div>
 
     <div id="m-roster" class="tab-content">
-        <h3>Skład Drużyny: <span id="team-name-display">...</span></h3>
+        <h3><span data-i18n="m_roster">Skład Drużyny</span>: <span id="team-name-display">...</span></h3>
         <div id="roster-container">Pobieranie zawodników...</div>
     </div>
 
     <div id="m-market" class="tab-content">
-        <h3>Rynek Transferowy</h3>
+        <h3 data-i18n="m_market">Rynek Transferowy</h3>
         <div id="transfer-market-container">Ładowanie ofert...</div>
     </div>
 
     <div id="m-finances" class="tab-content">
-        <h3>Finanse</h3>
+        <h3 data-i18n="m_finances">Finanse</h3>
         <div id="finances-container"></div>
     </div>
 
     <div id="m-draft" class="tab-content">
-        <h3>Draft Board</h3>
+        <h3 data-i18n="m_draft">Draft Board</h3>
         <div id="draft-board-container"></div>
     </div>
     
     <div id="m-schedule" class="tab-content">
-        <h3>Terminarz Sezonu</h3>
+        <h3 data-i18n="m_schedule">Terminarz Sezonu</h3>
         <p>Terminarz będzie dostępny po starcie sezonu.</p>
     </div>
 </div>
@@ -222,18 +222,10 @@
 <script>
     let currentUserRole = null;
 
-    /**
-     * Ustawia język i wizualnie zmienia stan flag
-     */
     function setLanguage(lang) {
-        // Usuń klasę active ze wszystkich flag
-        document.querySelectorAll('.lang-flag').forEach(el => el.classList.remove('active'));
-        // Dodaj klasę active do wybranej
-        document.getElementById(`flag-${lang}`).classList.add('active');
-        
-        // Wywołanie oryginalnej funkcji z lang.js (jeśli tak się nazywa)
-        if (typeof window.changeLanguage === 'function') {
-            window.changeLanguage(lang);
+        // Logika wizualna (flagi) i systemowa (lang.js)
+        if (typeof window.setLanguage === 'function') {
+            window.setLanguage(lang);
         }
     }
 
