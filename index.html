@@ -6,123 +6,219 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* --- NOWE STYLE DLA STRONY GŁÓWNEJ I FLAG --- */
+        /* --- NOWA STYLIZACJA STRONY GŁÓWNEJ (LANDING PAGE) --- */
         
-        /* Kontener centrujący logowanie */
-        .auth-container {
+        .landing-hero {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            /* Tło ustawiane domyślnie, docelowo z bazy (Media) */
+            background: url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=1600') no-repeat center center fixed;
+            background-size: cover;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: calc(100vh - 80px);
-            padding: 20px;
-            text-align: center;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        .lang-switcher {
+        .hero-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); /* Przyciemnienie zdjęcia tła */
+            z-index: 1;
+        }
+
+        /* Header strony głównej */
+        .landing-header {
+            position: relative;
+            z-index: 2;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
+            padding: 20px 40px;
+        }
+
+        .media-logo {
+            height: 80px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .lang-switcher-top {
+            display: flex;
+            gap: 12px;
         }
 
         .lang-flag {
-            width: 30px;
+            width: 32px;
             height: auto;
             cursor: pointer;
             transition: 0.3s;
             filter: grayscale(100%);
             opacity: 0.6;
+            border-radius: 4px; /* Delikatne zaokrąglenie */
         }
 
         .lang-flag.active {
             filter: grayscale(0%);
             opacity: 1;
             transform: scale(1.1);
+            box-shadow: 0 0 8px rgba(255,255,255,0.3);
         }
 
-        .lang-divider { color: #ccc; font-weight: bold; }
+        /* Centralna treść */
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding-bottom: 50px;
+        }
 
-        .hero-container {
+        .main-title {
+            font-size: 4.5rem;
+            font-weight: 900;
+            margin: 0 0 30px 0;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: #fff;
+            text-shadow: 3px 3px 15px rgba(0,0,0,0.7);
+        }
+
+        /* Box logowania */
+        .auth-box {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            color: #333;
+        }
+
+        .auth-box h2 {
+            margin-top: 0;
+            margin-bottom: 25px;
+            color: #1a237e;
+            font-weight: 800;
+        }
+
+        .auth-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .auth-inputs input {
+            padding: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .auth-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-main {
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 1rem;
+        }
+
+        .btn-login { background: #e65100; color: white; }
+        .btn-login:hover { background: #ff6d00; }
+        .btn-signup { background: #444; color: white; }
+        .btn-signup:hover { background: #222; }
+
+        /* Galeria na dole */
+        .hero-gallery {
+            position: relative;
+            z-index: 2;
             display: flex;
             gap: 20px;
-            margin-bottom: 30px;
-            justify-content: center;
-            flex-wrap: wrap;
+            margin-top: 40px;
         }
 
-        .hero-img {
-            width: 350px;
-            height: 200px;
+        .hero-gallery img {
+            width: 160px;
+            height: 100px;
             object-fit: cover;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 2px solid white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: 0.3s;
         }
 
-        /* --- STYLOVANIE ZAKŁADEK I TABELI --- */
+        .hero-gallery img:hover { transform: scale(1.1); }
+
+        /* --- STYLOVANIE APLIKACJI (BEZ ZMIAN) --- */
         .nav-container { display: flex; gap: 5px; padding: 0 20px; margin-top: 15px; flex-wrap: wrap; }
-        .btn-tab { 
-            padding: 10px 20px; border: none; background: #ddd; cursor: pointer; 
-            border-radius: 8px 8px 0 0; font-weight: bold; transition: 0.3s;
-        }
+        .btn-tab { padding: 10px 20px; border: none; background: #ddd; cursor: pointer; border-radius: 8px 8px 0 0; font-weight: bold; transition: 0.3s; }
         .btn-tab.active { background: #e65100; color: white; }
         .tab-content { display: none; margin: 0 20px 20px 20px; border-radius: 0 10px 10px 10px; padding: 20px; background: white; border: 1px solid #ddd; }
         .tab-content.active { display: block; }
-        
         .admin-table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; }
         .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 13px; }
         .admin-table th { background: #f2f2f2; }
-
-        /* DRAFT LOTTERY STYLES */
-        #draft-lottery-screen {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, #1a237e 0%, #000010 100%);
-            z-index: 9999; color: white; overflow-y: auto; padding: 40px 20px;
-        }
+        #draft-lottery-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a237e 0%, #000010 100%); z-index: 9999; color: white; overflow-y: auto; padding: 40px 20px; }
         .lottery-container { max-width: 900px; margin: 0 auto; text-align: center; }
-        .machine-ball {
-            width: 120px; height: 120px; background: #ff6d00; border-radius: 50%;
-            margin: 20px auto; display: flex; align-items: center; justify-content: center;
-            font-size: 50px; box-shadow: 0 0 30px rgba(255,109,0,0.5);
-            animation: bounce 0.5s infinite alternate;
-        }
+        .machine-ball { width: 120px; height: 120px; background: #ff6d00; border-radius: 50%; margin: 20px auto; display: flex; align-items: center; justify-content: center; font-size: 50px; box-shadow: 0 0 30px rgba(255,109,0,0.5); animation: bounce 0.5s infinite alternate; }
         @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
-        
         .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 30px; }
-        .envelope {
-            background: #283593; border: 2px solid #3f51b5; padding: 15px;
-            border-radius: 5px; font-weight: bold; transition: all 0.5s;
-            text-transform: uppercase; letter-spacing: 1px;
-        }
+        .envelope { background: #283593; border: 2px solid #3f51b5; padding: 15px; border-radius: 5px; font-weight: bold; transition: all 0.5s; text-transform: uppercase; letter-spacing: 1px; }
         .envelope.revealed { background: white; color: #1a237e; border-color: #ff6d00; transform: scale(1.05); }
         .exit-lottery { margin-top: 40px; padding: 10px 20px; background: transparent; border: 1px solid white; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="landing-page">
-    <header style="display: flex; justify-content: space-between; align-items: center; padding: 10px 40px; background: #fff; border-bottom: 2px solid var(--nba-orange);">
-        <h1 style="color:var(--nba-orange); margin:0" data-i18n="welcome_title">ELITE BUZZER LEAGUE</h1>
-        <div class="lang-switcher">
-            <img src="https://flagcdn.com/w40/pl.png" id="flag-pl" onclick="setLanguage('pl')" class="lang-flag active" alt="PL">
-            <span class="lang-divider">|</span>
-            <img src="https://flagcdn.com/w40/us.png" id="flag-en" onclick="setLanguage('en')" class="lang-flag" alt="EN">
+<div id="landing-page" class="landing-hero">
+    <div class="hero-overlay"></div>
+
+    <header class="landing-header">
+        <div class="header-left">
+            <img src="logo_EBL.png" id="landing-logo-media" class="media-logo" alt="Logo">
+        </div>
+        <div class="header-right">
+            <div class="lang-switcher-top">
+                <img src="https://flagcdn.com/w40/pl.png" id="flag-pl" onclick="setLanguage('pl')" class="lang-flag active" alt="PL">
+                <img src="https://flagcdn.com/w40/us.png" id="flag-en" onclick="setLanguage('en')" class="lang-flag" alt="EN">
+            </div>
         </div>
     </header>
 
-    <main class="auth-container">
-        <div class="hero-container">
-            <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600" class="hero-img">
-            <img src="https://images.unsplash.com/photo-1519861531473-920036214751?w=600" class="hero-img">
+    <main class="hero-content">
+        <h1 class="main-title" data-i18n="welcome_title">ELITE BUZZER LEAGUE</h1>
+
+        <div class="auth-box">
+            <h2 data-i18n="login_header">Panel Managera</h2>
+            <div class="auth-inputs">
+                <input type="email" id="email" placeholder="Email" data-i18n="email_placeholder">
+                <input type="password" id="password" placeholder="Hasło" data-i18n="password_placeholder">
+                <div class="auth-buttons">
+                    <button class="btn-main btn-login" onclick="signIn()" data-i18n="btn_login">ZALOGUJ SIĘ</button>
+                    <button class="btn-main btn-signup" onclick="signUp()" data-i18n="btn_signup">ZAŁÓŻ KONTO</button>
+                </div>
+            </div>
         </div>
 
-        <div class="auth-card" style="max-width: 400px; width: 100%; background: #f9f9f9; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-            <h2 data-i18n="login_header" style="margin-top:0; color: var(--nba-blue);">Panel Managera</h2>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <input type="email" id="email" placeholder="Email" data-i18n="email_placeholder" style="padding: 12px; border-radius: 6px; border: 1px solid #ddd;">
-                <input type="password" id="password" placeholder="Hasło" data-i18n="password_placeholder" style="padding: 12px; border-radius: 6px; border: 1px solid #ddd;">
-                <button class="btn" onclick="signIn()" data-i18n="btn_login" style="padding: 12px;">ZALOGUJ SIĘ</button>
-                <button class="btn" style="background:#555; padding: 12px;" onclick="signUp()" data-i18n="btn_signup">ZAŁÓŻ KONTO</button>
-            </div>
+        <div class="hero-gallery">
+            <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400" alt="Screen 1">
+            <img src="https://images.unsplash.com/photo-1519861531473-920036214751?w=400" alt="Screen 2">
+            <img src="https://images.unsplash.com/photo-1518063311540-30b8acb1d7a8?w=400" alt="Screen 3">
         </div>
     </main>
 </div>
@@ -145,7 +241,7 @@
         <button class="btn-tab active" onclick="switchTab('admin-tab-gen')" data-i18n="admin_panel">Generowanie</button>
         <button class="btn-tab" onclick="switchTab('admin-tab-players')">Baza Zawodników</button>
         <button class="btn-tab" onclick="switchTab('admin-tab-config')">Ustawienia Ligi</button>
-    </div>
+        </div>
 
     <div id="manager-nav" class="nav-container" style="display:none;">
         <button class="btn-tab active" onclick="switchTab('m-roster')" data-i18n="m_roster">ZAWODNICY</button>
@@ -223,7 +319,12 @@
     let currentUserRole = null;
 
     function setLanguage(lang) {
-        // Logika wizualna (flagi) i systemowa (lang.js)
+        // Usuwamy klasę active ze wszystkich flag na landing page
+        document.querySelectorAll('.lang-flag').forEach(f => f.classList.remove('active'));
+        // Dodajemy do wybranej
+        const selected = document.getElementById(`flag-${lang}`);
+        if(selected) selected.classList.add('active');
+
         if (typeof window.setLanguage === 'function') {
             window.setLanguage(lang);
         }
