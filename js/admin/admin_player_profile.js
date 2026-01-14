@@ -129,4 +129,59 @@ export function renderPlayerProfile(p) {
 function renderSkill(label, val) {
     const pct = (val / 20) * 100;
     return `<div style="margin-bottom:8px;">
-        <div style="display:flex; justify-content:space-between; font-size:12px;"><span>${label}</span><span>
+        <div style="display:flex; justify-content:space-between; font-size:12px;"><span>${label}</span><span>${val}</span></div>
+        <div style="height:6px; background:#ddd; border-radius:3px;"><div style="width:${pct}%; height:100%; background:orange; border-radius:3px;"></div></div>
+    </div>`;
+}
+
+function getFlagEmoji(c) {
+    const f = { "Poland": "🇵🇱", "USA": "🇺🇸", "Spain": "🇪🇸", "France": "🇫🇷" };
+    return f[c] || "🏳️";
+}
+
+// --- LOGIKA GLOBALNA ---
+let activePlayerId = null;
+
+window.openNBAEditor = (p) => {
+    activePlayerId = p.id;
+    const cfg = p.face_config || { skin: 1, hair: 1, eyes: 0, beard: 0 };
+    document.getElementById('nba-editor-modal').style.display = 'flex';
+    document.getElementById('e-skin').value = cfg.skin;
+    document.getElementById('e-hair').value = cfg.hair;
+    document.getElementById('e-beard').value = cfg.beard;
+    document.getElementById('e-eyes').value = cfg.eyes;
+    syncNBAEditor();
+};
+
+window.syncNBAEditor = () => {
+    const cfg = {
+        skin: parseInt(document.getElementById('e-skin').value),
+        hair: parseInt(document.getElementById('e-hair').value),
+        beard: parseInt(document.getElementById('e-beard').value),
+        eyes: parseInt(document.getElementById('e-eyes').value)
+    };
+    document.getElementById('editor-preview').innerHTML = generateNBAFaceSVG(cfg);
+};
+
+window.saveNBAFace = async () => {
+    const cfg = {
+        skin: parseInt(document.getElementById('e-skin').value),
+        hair: parseInt(document.getElementById('e-hair').value),
+        beard: parseInt(document.getElementById('e-beard').value),
+        eyes: parseInt(document.getElementById('e-eyes').value)
+    };
+
+    const { error } = await supabaseClient.from('players').update({ face_config: cfg }).eq('id', activePlayerId);
+    if (!error) {
+        document.getElementById('main-svg-wrapper').innerHTML = generateNBAFaceSVG(cfg);
+        closeNBAEditor();
+    } else {
+        alert("Błąd zapisu: " + error.message);
+    }
+};
+
+window.closeNBAEditor = () => { document.getElementById('nba-editor-modal').style.display = 'none'; };
+window.hidePlayerProfile = () => { 
+    document.getElementById('player-profile-view').style.display = 'none';
+    document.getElementById('admin-main-view').style.display = 'block';
+};
