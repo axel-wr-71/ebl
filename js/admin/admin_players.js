@@ -43,7 +43,7 @@ export async function renderAdminPlayers() {
         <div id="player-profile-view" style="display:none;"></div>
     `;
 
-    // Automatyczne wyszukiwanie przy wejściu, aby tabela nie była pusta
+    // Automatyczne wyszukiwanie przy wejściu
     setTimeout(() => { window.searchPlayers(); }, 100);
 }
 
@@ -65,7 +65,7 @@ window.searchPlayers = async () => {
 
     resultsContainer.innerHTML = "<div class='loading'>Pobieranie danych...</div>";
 
-    // Budujemy zapytanie - dołączamy relację teams, aby filtrować po lidze
+    // Budujemy zapytanie - uwzględniamy nowe nazwy kolumn
     let query = supabaseClient.from('players').select(`*, teams (team_name, league_name)`);
     
     if (country) query = query.eq('country', country);
@@ -76,7 +76,6 @@ window.searchPlayers = async () => {
         return;
     }
 
-    // Filtrowanie po lidze w JS (ponieważ liga jest w relacji)
     let filtered = league ? players.filter(p => p.teams?.league_name === league) : players;
 
     if (filtered.length === 0) {
@@ -89,14 +88,13 @@ window.searchPlayers = async () => {
             <thead>
                 <tr>
                     <th>ZAWODNIK</th><th>KLUB</th><th>WIEK</th><th>POZ</th>
-                    <th>JS</th><th>JR</th><th>OD</th><th>HA</th><th>DR</th><th>PA</th>
-                    <th>IS</th><th>ID</th><th>RE</th><th>BL</th><th>ST</th><th>FT</th>
+                    <th>2PT</th><th>3PT</th><th>DNK</th><th>PAS</th><th>1v1O</th><th>DRI</th>
+                    <th>REB</th><th>BLK</th><th>STL</th><th>1v1D</th><th>FT</th><th>STA</th>
                     <th>AKCJA</th>
                 </tr>
             </thead>
             <tbody>
                 ${filtered.map(p => {
-                    // Przygotowujemy dane do przekazania w atrybucie onclick
                     const pData = JSON.stringify(p).replace(/'/g, "&apos;");
                     return `
                     <tr>
@@ -104,10 +102,10 @@ window.searchPlayers = async () => {
                         <td style="text-align:left;">${p.teams?.team_name || "Wolny agent"}</td>
                         <td>${p.age}</td>
                         <td style="color:orange; font-weight:bold;">${p.position || '??'}</td>
-                        <td>${p.jump_shot}</td><td>${p.jump_range}</td><td>${p.outside_defense}</td>
-                        <td>${p.handling}</td><td>${p.driving}</td><td>${p.passing}</td>
-                        <td>${p.inside_shot}</td><td>${p.inside_defense}</td><td>${p.rebounding}</td>
-                        <td>${p.shot_blocking}</td><td>${p.stamina}</td><td>${p.free_throw}</td>
+                        <td>${p.skill_2pt}</td><td>${p.skill_3pt}</td><td>${p.skill_dunk}</td>
+                        <td>${p.skill_passing}</td><td>${p.skill_1on1_off}</td><td>${p.skill_dribbling}</td>
+                        <td>${p.skill_rebound}</td><td>${p.skill_block}</td><td>${p.skill_steal}</td>
+                        <td>${p.skill_1on1_def}</td><td>${p.skill_ft}</td><td>${p.skill_stamina}</td>
                         <td><button class="btn-show" onclick='showDetails(${pData})'>PROFIL</button></td>
                     </tr>
                     `;
@@ -117,7 +115,6 @@ window.searchPlayers = async () => {
     `;
 };
 
-// Funkcja przełączająca widoki
 window.showDetails = (p) => { 
     const mainView = document.getElementById('admin-main-view');
     const profileView = document.getElementById('player-profile-view');
@@ -129,7 +126,6 @@ window.showDetails = (p) => {
     }
 };
 
-// Funkcja powrotu (można ją wywołać z admin_player_profile.js)
 window.hidePlayerDetails = () => {
     const mainView = document.getElementById('admin-main-view');
     const profileView = document.getElementById('player-profile-view');
@@ -149,7 +145,8 @@ function getFlagEmoji(country) {
         "Germany": "🇩🇪",
         "Italy": "🇮🇹",
         "Greece": "🇬🇷",
-        "Lithuania": "🇱🇹"
+        "Lithuania": "🇱🇹",
+        "Belgium": "🇧🇪"
     };
     return flags[country] || "🏳️";
 }
