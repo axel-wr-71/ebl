@@ -35,7 +35,7 @@ export async function renderAdminPlayers() {
             </div>
             <div id="search-results-container"></div>
         </div>
-        <div id="player-profile-view" style="display:none;"></div>
+        <div id="player-profile-view" style="display:none; background: #f4f4f4; padding: 20px; border-radius: 8px;"></div>
     `;
 }
 
@@ -53,7 +53,7 @@ window.searchPlayers = async () => {
 
     resultsContainer.innerHTML = "<div class='loading'>Pobieranie...</div>";
 
-    // Wykonujemy zapytanie do tabeli players
+    // Wykonujemy zapytanie do tabeli players z relacją do teams
     let query = supabase.from('players').select(`*, teams (team_name, league_name)`);
     if (country) query = query.eq('country', country);
 
@@ -70,6 +70,7 @@ window.searchPlayers = async () => {
             <thead>
                 <tr>
                     <th style="text-align:left;">ZAWODNIK</th>
+                    <th style="text-align:left;">KLUB</th>
                     <th style="text-align:center;">WIEK</th>
                     <th style="text-align:center;">POZ</th>
                     <th style="text-align:center;">JS</th><th style="text-align:center;">JR</th>
@@ -83,18 +84,21 @@ window.searchPlayers = async () => {
             </thead>
             <tbody>
                 ${filtered.map(p => {
-                    // LOGIKA NAPRAWCZA DLA NAZW I POZYCJI:
-                    // 1. Sprawdzamy czy imię i nazwisko istnieją, jeśli nie, szukamy kolumny 'name'
-                    const displayName = (p.first_name && p.last_name) 
-                        ? `${p.first_name} ${p.last_name}` 
+                    // 1. Logika naprawcza dla imienia i nazwiska
+                    const displayName = (p.first_name || p.last_name) 
+                        ? `${p.first_name || ''} ${p.last_name || ''}`.trim() 
                         : (p.name || `Zawodnik ${p.id.substring(0,5)}`);
                     
-                    // 2. Obsługa pozycji (próbujemy position, pos lub skrót)
+                    // 2. Obsługa klubu
+                    const teamName = p.teams?.team_name || "Wolny agent";
+
+                    // 3. Obsługa pozycji
                     const displayPos = p.position || p.pos || "N/A";
 
                     return `
                     <tr>
                         <td style="text-align:left;"><strong>${displayName}</strong></td>
+                        <td style="text-align:left; color: #555; font-size: 12px;">${teamName}</td>
                         <td style="text-align:center;">${p.age || '--'}</td>
                         <td style="text-align:center; font-weight:bold; color: #e65100;">${displayPos}</td>
                         <td style="text-align:center;">${p.jump_shot || 0}</td>
@@ -131,28 +135,32 @@ window.showPlayerProfile = (p) => {
         { l: "Blk", v: p.shot_blocking }, { l: "Kon", v: p.stamina }, { l: "RzO", v: p.free_throw }
     ];
 
+    const displayName = (p.first_name || p.last_name) 
+        ? `${p.first_name || ''} ${p.last_name || ''}`.trim() 
+        : (p.name || `Zawodnik ${p.id.substring(0,5)}`);
+
     profile.innerHTML = `
         <button class="btn" onclick="hidePlayerProfile()" style="width:auto; background:#666; margin-bottom:15px;">← POWRÓT</button>
         <div style="background:white; border: 1px solid #ccc; padding: 20px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
             <div style="background:#ddd; padding:5px 10px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #f58426;">
-                <h2 style="margin:0; font-size:18px;">${getFlagEmoji(p.country)} ${p.first_name} ${p.last_name} (${p.id.substring(0,8)})</h2>
-                <strong style="color:#444;">${p.position}</strong>
+                <h2 style="margin:0; font-size:18px;">${getFlagEmoji(p.country)} ${displayName} (${p.id.substring(0,8)})</h2>
+                <strong style="color:#444;">${p.position || p.pos || 'N/A'}</strong>
             </div>
 
             <div style="display: flex; gap: 20px; margin-top: 15px;">
                 <div style="flex: 1; text-align: center;">
-                    <div style="width:120px; height:150px; background:#eee; margin:0 auto; border:1px solid #ccc; display:flex; align-items:center; justify-content:center;">
+                    <div style="width:120px; height:150px; background:#eee; margin:0 auto; border:1px solid #ccc; display:flex; align-items:center; justify-content:center; font-size: 40px;">
                         ${p.avatar_url ? `<img src="${p.avatar_url}" style="width:100%;">` : `👤`}
                     </div>
                     <div style="text-align:left; font-size:12px; margin-top:10px; line-height:1.6;">
                         <div><strong>Właściciel:</strong> ${p.teams ? p.teams.team_name : 'Wolny Agent'}</div>
                         <div><strong>Wiek:</strong> ${p.age}</div>
                         <div><strong>Wzrost:</strong> ${p.height || '198'} cm</div>
-                        <div><strong>Potencjał:</strong> <span style="color:red;">Tier ${p.potential_id}</span></div>
+                        <div><strong>Potencjał:</strong> <span style="color:red;">Tier ${p.potential_id || '??'}</span></div>
                     </div>
                 </div>
 
-                <div style="flex: 2; display: grid; grid-template-columns: 1fr 1fr; gap: x; font-size: 13px;">
+                <div style="flex: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; font-size: 13px;">
                     ${skills.map(s => renderSkillRow(s.l, s.v)).join('')}
                 </div>
             </div>
@@ -161,7 +169,7 @@ window.showPlayerProfile = (p) => {
                 <div style="display: flex; align-items: flex-end; height: 100px; gap: 5px; background: #fafafa; padding: 10px; border-left: 2px solid #555; border-bottom: 2px solid #555;">
                     ${skills.map(s => `
                         <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px;">
-                            <div style="width:100%; background:#1a237e; height:${s.v * 5}px; border:1px solid #000;"></div>
+                            <div style="width:100%; background:#1a237e; height:${(s.v || 0) * 5}px; border:1px solid #000;"></div>
                             <span style="font-size:9px; font-weight:bold;">${s.l}</span>
                         </div>
                     `).join('')}
@@ -177,7 +185,7 @@ function renderSkillRow(label, value) {
     return `
         <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0; padding:3px 5px;">
             <span>${label}:</span>
-            <span style="font-weight:bold; color:#1a237e;">${skillName} (${value})</span>
+            <span style="font-weight:bold; color:#1a237e;">${skillName} (${value || 0})</span>
         </div>
     `;
 }
