@@ -9,14 +9,13 @@ async function renderAdminPlayers() {
 
     container.innerHTML = "<p>Ładowanie bazy wszystkich zawodników...</p>";
 
-    // Pobieramy zawodników wraz z nazwami ich klubów (JOIN)
     const { data: players, error } = await supabase
         .from('players')
         .select(`
             *,
             teams (
                 team_name,
-                country_name,
+                country,
                 league_name
             )
         `)
@@ -46,7 +45,7 @@ async function renderAdminPlayers() {
                         <td style="font-weight:bold; background:#fff9c4; text-align:center;">${p.overall_rating}</td>
                         <td>${p.first_name} ${p.last_name}</td>
                         <td>${p.position}</td>
-                        <td>${p.teams ? p.teams.country_name : '-'}</td>
+                        <td>${p.teams ? p.teams.country : '-'}</td>
                         <td>${p.teams ? p.teams.league_name : '-'}</td>
                         <td>${p.teams ? p.teams.team_name : '<span style="color:red">Wolny Agent</span>'}</td>
                         <td>${p.age}</td>
@@ -59,7 +58,7 @@ async function renderAdminPlayers() {
 }
 
 /**
- * Widok ustawień lig (lista 10 krajów)
+ * Widok ustawień lig (lista 10 krajów z tabeli leagues)
  */
 async function renderLeagueSettings() {
     const container = document.getElementById('admin-league-config-container');
@@ -84,7 +83,7 @@ async function renderLeagueSettings() {
                 <tr>
                     <th>Kraj</th>
                     <th>Nazwa Ligi</th>
-                    <th>Tier</th>
+                    <th>Tier (Poziom)</th>
                     <th>Podział (Sub-tier)</th>
                 </tr>
             </thead>
@@ -102,5 +101,3 @@ async function renderLeagueSettings() {
     `;
     container.innerHTML = html;
 }
-
-// Pozostałe Twoje funkcje edycji (Game Config) mogą zostać tutaj...
