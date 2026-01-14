@@ -2,6 +2,9 @@ const SUPABASE_URL = 'https://zzsscobtzwbwubchqjyx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wdrjVOU6jVHGVpsxcUygmg_kqPqz1aC';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Eksportujemy klienta, żeby inne pliki (manager.js) widziały to samo połączenie
+window.supabase = _supabase;
+
 async function signIn() {
     const e = document.getElementById('email').value;
     const p = document.getElementById('password').value;
@@ -24,23 +27,27 @@ async function checkUser() {
     const { data: { user } } = await _supabase.auth.getUser();
     const landing = document.getElementById('landing-page');
     const app = document.getElementById('game-app');
-    const admin = document.getElementById('admin-panel');
     const userDisplay = document.getElementById('user-info-display');
 
     if(user) {
+        // 1. Ukrywamy stronę logowania, pokazujemy aplikację
         if(landing) landing.style.display = 'none';
         if(app) app.style.display = 'block';
-        if(user.email === 'strubbe23@gmail.com') admin.style.display = 'block';
+
+        // 2. Ustalamy rolę (Twoja definicja ADMINA)
+        const isAdmin = (user.email === 'strubbe23@gmail.com');
+        const role = isAdmin ? 'admin' : 'manager';
 
         try {
-            // Pobieranie z nowej tabeli teams
+            // 3. Pobieranie lub tworzenie danych zespołu dla Managera
             let { data: teamData, error: fErr } = await _supabase
                 .from('teams')
                 .select('*')
                 .eq('owner_id', user.id)
                 .maybeSingle();
 
-            if (!teamData && !fErr) {
+            if (!teamData && !fErr && !isAdmin) {
+                // Tworzymy zespół tylko jeśli to nie jest admin i nie ma jeszcze zespołu
                 const { data: newTeam } = await _supabase
                     .from('teams')
                     .insert([{ 
@@ -52,12 +59,22 @@ async function checkUser() {
                 teamData = newTeam;
             }
 
+            // 4. Wyświetlanie info o użytkowniku w nagłówku
             if(userDisplay) {
-                let status = (user.email === 'strubbe23@gmail.com') ? "Admin" : (teamData ? teamData.team_name : "Manager");
-                userDisplay.innerText = `${user.email} / ${status}`;
+                let statusName = isAdmin ? "Admin" : (teamData ? teamData.team_name : "Manager");
+                userDisplay.innerText = `${user.email} (${statusName})`;
             }
-        } catch (e) { console.log("Błąd:", e); }
+
+            // 5. KLUCZOWY MOMENT: Wywołanie funkcji z index.html, która pokazuje odpowiednie menu
+            if (typeof setupUI === 'function') {
+                setupUI(role);
+            }
+
+        } catch (e) { 
+            console.error("Błąd inicjalizacji użytkownika:", e); 
+        }
     } else {
+        // Brak zalogowanego użytkownika
         if(landing) landing.style.display = 'block';
         if(app) app.style.display = 'none';
     }
@@ -68,4 +85,5 @@ async function logout() {
     location.reload(); 
 }
 
+// Sprawdź stan sesji przy załadowaniu strony
 checkUser();
