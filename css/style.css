@@ -216,3 +216,104 @@ header {
     .skills-split-view, .skills-physical-row { grid-template-columns: 1fr; gap: 15px; }
     .bio-grid-modern { grid-template-columns: 1fr 1fr; }
 }
+/* RESET I STRUKTURA GŁÓWNA */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* NAGŁÓWEK - FLAGI I LOGO */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.language-switcher {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.flag-icon {
+    width: 25px;
+    height: auto;
+    cursor: pointer;
+    transition: filter 0.3s ease, transform 0.2s;
+    filter: grayscale(100%); /* Domyślnie wyszarzone */
+    opacity: 0.6;
+}
+
+.flag-icon.active {
+    filter: grayscale(0%); /* Kolorowa flaga dla wybranego języka */
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.flag-divider {
+    color: var(--border-color);
+    font-weight: bold;
+}
+
+/* CENTROWANIE PANELU LOGOWANIA */
+.login-container {
+    flex: 1; /* Zajmuje dostępną przestrzeń między nagłówkiem a dołem */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.login-card {
+    background: var(--white);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.login-input {
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.login-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* BANER (Obrazek z piłką) */
+.hero-image-container {
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 30px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.hero-image-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
