@@ -1,14 +1,16 @@
+// js/auth.js
+
 const SUPABASE_URL = 'https://zzsscobtzwbwubchqjyx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wdrjVOU6jVHGVpsxcUygmg_kqPqz1aC';
 
 // Tworzymy klienta
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// KLUCZOWE POPRAWKI:
-// 1. Eksportujemy dla modułów (np. admin.js, site_styles.js)
+// KLUCZOWE POPRAWKI EKSPORTÓW:
+// 1. Dla modułów JS (import { supabaseClient } from './auth.js')
 export const supabaseClient = _supabase; 
 
-// 2. Przypisujemy do window dla starych skryptów (np. manager.js, world_gen.js)
+// 2. Dla starych skryptów i konsoli
 window.supabase = _supabase;
 
 async function signIn() {
@@ -24,6 +26,8 @@ async function signIn() {
 async function signUp() {
     const e = document.getElementById('email').value;
     const p = document.getElementById('password').value;
+    if(!e || !p) return alert("Wypełnij pola!");
+
     const { error } = await _supabase.auth.signUp({email:e, password:p});
     if(error) alert(error.message);
     else alert("Konto stworzone! Sprawdź maila.");
@@ -66,11 +70,9 @@ async function checkUser() {
                 userDisplay.innerText = `${user.email} (${statusName})`;
             }
 
-            // Wywołanie funkcji z index.html
+            // Wywołanie funkcji globalnej setupUI
             if (typeof window.setupUI === 'function') {
                 window.setupUI(role);
-            } else if (typeof setupUI === 'function') {
-                setupUI(role);
             }
 
         } catch (e) { 
@@ -87,20 +89,13 @@ async function logout() {
     location.reload(); 
 }
 
-// Udostępniamy funkcje do HTML (onclick)
+// UDOSTĘPNIAMY FUNKCJE DO HTML (onclick)
+// To rozwiązuje błąd "ReferenceError: Can't find variable"
 window.signIn = signIn;
 window.signUp = signUp;
 window.logout = logout;
+window.signOut = logout; // Alias, żeby działały obie nazwy
 window.checkUser = checkUser;
 
 // Sprawdź stan sesji przy załadowaniu strony
 checkUser();
-
-// js/auth.js
-
-// ... Twoje istniejące funkcje (signIn, signUp, logout) ...
-
-// Dodaj to na samym dole pliku:
-window.signIn = signIn;
-window.signUp = signUp;
-window.logout = logout;
