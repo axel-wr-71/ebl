@@ -2,32 +2,61 @@
 import { supabaseClient } from '../auth.js';
 import { calculateMarketValue } from '../core/economy.js';
 
+// Mapa nazw umiejętności zgodna z Twoim systemem (1-15)
 const skillNames = {
     1: "okropny", 2: "żałosny", 3: "tragiczny", 4: "słaby", 5: "przeciętny",
     6: "ponadprzeciętny", 7: "porządny", 8: "solidny", 9: "sprawny", 10: "znaczący",
     11: "wybitny", 12: "wspaniały", 13: "świetny", 14: "niesamowity", 15: "cudowny"
 };
 
+/**
+ * Główna funkcja renderująca widok rynku
+ */
 export async function renderMarketView(teamData) {
     const container = document.getElementById('market-container');
     if (!container) return;
 
+    // Struktura strony z jasnym tłem i nowoczesnymi filtrami
     container.innerHTML = `
         <div class="market-modern-container">
             <header class="market-header">
-                <div>
-                    <h1>Rynek Transferowy</h1>
-                    <p class="budget-display">Twój budżet: <strong>$${teamData.balance.toLocaleString()}</strong></p>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+                    <div>
+                        <h1>Rynek Transferowy</h1>
+                        <p class="budget-display">Twój aktualny budżet: <strong>$${teamData.balance.toLocaleString()}</strong></p>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #64748b; padding-bottom: 10px;">
+                        Status ligi: <span style="color: #15803d; font-weight: bold;">OKIENKO OTWARTE</span>
+                    </div>
                 </div>
             </header>
 
             <section class="filter-section">
                 <div class="filter-group">
-                    <select id="f-pos"><option value="">Wszystkie pozycje</option><option value="PG">PG</option><option value="SG">SG</option><option value="SF">SF</option><option value="PF">PF</option><option value="C">C</option></select>
-                    <input type="number" id="f-max-ovr" placeholder="Max OVR">
-                    <input type="number" id="f-min-age" placeholder="Min Wiek">
-                    <input type="number" id="f-max-price" placeholder="Max Cena">
-                    <button id="btn-search-market" class="btn-primary">Filtruj Zawodników</button>
+                    <div class="filter-item">
+                        <label>Pozycja</label>
+                        <select id="f-pos">
+                            <option value="">Wszystkie</option>
+                            <option value="PG">PG - Rozgrywający</option>
+                            <option value="SG">SG - Rzucający obrońca</option>
+                            <option value="SF">SF - Niski skrzydłowy</option>
+                            <option value="PF">PF - Silny skrzydłowy</option>
+                            <option value="C">C - Środkowy</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>Max OVR</label>
+                        <input type="number" id="f-max-ovr" placeholder="Np. 85">
+                    </div>
+                    <div class="filter-item">
+                        <label>Min Wiek</label>
+                        <input type="number" id="f-min-age" placeholder="18">
+                    </div>
+                    <div class="filter-item">
+                        <label>Max Cena ($)</label>
+                        <input type="number" id="f-max-price" placeholder="Np. 1000000">
+                    </div>
+                    <button id="btn-search-market" class="btn-primary">SZUKAJ ZAWODNIKÓW</button>
                 </div>
             </section>
 
@@ -36,75 +65,129 @@ export async function renderMarketView(teamData) {
         </div>
     `;
 
-    document.getElementById('btn-search-market').onclick = loadMarketData;
-    loadMarketData();
+    // Podpięcie wyszukiwania
+    document.getElementById('btn-search-market').onclick = () => loadMarketData();
+    
+    // Inicjalne załadowanie danych
+    await loadMarketData();
 }
 
+/**
+ * Pobiera dane z Supabase i filtruje je
+ */
 async function loadMarketData() {
     const list = document.getElementById('market-listings');
-    list.innerHTML = '<div class="loader">Szukanie ofert...</div>';
+    if (!list) return;
 
-    const { data, error } = await supabaseClient.from('transfer_market').select('*, players(*)').eq('status', 'active');
-    if (error) return;
+    list.innerHTML = '<div class="loader-box">Trwa skanowanie ofert rynkowych...</div>';
 
-    const fPos = document.getElementById('f-pos').value;
-    const fMaxOvr = document.getElementById('f-max-ovr').value;
-    const fMinAge = document.getElementById('f-min-age').value;
-    const fMaxPrice = document.getElementById('f-max-price').value;
+    try {
+        const { data, error } = await supabaseClient
+            .from('transfer_market')
+            .select('*, players(*)')
+            .eq('status', 'active');
 
-    const filtered = data.filter(item => {
-        const p = item.players;
-        return (!fPos || p.position === fPos) &&
-               (!fMaxOvr || p.overall_rating <= fMaxOvr) &&
-               (!fMinAge || p.age >= fMinAge) &&
-               (!fMaxPrice || item.current_price <= fMaxPrice);
-    });
+        if (error) throw error;
 
-    list.innerHTML = filtered.map(item => renderPlayerCard(item)).join('');
+        const fPos = document.getElementById('f-pos').value;
+        const fMaxOvr = document.getElementById('f-max-ovr').value;
+        const fMinAge = document.getElementById('f-min-age').value;
+        const fMaxPrice = document.getElementById('f-max-price').value;
+
+        // Filtracja po stronie klienta
+        const filtered = data.filter(item => {
+            const p = item.players;
+            if (!p) return false;
+            return (!fPos || p.position === fPos) &&
+                   (!fMaxOvr || p.overall_rating <= parseInt(fMaxOvr)) &&
+                   (!fMinAge || p.age >= parseInt(fMinAge)) &&
+                   (!fMaxPrice || item.current_price <= parseInt(fMaxPrice));
+        });
+
+        if (filtered.length === 0) {
+            list.innerHTML = '<div class="no-results">Brak zawodników spełniających kryteria.</div>';
+            return;
+        }
+
+        list.innerHTML = filtered.map(item => renderPlayerCard(item)).join('');
+
+    } catch (err) {
+        console.error("Market error:", err);
+        list.innerHTML = `<div class="error-msg">Błąd bazy danych: ${err.message}</div>`;
+    }
 }
 
+/**
+ * Generuje HTML pojedynczej karty zawodnika
+ */
 function renderPlayerCard(item) {
     const p = item.players;
     const marketVal = calculateMarketValue(p);
     
-    const getSkillLabel = (val) => `<span class="skill-label level-${val}">${skillNames[val] || 'nieznany'} (${val})</span>`;
+    // Pomocnicza funkcja do etykiet umiejętności
+    const s = (val) => {
+        let colorClass = "level-normal";
+        if (val >= 10) colorClass = "level-high"; // Znaczący i wyżej - pomarańczowy/złoty
+        if (val <= 4) colorClass = "level-low";  // Słabi - czerwony
+        
+        return `<span class="skill-tag ${colorClass}">${skillNames[val] || 'nieznany'} (${val})</span>`;
+    };
 
     return `
         <div class="player-card-modern">
-            <div class="card-header">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" class="player-avatar">
-                <div class="player-main-info">
-                    <h3>${p.first_name} ${p.last_name} (${p.id})</h3>
-                    <p>${p.position} | Wiek: ${p.age} | Wzrost: ${p.height} cm | Potencjał: <span class="pot-tag">${p.potential}</span></p>
+            <div class="card-top">
+                <div class="avatar-circle">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}">
                 </div>
-                <div class="player-ovr-box">${p.overall_rating}</div>
+                <div class="main-meta">
+                    <div class="name-row">
+                        <span class="p-id">#${p.id}</span>
+                        <h3>${p.first_name} ${p.last_name}</h3>
+                    </div>
+                    <p class="sub-meta">${p.position} | ${p.age} lata | ${p.height} cm | Potencjał: <strong>${p.potential}</strong></p>
+                </div>
+                <div class="ovr-badge">${p.overall_rating}</div>
             </div>
 
-            <div class="card-skills-grid">
-                <div class="skill-col">
-                    <p>Rzut z wyskoku: ${getSkillLabel(p.jump_shot)}</p>
-                    <p>Zasięg rzutu: ${getSkillLabel(p.range)}</p>
-                    <p>Obr. na obwodzie: ${getSkillLabel(p.outside_def)}</p>
-                    <p>Kozłowanie: ${getSkillLabel(p.handling)}</p>
-                    <p>Jeden na jeden: ${getSkillLabel(p.driving)}</p>
+            <div class="card-body-skills">
+                <div class="skills-column">
+                    <div class="skill-row"><span>Rzut z wyskoku:</span> ${s(p.jump_shot)}</div>
+                    <div class="skill-row"><span>Zasięg rzutu:</span> ${s(p.range)}</div>
+                    <div class="skill-row"><span>Obr. na obwodzie:</span> ${s(p.outside_def)}</div>
+                    <div class="skill-row"><span>Kozłowanie:</span> ${s(p.handling)}</div>
+                    <div class="skill-row"><span>Jeden na jeden:</span> ${s(p.driving)}</div>
                 </div>
-                <div class="skill-col">
-                    <p>Podania: ${getSkillLabel(p.passing)}</p>
-                    <p>Rzut z bliska: ${getSkillLabel(p.inside_shot)}</p>
-                    <p>Obr. pod koszem: ${getSkillLabel(p.inside_def)}</p>
-                    <p>Zbieranie: ${getSkillLabel(p.rebounding)}</p>
-                    <p>Blokowanie: ${getSkillLabel(p.blocking)}</p>
+                <div class="skills-column">
+                    <div class="skill-row"><span>Podania:</span> ${s(p.passing)}</div>
+                    <div class="skill-row"><span>Rzut z bliska:</span> ${s(p.inside_shot)}</div>
+                    <div class="skill-row"><span>Obr. pod koszem:</span> ${s(p.inside_def)}</div>
+                    <div class="skill-row"><span>Zbieranie:</span> ${s(p.rebounding)}</div>
+                    <div class="skill-row"><span>Blokowanie:</span> ${s(p.blocking)}</div>
                 </div>
             </div>
 
-            <div class="card-footer">
-                <div class="price-info">
-                    <span class="label">Cena aktualna:</span>
-                    <span class="price">$${item.current_price.toLocaleString()}</span>
-                    <span class="valuation">Wycena: $${marketVal.toLocaleString()}</span>
+            <div class="card-action-footer">
+                <div class="financials">
+                    <div class="current-bid">
+                        <span class="fin-label">Aktualna oferta:</span>
+                        <span class="fin-value">$${item.current_price.toLocaleString()}</span>
+                    </div>
+                    <div class="market-est">
+                        Wycena managera: $${marketVal.toLocaleString()}
+                    </div>
                 </div>
-                <button class="btn-bid" onclick="handleBid('${item.id}')">Licytuj</button>
+                <button class="bid-button" onclick="handleBid('${item.id}', ${item.current_price})">
+                    ZŁÓŻ OFERTĘ
+                </button>
             </div>
         </div>
     `;
 }
+
+// Funkcja licytacji (do rozbudowy w kolejnym kroku)
+window.handleBid = async function(listingId, currentPrice) {
+    const bid = prompt(`Podaj swoją ofertę (musi być wyższa niż $${currentPrice.toLocaleString()}):`, currentPrice + 1000);
+    if (bid && parseInt(bid) > currentPrice) {
+        alert("Funkcja licytacji zostanie wkrótce podpięta pod bazę!");
+    }
+};
