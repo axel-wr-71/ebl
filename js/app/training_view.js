@@ -20,17 +20,17 @@ export async function renderTrainingDashboard(teamData, players) {
 
         if (historyError) console.warn("Could not fetch history:", historyError);
 
-        const teamName = teamData.name || "My Team";
+        // Dynamiczna nazwa zespołu
+        const teamDisplayName = teamData.name || "My Team";
 
         appContainer.innerHTML = `
             <div class="training-container" style="padding: 30px; color: #333; font-family: 'Inter', sans-serif; background: #f4f7f6; min-height: 100vh;">
                 <header style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <h1 style="font-size: 2.2em; font-weight: 800; color: #1a237e; margin:0; letter-spacing: -1px;">TRAINING <span style="color: #e65100;">HUB</span></h1>
-                        <p style="color: #666; margin: 5px 0 0 0;">Optimize performance for: <strong style="color: #1a237e;">${teamName}</strong></p>
                     </div>
-                    <div style="background: #1a237e; color: white; padding: 12px 24px; border-radius: 50px; box-shadow: 0 4px 15px rgba(26, 35, 126, 0.2); font-weight: bold; font-size: 0.9em;">
-                        🏀 ${teamName.toUpperCase()}
+                    <div style="background: #1a237e; color: white; padding: 12px 24px; border-radius: 50px; box-shadow: 0 4px 15px rgba(26, 35, 126, 0.2); font-weight: bold; font-size: 0.9em; display: flex; align-items: center; gap: 10px;">
+                        🏀 ${teamDisplayName.toUpperCase()}
                     </div>
                 </header>
 
@@ -73,6 +73,7 @@ function getNextTrainingDate(dayName) {
 }
 
 function renderFocusCard(day, currentFocus) {
+    // Te dane docelowo będą definiowane w sekcji Media (Admin)
     const focusOptions = {
         'SHARP_SHOOTER': { img: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400', label: 'Sharp Shooter' },
         'PAINT_PROTECTOR': { img: 'https://images.unsplash.com/photo-1519861531473-920036214751?w=400', label: 'Paint Protector' },
@@ -88,7 +89,7 @@ function renderFocusCard(day, currentFocus) {
     return `
         <div style="background: white; padding: 25px; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 20px rgba(0,0,0,0.02);">
             <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-                <img id="focus-img-${day}" src="${selected.img}" style="width: 90px; height: 90px; border-radius: 15px; object-fit: cover; border: 3px solid #f0f2f5;">
+                <img id="focus-img-${day}" src="${selected.img}" style="width: 100px; height: 100px; border-radius: 15px; object-fit: cover; border: 3px solid #f0f2f5;">
                 <div>
                     <div style="font-size: 0.75em; color: #999; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">${day} Session</div>
                     <div id="focus-label-${day}" style="font-size: 1.5em; font-weight: 800; color: #1a237e; margin: 2px 0;">${selected.label}</div>
@@ -163,6 +164,7 @@ function renderCalendar(date, history) {
 // --- WINDOW FUNCTIONS ---
 
 window.updateFocusPreview = (day, val) => {
+    // Te URL będą pobierane dynamicznie z bazy w wersji Media Component
     const focusOptions = {
         'SHARP_SHOOTER': 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400',
         'PAINT_PROTECTOR': 'https://images.unsplash.com/photo-1519861531473-920036214751?w=400',
