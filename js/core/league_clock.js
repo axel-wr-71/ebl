@@ -1,25 +1,34 @@
 // js/core/league_clock.js
+import { supabaseClient } from '../auth.js';
+import { runGlobalTrainingSession } from './training_engine.js';
 
-export async function processLeagueFlow() {
+/**
+ * Checks if league events (Training/Matches) need to be executed
+ */
+export async function checkLeagueEvents() {
     const now = new Date();
-    const currentDay = now.toLocaleDateString('pl-PL', { weekday: 'long' }); // np. "poniedziałek"
-    const currentTime = now.getHours() + ":" + now.getMinutes();
+    const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const todayName = dayNames[now.getDay()];
 
-    // Pobieramy status obecnego sezonu z bazy
-    const { data: season } = await supabaseClient.from('seasons').select('*').single();
+    // We only process on Monday and Friday
+    if (todayName === 'MONDAY' || todayName === 'FRIDAY') {
+        const eventKey = `TRAINING_${todayName}`;
 
-    // 1. Logika Treningów (Poniedziałek, Piątek)
-    if (currentDay === 'poniedziałek' || currentDay === 'piątek') {
-        await runAutomaticTraining(season.id);
-    }
+        try {
+            // Call the SQL RPC function (Plan B)
+            const { data, error } = await supabaseClient.rpc('request_league_event', { 
+                p_event_type: eventKey 
+            });
 
-    // 2. Logika Meczów (Wtorek, Czwartek, Sobota, Środa)
-    if (['wtorek', 'czwartek', 'sobota', 'środa'].includes(currentDay)) {
-        await runAutomaticMatches(season.id);
-    }
+            if (error) throw error;
 
-    // 3. Logika Końca Sezonu (Niedziela, Tydzień 15)
-    if (currentDay === 'niedziela' && season.current_week === 15) {
-        await runSeasonTransition();
+            // If the database says we are the first ones today
+            if (data && data.can_proceed) {
+                console.log(`[LEAGUE CLOCK] Starting global training for: ${todayName}`);
+                await runGlobalTrainingSession(todayName);
+            }
+        } catch (err) {
+            console.warn("[LEAGUE CLOCK] Event check skipped or already processed.");
+        }
     }
 }
