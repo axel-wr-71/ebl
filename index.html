@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Elite Basket League</title>
     <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* Twoje style CSS */
@@ -16,7 +17,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
         }
         .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1; }
         .landing-header { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; }
@@ -40,14 +41,22 @@
         .hero-gallery img { width: 160px; height: 100px; object-fit: cover; border: 2px solid white; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: 0.3s; }
         .hero-gallery img:hover { transform: scale(1.1); }
         .nav-container { display: flex; gap: 5px; padding: 0 20px; margin-top: 15px; flex-wrap: wrap; }
-        .btn-tab { padding: 10px 20px; border: none; background: #ddd; cursor: pointer; border-radius: 8px 8px 0 0; font-weight: bold; transition: 0.3s; }
-        .btn-tab.active { background: #e65100; color: white; }
-        .tab-content { display: none; margin: 0 20px 20px 20px; border-radius: 0 10px 10px 10px; padding: 20px; background: white; border: 1px solid #ddd; }
+        .btn-tab { padding: 12px 25px; border: none; background: #e0e0e0; cursor: pointer; border-radius: 12px 12px 0 0; font-weight: 800; transition: 0.3s; color: #666; font-size: 0.85rem; letter-spacing: 0.5px; }
+        .btn-tab.active { background: #1a237e; color: white; }
+        .tab-content { display: none; min-height: 80vh; background: #f4f7f6; }
         .tab-content.active { display: block; }
-        .admin-table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; }
-        .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 13px; }
-        .admin-table th { background: #f2f2f2; }
-        .main-logo { height: 40px; width: auto; object-fit: contain; }
+        
+        /* Styl nagłówka aplikacji */
+        header.app-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .main-logo { height: 45px; width: auto; }
+        .btn-logout { background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -88,24 +97,24 @@
 </div>
 
 <div id="game-app" style="display:none;">
-    <header>
-        <div class="header-left">
-            <div class="logo-container" onclick="location.reload()" style="cursor: pointer;">
+    <header class="app-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div onclick="location.reload()" style="cursor: pointer;">
                 <img src="logo_EBL.png" alt="Logo" class="main-logo" id="main-logo-img">
             </div>
-            <div class="league-name-text" style="font-weight:bold; color:#1a237e; font-size: 1.2rem;">ELITE BUZZER LEAGUE</div>
+            <div style="font-weight:900; color:#1a237e; font-size: 1.4rem; letter-spacing: -1px;">ELITE <span style="color:#e65100">BUZZER</span> LEAGUE</div>
         </div>
-        <div class="header-right">
-            <div id="user-info-display" class="user-info"></div>
-            <button onclick="logout()" class="btn-logout" data-i18n="logout">Wyloguj</button>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div id="user-info-display" style="font-weight: 600; color: #555;"></div>
+            <button onclick="logout()" class="btn-logout" data-i18n="logout">WYLOGUJ</button>
         </div>
     </header>
 
     <div id="admin-nav" class="nav-container" style="display:none;">
-        <button class="btn-tab active" onclick="switchTab('admin-tab-gen')">Generowanie</button>
-        <button class="btn-tab" onclick="switchTab('admin-tab-players')">Baza Zawodników</button>
-        <button class="btn-tab" onclick="switchTab('admin-tab-config')">Ustawienia Ligi</button>
-        <button class="btn-tab" onclick="switchTab('admin-tab-media')">Media</button>
+        <button class="btn-tab active" onclick="switchTab('admin-tab-gen')">GENEROWANIE</button>
+        <button class="btn-tab" onclick="switchTab('admin-tab-players')">BAZA ZAWODNIKÓW</button>
+        <button class="btn-tab" onclick="switchTab('admin-tab-config')">USTAWIENIA LIGI</button>
+        <button class="btn-tab" onclick="switchTab('admin-tab-media')">MEDIA</button>
     </div>
 
     <div id="manager-nav" class="nav-container" style="display:none;">
@@ -117,41 +126,37 @@
         <button class="btn-tab" onclick="switchTab('m-finances')">FINANSE</button>
     </div>
 
-    <div id="admin-tab-gen" class="tab-content">
+    <div id="m-roster" class="tab-content">
+        <div id="roster-view-container">
+            </div>
+    </div>
+
+    <div id="m-training" class="tab-content">
+        <div id="app-main-view">
+            </div>
+    </div>
+
+    <div id="admin-tab-gen" class="tab-content" style="padding: 30px;">
         <h3>Generator Świata</h3>
-        <div style="display:flex; gap:10px;">
-            <button class="btn" onclick="initWorld()">GENERUJ ŚWIAT I LIGI</button>
-            <button class="btn" onclick="startLotteryShow()" style="background:#1a237e;">URUCHOM LOTERIĘ DRAFTU</button>
-        </div>
+        <button class="btn-main btn-login" onclick="initWorld()">GENERUJ ŚWIAT I LIGI</button>
     </div>
     
-    <div id="admin-tab-players" class="tab-content">
+    <div id="admin-tab-players" class="tab-content" style="padding: 30px;">
         <h3>Baza Wszystkich Zawodników</h3>
         <div id="admin-players-table-container"></div>
     </div>
 
-    <div id="admin-tab-config" class="tab-content">
+    <div id="admin-tab-config" class="tab-content" style="padding: 30px;">
         <h3>Ustawienia Struktur Ligowych</h3>
         <div id="admin-league-config-container"></div>
     </div>
 
-    <div id="admin-tab-media" class="tab-content">
-        <h3>Zarządzanie Mediami i Wyglądem</h3>
-        <div id="admin-media-manager-container">
-            <p>Ładowanie panelu mediów...</p>
-        </div>
+    <div id="admin-tab-media" class="tab-content" style="padding: 30px;">
+        <h3>Zarządzanie Mediami</h3>
+        <div id="admin-media-manager-container"></div>
     </div>
 
-    <div id="m-roster" class="tab-content">
-        <h3>Skład Drużyny: <span id="team-name-display">...</span></h3>
-        <div id="roster-container">Pobieranie zawodników...</div>
-    </div>
-
-    <div id="m-training" class="tab-content" style="background: #000; padding: 0; border: none;">
-        <div id="app-main-view">Pobieranie panelu treningowego...</div>
-    </div>
-
-    <div id="m-market" class="tab-content">
+    <div id="m-market" class="tab-content" style="padding: 30px;">
         <h3>Rynek Transferowy</h3>
         <div id="market-container">Ładowanie ofert...</div>
     </div>
@@ -181,6 +186,7 @@
     }
 
     async function switchTab(tabId) {
+        // UI: Przełączanie przycisków i widoczności
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
         
@@ -190,14 +196,20 @@
         const btn = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
         if (btn) btn.classList.add('active');
 
+        // LOGIKA: Ładowanie nowych modułów
         if (currentUserRole === 'manager') {
-            if (tabId === 'm-roster' && typeof renderRoster === 'function') renderRoster(); 
-            if (tabId === 'm-market' && typeof renderTransferMarket === 'function') renderTransferMarket();
-            
-            // Integracja z nowym modułem treningu
-            if (tabId === 'm-training') {
-                const { initApp } = await import('./js/app/app.js');
-                initApp();
+            // Import głównego kontrolera aplikacji (js/app/app.js)
+            const { initApp, showRoster, showTraining } = await import('./js/app/app.js');
+
+            if (tabId === 'm-roster') {
+                await showRoster();
+            } else if (tabId === 'm-training') {
+                // Przenosimy element app-main-view do kontenera treningu jeśli trzeba
+                const view = document.getElementById('app-main-view');
+                document.getElementById('m-training').appendChild(view);
+                await showTraining();
+            } else if (tabId === 'm-market' && typeof renderTransferMarket === 'function') {
+                renderTransferMarket();
             }
         }
         
@@ -210,12 +222,7 @@
                     if (tabId === 'admin-tab-gen') window.switchAdminTab('dashboard');
                 }
             };
-
-            if (!window.switchAdminTab) {
-                setTimeout(runAdminTab, 200);
-            } else {
-                runAdminTab();
-            }
+            if (!window.switchAdminTab) setTimeout(runAdminTab, 200); else runAdminTab();
         }
     }
 
@@ -224,18 +231,15 @@
         document.getElementById('landing-page').style.display = 'none';
         document.getElementById('game-app').style.display = 'block';
 
-        const adminNav = document.getElementById('admin-nav');
-        const managerNav = document.getElementById('manager-nav');
-
         if (userRole === 'admin') {
-            adminNav.style.display = 'flex';
-            managerNav.style.display = 'none';
+            document.getElementById('admin-nav').style.display = 'flex';
+            document.getElementById('manager-nav').style.display = 'none';
             switchTab('admin-tab-gen');
         } else {
-            adminNav.style.display = 'none';
-            managerNav.style.display = 'flex';
+            document.getElementById('admin-nav').style.display = 'none';
+            document.getElementById('manager-nav').style.display = 'flex';
             if (typeof initManagerData === 'function') await initManagerData(); 
-            switchTab('m-roster');
+            switchTab('m-roster'); // Startujemy od zawodników
         }
     }
     window.setupUI = setupUI;
