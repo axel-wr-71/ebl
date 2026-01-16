@@ -102,9 +102,10 @@ function renderPlayerRowInternal(player, potLabel) {
             </td>
             <td style="padding: 15px;"><div style="width: 45px; height: 45px; border-radius: 12px; background: #e8f5e9; color: #2e7d32; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.1em; border: 2px solid #c8e6c9;">${player.overall_rating || 0}</div></td>
             <td style="padding: 15px; text-align: center;">
-                <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
-                    <button onclick="window.rosterAction('sell', '${player.id}')" style="width: 100px; background: #fee2e2; border: 1px solid #ef4444; padding: 6px 0; border-radius: 8px; color: #ef4444; font-weight: 700; cursor: pointer; font-size: 0.7em;">SELL</button>
-                    <button onclick="window.rosterAction('profile', '${player.id}')" style="width: 100px; background: white; border: 1px solid #1a237e; padding: 6px 0; border-radius: 8px; color: #1a237e; font-weight: 700; cursor: pointer; font-size: 0.7em;">PROFILE</button>
+                <div style="display: flex; flex-direction: column; gap: 6px; align-items: center;">
+                    <button onclick="window.rosterAction('training', '${player.id}')" style="width: 100px; background: #e0f2fe; border: 1px solid #0ea5e9; padding: 5px 0; border-radius: 8px; color: #0369a1; font-weight: 700; cursor: pointer; font-size: 0.7em;">TRAINING</button>
+                    <button onclick="window.rosterAction('profile', '${player.id}')" style="width: 100px; background: white; border: 1px solid #1a237e; padding: 5px 0; border-radius: 8px; color: #1a237e; font-weight: 700; cursor: pointer; font-size: 0.7em;">PROFILE</button>
+                    <button onclick="window.rosterAction('sell', '${player.id}')" style="width: 100px; background: #fee2e2; border: 1px solid #ef4444; padding: 5px 0; border-radius: 8px; color: #ef4444; font-weight: 700; cursor: pointer; font-size: 0.7em;">SELL</button>
                 </div>
             </td>
         </tr>
@@ -128,6 +129,8 @@ export async function renderRosterView(teamData, players) {
             RosterActions.showProfile(player, getPotentialLabel(player.potential));
         } else if (type === 'sell') {
             RosterActions.showSellConfirm(player);
+        } else if (type === 'training') {
+            RosterActions.showTraining(player);
         }
     };
 
