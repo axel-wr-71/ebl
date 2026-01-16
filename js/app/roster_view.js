@@ -1,19 +1,7 @@
 // js/app/roster_view.js
 import { supabaseClient } from '../auth.js';
 import { renderPlayerRow } from './player_list_component.js';
-
-/**
- * Symulacja ustawień z profilu Admina (Sekcja Teksty)
- * W docelowej wersji dane te powinny być pobrane z Supabase
- */
-const adminSettings = {
-    transferTexts: {
-        auctionOnlyTitle: "ZAWODNIK DOSTĘPNY W SKŁADZIE",
-        auctionOnlyDesc: "Standardowy tryb licytacji. Zawodnik pozostaje w rotacji i może grać w meczach do momentu zakończenia aukcji.",
-        buyNowTitle: "ZAWODNIK ZOSTANIE ZABLOKOWANY",
-        buyNowDesc: "Uwaga! Ustawienie ceny 'Kup Teraz' powoduje natychmiastowe wycofanie zawodnika ze składu, aby zapewnić gotowość do transferu."
-    }
-};
+import { openTransferModal } from './transfer_modal_component.js'; 
 
 /**
  * Mapowanie liczbowego potencjału na prestiżowe rangi
@@ -61,8 +49,7 @@ export async function renderRosterView(teamData, players) {
                 ${renderFeaturedPlayerCard('FUTURE PILLAR', topProspect || sortedByOvr[1])}
             </div>
 
-            <div id="media-section-container" style="margin-bottom: 30px;">
-                </div>
+            <div id="media-section-container" style="margin-bottom: 30px;"></div>
 
             <div style="background: white; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.03); overflow: hidden;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
@@ -78,7 +65,7 @@ export async function renderRosterView(teamData, players) {
                             <th style="padding: 15px; text-align: center;">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="roster-table-body">
                         ${safePlayers.map(player => {
                             const potLabel = getPotentialLabel(player.potential);
                             return renderPlayerRow(player, potLabel);
@@ -88,6 +75,24 @@ export async function renderRosterView(teamData, players) {
             </div>
         </div>
     `;
+
+    // Obsługa kliknięć w przyciski (Delegacja zdarzeń)
+    const tableBody = document.getElementById('roster-table-body');
+    tableBody.addEventListener('click', (e) => {
+        // Sprzedaż zawodnika (Otwiera Pop-up)
+        const sellBtn = e.target.closest('.sell-btn');
+        if (sellBtn) {
+            const playerId = sellBtn.getAttribute('data-id');
+            const player = safePlayers.find(p => p.id == playerId);
+            if (player) openTransferModal(player);
+        }
+
+        // Profil zawodnika
+        const profileBtn = e.target.closest('.profile-btn');
+        if (profileBtn) {
+            console.log("Opening Profile for ID:", profileBtn.getAttribute('data-id'));
+        }
+    });
 }
 
 function renderFeaturedPlayerCard(title, player) {
@@ -106,99 +111,3 @@ function renderFeaturedPlayerCard(title, player) {
         </div>
     `;
 }
-
-/**
- * Dynamiczna aktualizacja UI pop-upu na podstawie wpisanej kwoty
- */
-window.updateSaleLogicUI = () => {
-    const buyNowInput = document.getElementById('bn-price-input');
-    const warningBox = document.getElementById('sale-warning-box');
-    const texts = adminSettings.transferTexts;
-    
-    if (buyNowInput.value && parseInt(buyNowInput.value) > 0) {
-        warningBox.style.background = '#fff1f2';
-        warningBox.style.borderLeft = '5px solid #be123c';
-        warningBox.innerHTML = `
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <span style="font-size: 1.2em;">🚫</span>
-                <span style="font-weight: 800; color: #be123c; font-size: 0.85em; text-transform: uppercase;">${texts.buyNowTitle}</span>
-            </div>
-            <p style="margin: 5px 0 0 0; font-size: 0.82em; color: #9f1239; line-height: 1.5;">${texts.buyNowDesc}</p>
-        `;
-    } else {
-        warningBox.style.background = '#f0f9ff';
-        warningBox.style.borderLeft = '5px solid #0ea5e9';
-        warningBox.innerHTML = `
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <span style="font-size: 1.2em;">🏀</span>
-                <span style="font-weight: 800; color: #075985; font-size: 0.85em; text-transform: uppercase;">${texts.auctionOnlyTitle}</span>
-            </div>
-            <p style="margin: 5px 0 0 0; font-size: 0.82em; color: #0c4a6e; line-height: 1.5;">${texts.auctionOnlyDesc}</p>
-        `;
-    }
-};
-
-window.sellPlayer = (playerId) => {
-    const texts = adminSettings.transferTexts;
-
-    const modalHtml = `
-        <div id="sell-player-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px);">
-            <div style="background: white; width: 450px; border-radius: 28px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: modalFadeIn 0.3s ease-out;">
-                
-                <div style="background: #1a237e; padding: 25px; color: white; position: relative;">
-                    <h2 style="margin: 0; font-size: 1.3em; font-weight: 800;">TRANSFER LISTING</h2>
-                    <p style="margin: 5px 0 0 0; font-size: 0.8em; opacity: 0.7;">Player ID: ${playerId}</p>
-                    <button onclick="document.getElementById('sell-player-modal').remove()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: white; font-size: 1.5em; cursor: pointer;">&times;</button>
-                </div>
-
-                <div id="sale-warning-box" style="margin: 20px; padding: 18px; border-radius: 14px; transition: 0.3s; background: #f0f9ff; border-left: 5px solid #0ea5e9;">
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <span style="font-size: 1.2em;">🏀</span>
-                        <span style="font-weight: 800; color: #075985; font-size: 0.85em; text-transform: uppercase;">${texts.auctionOnlyTitle}</span>
-                    </div>
-                    <p style="margin: 5px 0 0 0; font-size: 0.82em; color: #0c4a6e; line-height: 1.5;">${texts.auctionOnlyDesc}</p>
-                </div>
-
-                <div style="padding: 0 25px 30px 25px;">
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; font-size: 0.75em; font-weight: 800; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase;">Buy Now Price ($)</label>
-                        <input type="number" id="bn-price-input" oninput="window.updateSaleLogicUI()" placeholder="Zostaw puste dla licytacji" style="width: 100%; padding: 15px; border-radius: 14px; border: 2px solid #e2e8f0; font-family: 'JetBrains Mono'; font-weight: 700; font-size: 1.1em; box-sizing: border-box; outline: none;">
-                    </div>
-
-                    <div style="margin-bottom: 25px;">
-                        <label style="display: block; font-size: 0.75em; font-weight: 800; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase;">Auction Duration</label>
-                        <select id="auction-duration-select" style="width: 100%; padding: 15px; border-radius: 14px; border: 2px solid #e2e8f0; font-weight: 600; background: #fff; cursor: pointer;">
-                            <option value="12">12 Hours</option>
-                            <option value="24" selected>24 Hours</option>
-                            <option value="48">48 Hours</option>
-                        </select>
-                    </div>
-
-                    <button onclick="confirmListing('${playerId}')" style="width: 100%; padding: 18px; border-radius: 16px; border: none; background: #1a237e; color: white; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 10px 15px -3px rgba(26,35,126,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                        CONFIRM & LIST PLAYER
-                    </button>
-                </div>
-            </div>
-        </div>
-        <style>
-            @keyframes modalFadeIn {
-                from { opacity: 0; transform: scale(0.9); }
-                to { opacity: 1; transform: scale(1); }
-            }
-        </style>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-};
-
-window.confirmListing = (playerId) => {
-    const buyNow = document.getElementById('bn-price-input').value;
-    const duration = document.getElementById('auction-duration-select').value;
-    
-    console.log(`Action: List player ${playerId}. BN: ${buyNow || 'NONE'}, Dur: ${duration}h`);
-    alert("Player has been listed on the market!");
-    document.getElementById('sell-player-modal').remove();
-};
-
-window.showPlayerProfile = (playerId) => {
-    console.log("Opening Profile Hub for player:", playerId);
-};
