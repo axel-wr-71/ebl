@@ -1,11 +1,11 @@
 // js/app/roster_view.js
 import { supabaseClient } from '../auth.js';
-// Importujemy Twoje funkcje renderujące (upewnij się, że plik ma taką nazwę!)
-import { renderPlayerRow } from './player_list_component.js'; 
+import { renderPlayerRow } from './player_list_component.js';
 import { openTransferModal } from './transfer_modal_component.js'; 
 
 /**
- * Mapowanie potencjału - musi być tutaj, by wyliczyć label przed wysłaniem do renderPlayerRow
+ * Mapowanie potencjału - musi być identyczne jak wcześniej, 
+ * aby renderPlayerRow otrzymał poprawne kolory do belek.
  */
 function getPotentialLabel(pot) {
     const p = parseInt(pot) || 0;
@@ -26,28 +26,38 @@ export async function renderRosterView(teamData, players) {
     if (!container) return;
 
     const safePlayers = Array.isArray(players) ? players : [];
-    
-    // Logika obsługi przycisków (Globalna)
+
+    // --- PRZYWRÓCENIE FUNKCJI GLOBALNYCH ---
+    // Twoje przyciski w player_list_component używają window.sellPlayer
     window.sellPlayer = (playerId) => {
         const player = safePlayers.find(p => String(p.id) === String(playerId));
-        if (player) openTransferModal(player);
+        if (player) {
+            openTransferModal(player);
+        } else {
+            console.error("Nie znaleziono zawodnika:", playerId);
+        }
     };
 
     window.showPlayerProfile = (playerId) => {
-        console.log("Otwieranie profilu gracza:", playerId);
-        // Tutaj w przyszłości dodasz funkcję otwierania profilu
+        console.log("Otwieranie profilu dla ID:", playerId);
     };
+
+    // Sortowanie (opcjonalne, by liderzy byli na górze)
+    const sortedPlayers = [...safePlayers].sort((a, b) => (b.overall_rating || 0) - (a.overall_rating || 0));
 
     container.innerHTML = `
         <div class="roster-container" style="padding: 30px; background: #f4f7f6; min-height: 100vh; font-family: 'Inter', sans-serif;">
             <header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h1 style="font-size: 2.2em; font-weight: 800; color: #1a237e; margin:0;">ROSTER MANAGEMENT</h1>
-                    <p style="color: #666;">Current squad: <strong>${teamData.team_name || "Twój Zespół"}</strong></p>
+                    <h1 style="font-size: 2.2em; font-weight: 800; color: #1a237e; margin:0; letter-spacing: -1px;">ROSTER <span style="color: #e65100;">MANAGEMENT</span></h1>
+                    <p style="color: #666; margin: 5px 0 0 0;">Current squad: <strong style="color: #1a237e;">${teamData.team_name || "Twój Zespół"}</strong></p>
+                </div>
+                <div style="background: #1a237e; color: white; padding: 12px 24px; border-radius: 15px; font-weight: bold; font-size: 0.9em; box-shadow: 0 4px 10px rgba(26,35,126,0.2);">
+                    🏀 SQUAD SIZE: ${safePlayers.length} / 12
                 </div>
             </header>
 
-            <div style="background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); overflow: hidden;">
+            <div style="background: white; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.03); overflow: hidden;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
                     <thead style="background: #f8f9fa; color: #94a3b8; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px;">
                         <tr>
@@ -62,9 +72,9 @@ export async function renderRosterView(teamData, players) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${safePlayers.map(player => {
+                        ${sortedPlayers.map(player => {
                             const potLabel = getPotentialLabel(player.potential);
-                            // WYWOŁANIE TWOJEGO ORYGINALNEGO KODU (z belkami, skillem i profilem)
+                            // To wywołuje Twój oryginalny design (belki, skille, % wykorzystania)
                             return renderPlayerRow(player, potLabel);
                         }).join('')}
                     </tbody>
