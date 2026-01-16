@@ -25,6 +25,8 @@ export async function renderRosterView(teamData, players) {
     if (!container) return;
 
     const safePlayers = Array.isArray(players) ? players : [];
+    
+    // Sortowanie zawodników po OVR
     const sortedByOvr = [...safePlayers].sort((a, b) => (b.overall_rating || 0) - (a.overall_rating || 0));
     
     const teamLeader = sortedByOvr[0];
@@ -32,22 +34,23 @@ export async function renderRosterView(teamData, players) {
         .filter(p => p.age <= 21)
         .sort((a, b) => (b.potential || 0) - (a.potential || 0))[0];
 
-    // --- KLUCZOWA ZMIANA: PRZYPISANIE FUNKCJI DO WINDOW ---
-    // Dzięki temu nieważne jak wygląda przycisk w player_list_component,
-    // jeśli ma onclick="sellPlayer(...)" - zadziała.
+    /**
+     * EKSPORCJA FUNKCJI DO WINDOW
+     * Twoje przyciski w player_list_component.js używają onclick="window.sellPlayer(...)"
+     * Musimy je tutaj zdefiniować, aby były dostępne globalnie.
+     */
     window.sellPlayer = (playerId) => {
-        console.log("Próba sprzedaży gracza ID:", playerId);
         const player = safePlayers.find(p => String(p.id) === String(playerId));
         if (player) {
             openTransferModal(player);
         } else {
-            console.error("Nie znaleziono zawodnika w lokalnej tablicy safePlayers dla ID:", playerId);
+            console.error("RosterView: Nie znaleziono gracza o ID:", playerId);
         }
     };
 
     window.showPlayerProfile = (playerId) => {
-        console.log("Otwieranie profilu dla ID:", playerId);
-        // Tu dodasz logikę profilu
+        console.log("RosterView: Otwieranie profilu gracza:", playerId);
+        // Tu w przyszłości dodasz: openPlayerProfile(playerId);
     };
 
     container.innerHTML = `
@@ -83,7 +86,7 @@ export async function renderRosterView(teamData, players) {
                             <th style="padding: 15px; text-align: center;">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="roster-table-body">
+                    <tbody>
                         ${safePlayers.map(player => {
                             const potLabel = getPotentialLabel(player.potential);
                             return renderPlayerRow(player, potLabel);
@@ -93,16 +96,6 @@ export async function renderRosterView(teamData, players) {
             </div>
         </div>
     `;
-
-    // Zachowujemy też delegację jako backup dla nowocześniejszych komponentów
-    const tableBody = document.getElementById('roster-table-body');
-    tableBody.addEventListener('click', (e) => {
-        const sellBtn = e.target.closest('.sell-btn');
-        if (sellBtn && !sellBtn.getAttribute('onclick')) { // Tylko jeśli nie ma onclicka
-            const playerId = sellBtn.getAttribute('data-id');
-            window.sellPlayer(playerId);
-        }
-    });
 }
 
 function renderFeaturedPlayerCard(title, player) {
