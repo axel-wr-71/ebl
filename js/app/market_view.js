@@ -10,6 +10,9 @@ export async function renderMarketView(teamData) {
     const container = document.getElementById('market-container');
     if (!container) return;
 
+    // Zapisujemy ID zespołu do globalnego okna, by funkcje onclick miały do niego dostęp
+    window.currentTeamId = teamData.id;
+
     container.innerHTML = `
         <div class="market-modern-wrapper">
             <div class="market-top-bar">
@@ -67,10 +70,12 @@ async function loadMarketData() {
     const { data, error } = await supabaseClient
         .from('transfer_market')
         .select('*, players(*)')
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
     
     if (error) {
         console.error("Supabase Error:", error);
+        list.innerHTML = `<div class="error">Error: ${error.message}</div>`;
         return;
     }
 
@@ -85,7 +90,7 @@ function displayCurrentPage() {
     const pageData = allMarketData.slice(start, end);
 
     if (pageData.length === 0) {
-        list.innerHTML = '<div class="no-results">No players found.</div>';
+        list.innerHTML = '<div class="no-results">No players found on the market.</div>';
     } else {
         list.innerHTML = pageData.map(item => renderPlayerCard(item)).join('');
     }
@@ -103,23 +108,26 @@ function renderPlayerCard(item) {
 
     const marketVal = calculateMarketValue(p);
     const accentColor = getPosColor(p.position);
+    
+    // Dodajemy badge ROOKIE jeśli flaga is_rookie jest true
+    const rookieBadge = p.is_rookie ? `<span class="rookie-tag">ROOKIE</span>` : '';
 
     const scoutingReport = {
         attack: [
-            { label: 'Jump Shot (2PT)', val: p.skill_2pt },
-            { label: 'Range (3PT)', val: p.skill_3pt },
-            { label: 'Dunk/Inside', val: p.skill_dunk },
+            { label: 'Jump Shot', val: p.skill_2pt },
+            { label: '3PT Range', val: p.skill_3pt },
+            { label: 'Dunking', val: p.skill_dunk },
             { label: 'Passing', val: p.skill_passing }
         ],
         defense: [
-            { label: '1on1 Defense', val: p.skill_1on1_def },
-            { label: 'Rebounding', val: p.skill_rebound },
+            { label: '1on1 Def', val: p.skill_1on1_def },
+            { label: 'Rebound', val: p.skill_rebound },
             { label: 'Blocking', val: p.skill_block },
             { label: 'Stealing', val: p.skill_steal }
         ],
         general: [
             { label: 'Handling', val: p.skill_dribbling },
-            { label: '1on1 Offense', val: p.skill_1on1_off },
+            { label: '1on1 Off', val: p.skill_1on1_off },
             { label: 'Stamina', val: p.skill_stamina },
             { label: 'Free Throw', val: p.skill_ft }
         ]
@@ -133,13 +141,14 @@ function renderPlayerCard(item) {
         </div>
     `).join('');
 
-    // Logika przycisków
+    // Dynamiczne przyciski akcji
     let actionButtons = '';
     if (item.type === 'auction' || item.type === 'both') {
         actionButtons += `<button class="bid-btn" style="background: ${accentColor}" onclick="handleBid('${item.id}', ${item.current_price})">BID $${item.current_price.toLocaleString()}</button>`;
     }
     if (item.type === 'buy_now' || item.type === 'both') {
-        actionButtons += `<button class="bid-btn" style="background: #10b981" onclick="handleBuyNow('${item.id}', ${item.buy_now_price})">BUY $${item.buy_now_price.toLocaleString()}</button>`;
+        // Używamy zielonego koloru dla "Kup Teraz"
+        actionButtons += `<button class="buy-btn" style="background: #10b981" onclick="handleBuyNow('${item.id}', ${item.buy_now_price})">BUY $${item.buy_now_price.toLocaleString()}</button>`;
     }
 
     return `
@@ -148,12 +157,12 @@ function renderPlayerCard(item) {
             <div class="card-main">
                 <div class="card-header">
                     <div class="p-info">
-                        <h3>${p.first_name} ${p.last_name}</h3>
+                        <h3>${p.first_name} ${p.last_name} ${rookieBadge}</h3>
                         <div class="p-sub-header">
                             <span class="p-pos-tag" style="background: ${accentColor}">${p.position}</span>
                             <span class="p-salary">Salary: <strong>$${(p.salary || 0).toLocaleString()}</strong></span>
                         </div>
-                        <p class="p-meta">Age: ${p.age} | Height: ${p.height || '---'} cm</p>
+                        <p class="p-meta">Age: ${p.age} | Height: ${p.height || '---'} cm | ${p.country || 'N/A'}</p>
                     </div>
                     <div class="p-ovr" style="border-color: ${accentColor}; color: ${accentColor}">${p.overall_rating}</div>
                 </div>
@@ -175,9 +184,9 @@ function renderPlayerCard(item) {
 
                 <div class="card-footer">
                     <div class="price-box">
-                        <span class="price-val">Est. Val: $${marketVal.toLocaleString()}</span>
+                        <span class="price-val">Market Value: $${marketVal.toLocaleString()}</span>
                     </div>
-                    <div class="action-container" style="display: flex; gap: 8px;">
+                    <div class="action-container" style="display: flex; gap: 8px; width: 100%;">
                         ${actionButtons}
                     </div>
                 </div>
@@ -191,5 +200,34 @@ function getPosColor(pos) {
     return colors[pos] || '#94a3b8';
 }
 
-window.handleBid = (id, price) => alert(`Bidding $${price + 1000} for auction ${id}`);
-window.handleBuyNow = (id, price) => alert(`Buying now for $${price} (ID: ${id})`);
+// Logika Licytacji (Alert do czasu wdrożenia pełnego systemu Bid)
+window.handleBid = (listingId, currentPrice) => {
+    alert(`Auction system coming soon. Current price: $${currentPrice.toLocaleString()}`);
+};
+
+// Logika "Kup Teraz" wykorzystująca funkcję RPC w Supabase
+window.handleBuyNow = async (listingId, price) => {
+    const confirmBuy = confirm(`Do you want to buy this player immediately for $${price.toLocaleString()}?`);
+    if (!confirmBuy) return;
+
+    if (!window.currentTeamId) {
+        alert("Error: Team ID not found. Please refresh the page.");
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient.rpc('buy_player_now', {
+            p_listing_id: listingId,
+            p_buyer_team_id: window.currentTeamId
+        });
+
+        if (error) throw error;
+
+        alert("Congratulations! The player has joined your team.");
+        location.reload(); // Odświeżamy, aby zaktualizować budżet i listę
+
+    } catch (err) {
+        console.error("Purchase Error:", err.message);
+        alert("Transaction failed: " + err.message);
+    }
+};
