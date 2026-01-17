@@ -6,7 +6,7 @@ import { renderRosterView } from './roster_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 
-// Cache na dane
+// Cache na dane, aby aplikacja działała szybciej
 let cachedTeam = null;
 let cachedPlayers = null;
 
@@ -39,6 +39,7 @@ export async function initApp(forceRefresh = false) {
 
         if (playersError) throw playersError;
 
+        // Aktualizacja cache
         cachedTeam = team;
         cachedPlayers = players;
         window.userTeamId = team.id;
@@ -50,6 +51,9 @@ export async function initApp(forceRefresh = false) {
     }
 }
 
+/**
+ * Czyści kontenery widoków
+ */
 function clearAllContainers() {
     const containers = ['roster-view-container', 'app-main-view', 'market-container', 'finances-container'];
     containers.forEach(id => {
@@ -58,7 +62,8 @@ function clearAllContainers() {
     });
 }
 
-// Funkcje widoków
+// --- FUNKCJE WYŚWIETLANIA WIDOKÓW ---
+
 export async function showRoster(forceRefresh = false) {
     const data = await initApp(forceRefresh);
     if (data) {
@@ -92,10 +97,10 @@ export async function showFinances() {
 }
 
 /**
- * Switcher zakładek - dodany i domknięty poprawnie
+ * Obsługa nawigacji (menu)
  */
 window.switchTab = async (tabName) => {
-    console.log("Przełączanie na:", tabName);
+    console.log("[APP] Switch to:", tabName);
     switch(tabName) {
         case 'roster': await showRoster(); break;
         case 'training': await showTraining(); break;
@@ -105,16 +110,23 @@ window.switchTab = async (tabName) => {
     }
 };
 
+/**
+ * Funkcja pomocnicza do błędów
+ */
 function renderError(message) {
     const container = document.getElementById('app-main-view') || document.body;
     container.innerHTML = `
         <div style="color: #ff4444; padding: 20px; text-align: center; background: #fff; border-radius: 15px; border: 1px solid #ddd; margin: 20px;">
-            <h3>Błąd modułu</h3>
+            <h3 style="margin-top:0;">Błąd modułu</h3>
             <p>${message}</p>
+            <button onclick="location.reload()" style="background:#1a237e; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Odśwież aplikację</button>
         </div>
     `;
 }
 
+/**
+ * Odświeżanie aktywnego widoku
+ */
 window.refreshCurrentView = (viewName) => {
     if (viewName === 'roster') showRoster(true);
     if (viewName === 'training') showTraining(true);
