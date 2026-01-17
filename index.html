@@ -195,8 +195,8 @@
 </div>
 
 <script src="js/lang.js"></script>
-<script type="module" src="js/auth.js"></script> 
-<script type="module" src="js/admin.js"></script> 
+<script type="module" src="js/auth.js"></script>
+<script type="module" src="js/admin.js"></script>
 <script src="js/world_gen.js"></script>
 <script src="js/draft.js"></script>
 <script src="js/manager.js"></script>
@@ -228,17 +228,13 @@
         if (btn) btn.classList.add('active');
 
         if (currentUserRole === 'manager') {
-            const { showRoster, showTraining, showMarket, showFinances } = await import('./js/app/app.js');
-
-            if (tabId === 'm-roster') {
-                await showRoster();
-            } else if (tabId === 'm-training') {
-                await showTraining();
-            } else if (tabId === 'm-market') {
-                await showMarket();
-            } else if (tabId === 'm-finances') {
-                await showFinances();
-            }
+            try {
+                const { showRoster, showTraining, showMarket, showFinances } = await import('./js/app/app.js');
+                if (tabId === 'm-roster') await showRoster();
+                else if (tabId === 'm-training') await showTraining();
+                else if (tabId === 'm-market') await showMarket();
+                else if (tabId === 'm-finances') await showFinances();
+            } catch (e) { console.error("Błąd ładowania modułu managera:", e); }
         }
         
         if (currentUserRole === 'admin') {
@@ -258,7 +254,6 @@
         alert("Tu otworzy się panel konfiguracji nawigacji (JSONB Config)");
     }
 
-    // TA FUNKCJA MUSI BYĆ DOSTĘPNA DLA auth.js
     window.setupUI = async function(userRole) {
         currentUserRole = userRole;
         const lp = document.getElementById('landing-page');
@@ -273,9 +268,8 @@
         } else {
             document.getElementById('admin-nav').style.display = 'none';
             document.getElementById('manager-nav').style.display = 'flex';
-            
-            if (typeof window.initManagerData === 'function') await window.initManagerData(); 
-            switchTab('m-roster'); 
+            if (typeof window.initManagerData === 'function') await window.initManagerData();
+            switchTab('m-roster');
         }
     };
 </script>
