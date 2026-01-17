@@ -258,10 +258,13 @@
         alert("Tu otworzy się panel konfiguracji nawigacji (JSONB Config)");
     }
 
-    async function setupUI(userRole) {
+    // TA FUNKCJA MUSI BYĆ DOSTĘPNA DLA auth.js
+    window.setupUI = async function(userRole) {
         currentUserRole = userRole;
-        document.getElementById('landing-page').style.display = 'none';
-        document.getElementById('game-app').style.display = 'block';
+        const lp = document.getElementById('landing-page');
+        const ga = document.getElementById('game-app');
+        if (lp) lp.style.display = 'none';
+        if (ga) ga.style.display = 'block';
 
         if (userRole === 'admin') {
             document.getElementById('admin-nav').style.display = 'flex';
@@ -271,11 +274,10 @@
             document.getElementById('admin-nav').style.display = 'none';
             document.getElementById('manager-nav').style.display = 'flex';
             
-            if (typeof initManagerData === 'function') await initManagerData(); 
+            if (typeof window.initManagerData === 'function') await window.initManagerData(); 
             switchTab('m-roster'); 
         }
-    }
-    window.setupUI = setupUI;
+    };
 </script>
 
 </body>
