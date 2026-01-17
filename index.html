@@ -255,23 +255,32 @@
     }
 
     window.setupUI = async function(userRole) {
-        currentUserRole = userRole;
-        const lp = document.getElementById('landing-page');
-        const ga = document.getElementById('game-app');
-        if (lp) lp.style.display = 'none';
-        if (ga) ga.style.display = 'block';
+    currentUserRole = userRole;
+    document.getElementById('landing-page').style.display = 'none';
+    document.getElementById('game-app').style.display = 'block';
 
-        if (userRole === 'admin') {
-            document.getElementById('admin-nav').style.display = 'flex';
-            document.getElementById('manager-nav').style.display = 'none';
-            switchTab('admin-tab-gen');
-        } else {
-            document.getElementById('admin-nav').style.display = 'none';
-            document.getElementById('manager-nav').style.display = 'flex';
-            if (typeof window.initManagerData === 'function') await window.initManagerData();
-            switchTab('m-roster');
+    const adminNav = document.getElementById('admin-nav');
+    const managerNav = document.getElementById('manager-nav');
+
+    if (userRole === 'admin' || userRole === 'moderator') {
+        adminNav.style.display = 'flex';
+        managerNav.style.display = 'none';
+        
+        // Jeśli moderator, możemy ukryć niektóre przyciski w menu admina
+        if (userRole === 'moderator') {
+            // Przykład: moderator nie widzi przycisku "Ustawienia ligi"
+            const configBtn = document.querySelector('[onclick="switchTab(\'admin-tab-config\')"]');
+            if (configBtn) configBtn.style.display = 'none';
         }
-    };
+        
+        switchTab('admin-tab-gen');
+    } else {
+        adminNav.style.display = 'none';
+        managerNav.style.display = 'flex';
+        if (typeof window.initManagerData === 'function') await window.initManagerData();
+        switchTab('m-roster');
+    }
+};
 </script>
 
 </body>
