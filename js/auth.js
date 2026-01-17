@@ -3,18 +3,17 @@
 const SUPABASE_URL = 'https://zzsscobtzwbwubchqjyx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wdrjVOU6jVHGVpsxcUygmg_kqPqz1aC';
 
-// Tworzymy klienta
+// Klient Supabase
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// KLUCZOWE POPRAWKI EKSPORTÓW:
-export const supabaseClient = _supabase; 
+export const supabaseClient = _supabase;
 window.supabase = _supabase;
 
-// Zmienna globalna na definicje potencjałów z bazy
+// Globalne dane potencjałów
 window.POTENTIAL_MAP = [];
 
 /**
- * Pobiera definicje potencjałów z bazy danych
+ * Pobiera definicje potencjałów z bazy
  */
 async function fetchPotentialDefinitions() {
     try {
@@ -24,40 +23,39 @@ async function fetchPotentialDefinitions() {
             .order('min_value', { ascending: false });
 
         if (error) throw error;
-        window.POTENTIAL_MAP = data;
-        console.log("Definicje potencjałów załadowane:", window.POTENTIAL_MAP.length);
+        window.POTENTIAL_MAP = data || [];
+        console.log("[AUTH] Potencjały załadowane:", window.POTENTIAL_MAP.length);
     } catch (err) {
-        console.error("Błąd pobierania definicji potencjałów:", err);
-        // Fallback w razie błędu bazy, żeby aplikacja się nie wywaliła
-        window.POTENTIAL_MAP = [
-            { min_value: 0, label: 'Project Player', color_hex: '#94a3b8', emoji: '🛠️' }
-        ];
+        console.error("[AUTH] Błąd tabeli potential_definitions:", err);
+        // Fallback, aby aplikacja nie przestała działać przy braku tabeli
+        window.POTENTIAL_MAP = [{ min_value: 0, label: 'Player', color_hex: '#94a3b8', emoji: '👤' }];
     }
 }
 
 /**
- * Dynamiczna funkcja zwracająca dane o potencjale na podstawie załadowanej mapy
+ * Pobiera dane potencjału dla konkretnej wartości
  */
 window.getPotentialData = (val) => {
     const p = parseInt(val) || 0;
-    // Szukamy pierwszego progu, który jest mniejszy lub równy wartości gracza
-    const def = window.POTENTIAL_MAP.find(d => p >= d.min_value);
+    const map = window.POTENTIAL_MAP || [];
+    const def = map.find(d => p >= d.min_value);
     
     if (def) {
         return {
             label: def.label,
             color: def.color_hex,
-            // Jeśli w przyszłości dodasz icon_url, tutaj można zrobić logikę zamiany
             icon: def.emoji || '🏀'
         };
     }
-    
-    return { label: 'Unknown', color: '#94a3b8', icon: '❓' };
+    return { label: 'Prospect', color: '#94a3b8', icon: '📋' };
 };
 
+/**
+ * Logowanie
+ */
 async function signIn() {
-    const e = document.getElementById('email').value;
-    const p = document.getElementById('password').value;
+    const e = document.getElementById('email')?.value;
+    const p = document.getElementById('password')?.value;
     if(!e || !p) return alert("Wypełnij pola!");
 
     const { error } = await _supabase.auth.signInWithPassword({email:e, password:p});
@@ -65,9 +63,12 @@ async function signIn() {
     else checkUser();
 }
 
+/**
+ * Rejestracja
+ */
 async function signUp() {
-    const e = document.getElementById('email').value;
-    const p = document.getElementById('password').value;
+    const e = document.getElementById('email')?.value;
+    const p = document.getElementById('password')?.value;
     if(!e || !p) return alert("Wypełnij pola!");
 
     const { error } = await _supabase.auth.signUp({email:e, password:p});
@@ -75,6 +76,9 @@ async function signUp() {
     else alert("Konto stworzone! Sprawdź maila.");
 }
 
+/**
+ * Sprawdzanie sesji i inicjalizacja danych
+ */
 async function checkUser() {
     const { data: { user } } = await _supabase.auth.getUser();
     const landing = document.getElementById('landing-page');
@@ -82,7 +86,7 @@ async function checkUser() {
     const userDisplay = document.getElementById('user-info-display');
 
     if(user) {
-        // 1. Najpierw ładujemy definicje z bazy (Ważne!)
+        // 1. Ładujemy definicje z bazy danych
         await fetchPotentialDefinitions();
 
         if(landing) landing.style.display = 'none';
@@ -111,17 +115,17 @@ async function checkUser() {
             }
 
             if(userDisplay) {
-                let statusName = isAdmin ? "Admin" : (teamData ? teamData.team_name : "Manager");
+                const statusName = isAdmin ? "Admin" : (teamData ? teamData.team_name : "Manager");
                 userDisplay.innerText = `${user.email} (${statusName})`;
             }
 
-            // Wywołanie funkcji globalnej setupUI
+            // Uruchomienie interfejsu głównego
             if (typeof window.setupUI === 'function') {
                 window.setupUI(role);
             }
 
         } catch (e) { 
-            console.error("Błąd inicjalizacji użytkownika:", e); 
+            console.error("[AUTH] Krytyczny błąd checkUser:", e); 
         }
     } else {
         if(landing) landing.style.display = 'block';
@@ -134,12 +138,12 @@ async function logout() {
     location.reload(); 
 }
 
-// UDOSTĘPNIAMY FUNKCJE DO HTML (onclick)
+// Globalne przypisania dla onclick w HTML
 window.signIn = signIn;
 window.signUp = signUp;
 window.logout = logout;
 window.signOut = logout;
 window.checkUser = checkUser;
 
-// Sprawdź stan sesji przy załadowaniu strony
+// Start aplikacji
 checkUser();
