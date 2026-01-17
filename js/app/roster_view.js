@@ -19,7 +19,6 @@ function getSkillColor(val) {
 }
 
 function renderSkillMini(name, val) {
-    // Jeśli wartość to undefined/null, wyświetlamy '--'
     const v = (val !== undefined && val !== null) ? val : '--';
     const color = getSkillColor(v);
     return `
@@ -30,13 +29,13 @@ function renderSkillMini(name, val) {
     `;
 }
 
-// Pomocnik do przeliczania cm na stopy/cale
+// Przelicznik cm na stopy/cale (np. 211cm -> 6'11")
 function cmToFtIn(cm) {
     if (!cm) return '--';
-    const realInches = cm * 0.393701;
-    const feet = Math.floor(realInches / 12);
-    const inches = Math.round(realInches % 12);
-    return `${feet}'${inches}"`;
+    const inches = cm * 0.393701;
+    const feet = Math.floor(inches / 12);
+    const remainingInches = Math.round(inches % 12);
+    return `${feet}'${remainingInches}"`;
 }
 
 function getPotentialLabel(pot) {
@@ -75,9 +74,9 @@ function renderPlayerRowInternal(player, potLabel) {
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8f9fa; padding: 12px; border-radius: 12px; border: 1px solid #f0f0f0; flex-grow: 1; min-width: 450px;">
                             <div>
                                 <div style="font-size: 8px; font-weight: 900; color: #1a237e; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0;">Attack</div>
-                                ${renderSkillMini('JumpShot', player.skill_jump_shot)}
-                                ${renderSkillMini('3PT Range', player.skill_3pt_range)}
-                                ${renderSkillMini('Dunking', player.skill_dunking)}
+                                ${renderSkillMini('Jump Shot', player.skill_2pt)}
+                                ${renderSkillMini('3PT Range', player.skill_3pt)}
+                                ${renderSkillMini('Dunking', player.skill_dunk)}
                                 ${renderSkillMini('Passing', player.skill_passing)}
                             </div>
                             <div>
@@ -85,14 +84,14 @@ function renderPlayerRowInternal(player, potLabel) {
                                 ${renderSkillMini('1on1 Def', player.skill_1on1_def)}
                                 ${renderSkillMini('Rebound', player.skill_rebound)}
                                 ${renderSkillMini('Blocking', player.skill_block)}
-                                ${renderSkillMini('Stealing', player.skill_stealing)}
+                                ${renderSkillMini('Stealing', player.skill_steal)}
                             </div>
                             <div>
                                 <div style="font-size: 8px; font-weight: 900; color: #1a237e; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0;">General</div>
-                                ${renderSkillMini('Handling', player.skill_handling)}
+                                ${renderSkillMini('Handling', player.skill_dribbling)}
                                 ${renderSkillMini('1on1 Off', player.skill_1on1_off)}
                                 ${renderSkillMini('Stamina', player.skill_stamina)}
-                                ${renderSkillMini('FreeThrow', player.skill_free_throw)}
+                                ${renderSkillMini('Free Throw', player.skill_ft)}
                             </div>
                         </div>
                     </div>
@@ -101,9 +100,9 @@ function renderPlayerRowInternal(player, potLabel) {
             <td style="padding: 15px;"><div style="font-size: 0.85em; font-weight: 600; color: #444; background: #f0f2f5; display: inline-block; padding: 4px 12px; border-radius: 20px;">${player.position}</div></td>
             <td style="padding: 15px; color: #666; font-weight: 600;">${player.age}</td>
             <td style="padding: 15px; color: #666; font-weight: 600;">
-                <div style="display:flex; flex-direction:column;">
+                <div style="display: flex; flex-direction: column;">
                     <span>${player.height || '--'} cm</span>
-                    <small style="font-size: 0.75em; color: #94a3b8;">${cmToFtIn(player.height)}</small>
+                    <span style="font-size: 0.75em; color: #94a3b8; font-weight: 400;">${cmToFtIn(player.height)}</span>
                 </div>
             </td>
             <td style="padding: 15px; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #2e7d32; font-size: 0.9em;">$${(player.salary || 0).toLocaleString()}</td>
@@ -139,14 +138,20 @@ export async function renderRosterView(teamData, players) {
     window.rosterAction = (type, playerId) => {
         const player = safePlayers.find(p => String(p.id) === String(playerId));
         if (!player) return;
-        if (type === 'profile') RosterActions.showProfile(player);
-        else if (type === 'sell') RosterActions.showSellConfirm(player);
-        else if (type === 'training') RosterActions.showTraining(player);
+
+        if (type === 'profile') {
+            RosterActions.showProfile(player);
+        } else if (type === 'sell') {
+            RosterActions.showSellConfirm(player);
+        } else if (type === 'training') {
+            RosterActions.showTraining(player);
+        }
     };
 
     container.innerHTML = `
         <div style="padding: 30px; background: #f4f7f6; min-height: 100vh; font-family: 'Inter', sans-serif;">
             <h1 style="color: #1a237e; font-weight: 800; margin-bottom: 20px;">ROSTER MANAGEMENT</h1>
+            
             <div style="background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); overflow: hidden;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
                     <thead style="background: #f8f9fa; color: #94a3b8; font-size: 0.75em; text-transform: uppercase;">
