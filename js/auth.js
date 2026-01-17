@@ -28,15 +28,19 @@ async function fetchPotentialDefinitions() {
 
 window.getPotentialData = (val) => {
     const p = parseInt(val) || 0;
-    const map = window.POTENTIAL_MAP || [];
-    const def = map.find(d => p >= d.min_value);
+    // Zabezpieczenie: jeśli mapa jest pusta, zwróć domyślny obiekt zamiast błędu
+    if (!window.POTENTIAL_MAP || window.POTENTIAL_MAP.length === 0) {
+        return { label: 'Prospect (' + p + ')', color: '#94a3b8', icon: '👤' };
+    }
+
+    const def = window.POTENTIAL_MAP.find(d => p >= d.min_value);
     
-    if (def) {
-        return {
-            label: def.label,
-            color: def.color_hex,
-            icon: def.emoji || '🏀'
-        };
+    return def ? {
+        label: def.label,
+        color: def.color_hex,
+        icon: def.emoji || '🏀'
+    } : { label: 'Player', color: '#94a3b8', icon: '👤' };
+};
     }
     return { label: 'Prospect', color: '#94a3b8', icon: '📋' };
 };
