@@ -6,8 +6,14 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 export const supabaseClient = _supabase;
 window.supabase = _supabase;
 
+// Importujemy inicjalizację aplikacji dla Managera
+import { initApp } from './app/app.js';
+
 window.POTENTIAL_MAP = [];
 
+/**
+ * Pobiera definicje potencjałów (np. GOAT, Elite) z bazy
+ */
 async function fetchPotentialDefinitions() {
     try {
         const { data, error } = await _supabase
@@ -22,6 +28,9 @@ async function fetchPotentialDefinitions() {
     }
 }
 
+/**
+ * Zwraca sformatowane dane potencjału dla zawodnika
+ */
 window.getPotentialData = (val) => {
     const p = parseInt(val) || 0;
     const map = window.POTENTIAL_MAP || [];
@@ -29,12 +38,42 @@ window.getPotentialData = (val) => {
     return def ? { label: def.label, color: def.color_hex, icon: def.emoji || '🏀' } : { label: 'Prospect', color: '#94a3b8', icon: '👤' };
 };
 
+/**
+ * Funkcja ustawiająca interfejs zależnie od roli
+ */
+window.setupUI = async (role) => {
+    console.log("[AUTH] Konfiguracja UI dla roli:", role);
+    
+    const landingPage = document.getElementById('landing-page');
+    const gameApp = document.getElementById('game-app');
+    const adminNav = document.getElementById('admin-nav');
+    const managerNav = document.getElementById('manager-nav');
+
+    if (landingPage) landingPage.style.display = 'none';
+    if (gameApp) gameApp.style.display = 'block';
+
+    if (role === 'admin' || role === 'moderator') {
+        if (adminNav) adminNav.style.display = 'flex';
+        if (managerNav) managerNav.style.display = 'none';
+        // Domyślna zakładka dla admina
+        if (window.showAdminTab) window.showAdminTab('admin-tab-gen');
+    } else {
+        // ROLA: MANAGER
+        if (adminNav) adminNav.style.display = 'none';
+        if (managerNav) managerNav.style.display = 'flex';
+        
+        // URUCHOMIENIE NOWEGO SILNIKA APP (Kragujevac Hoops)
+        await initApp();
+    }
+};
+
 async function signIn() {
     const e = document.getElementById('email').value;
     const p = document.getElementById('password').value;
     if (!e || !p) return alert("Wypełnij pola!");
+    
     const { error } = await _supabase.auth.signInWithPassword({ email: e, password: p });
-    if (error) alert("Błąd: " + error.message);
+    if (error) alert("Błąd logowania: " + error.message);
     else window.checkUser();
 }
 
@@ -42,34 +81,43 @@ async function signUp() {
     const e = document.getElementById('email').value;
     const p = document.getElementById('password').value;
     if (!e || !p) return alert("Wypełnij pola!");
+    
     const { error } = await _supabase.auth.signUp({ email: e, password: p });
     if (error) alert(error.message);
-    else alert("Konto stworzone! Sprawdź maila.");
+    else alert("Konto stworzone! Sprawdź pocztę (również spam).");
 }
 
 async function checkUser() {
     const { data: { user } } = await _supabase.auth.getUser();
     
     if (user) {
-        // POBIERANIE ROLI Z BAZY
-        const { data: profile, error } = await _supabase
+        // Pobieranie profilu i roli
+        let { data: profile, error } = await _supabase
             .from('profiles')
-            .select('role')
+            .select('*')
             .eq('id', user.id)
             .single();
 
+        // Jeśli użytkownik istnieje w Auth, ale nie ma rekordu w Profiles (np. błąd przy rejestracji)
         if (error || !profile) {
-            console.error("Błąd pobierania roli, ustawiam domyślną: manager");
-            window.setupUI('manager');
-        } else {
-            console.log("Zalogowano jako:", profile.role);
-            window.setupUI(profile.role); // Tutaj przekaże 'admin', 'moderator' lub 'manager'
+            console.warn("Profil nie istnieje, tworzę domyślny...");
+            const { data: newProfile } = await _supabase
+                .from('profiles')
+                .insert([{ id: user.id, email: user.email, role: 'manager' }])
+                .select()
+                .single();
+            profile = newProfile;
         }
-        
+
         await fetchPotentialDefinitions();
+        
+        // Ustawiamy UI na podstawie roli z profilu
+        const userRole = profile?.role || 'manager';
+        window.setupUI(userRole);
+
     } else {
-        document.getElementById('landing-page').style.display = 'block';
-        document.getElementById('game-app').style.display = 'none';
+        if (document.getElementById('landing-page')) document.getElementById('landing-page').style.display = 'block';
+        if (document.getElementById('game-app')) document.getElementById('game-app').style.display = 'none';
     }
 }
 
@@ -78,6 +126,7 @@ async function logout() {
     location.reload();
 }
 
+// Ekspozycja funkcji do okna globalnego (dla przycisków HTML)
 window.signIn = signIn;
 window.signUp = signUp;
 window.logout = logout;
