@@ -7,11 +7,53 @@ const SUPABASE_KEY = 'sb_publishable_wdrjVOU6jVHGVpsxcUygmg_kqPqz1aC';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // KLUCZOWE POPRAWKI EKSPORTÓW:
-// 1. Dla modułów JS (import { supabaseClient } from './auth.js')
 export const supabaseClient = _supabase; 
-
-// 2. Dla starych skryptów i konsoli
 window.supabase = _supabase;
+
+// Zmienna globalna na definicje potencjałów z bazy
+window.POTENTIAL_MAP = [];
+
+/**
+ * Pobiera definicje potencjałów z bazy danych
+ */
+async function fetchPotentialDefinitions() {
+    try {
+        const { data, error } = await _supabase
+            .from('potential_definitions')
+            .select('*')
+            .order('min_value', { ascending: false });
+
+        if (error) throw error;
+        window.POTENTIAL_MAP = data;
+        console.log("Definicje potencjałów załadowane:", window.POTENTIAL_MAP.length);
+    } catch (err) {
+        console.error("Błąd pobierania definicji potencjałów:", err);
+        // Fallback w razie błędu bazy, żeby aplikacja się nie wywaliła
+        window.POTENTIAL_MAP = [
+            { min_value: 0, label: 'Project Player', color_hex: '#94a3b8', emoji: '🛠️' }
+        ];
+    }
+}
+
+/**
+ * Dynamiczna funkcja zwracająca dane o potencjale na podstawie załadowanej mapy
+ */
+window.getPotentialData = (val) => {
+    const p = parseInt(val) || 0;
+    // Szukamy pierwszego progu, który jest mniejszy lub równy wartości gracza
+    const def = window.POTENTIAL_MAP.find(d => p >= d.min_value);
+    
+    if (def) {
+        return {
+            label: def.label,
+            color: def.color_hex,
+            // Jeśli w przyszłości dodasz icon_url, tutaj można zrobić logikę zamiany
+            icon: def.emoji || '🏀'
+        };
+    }
+    
+    return { label: 'Unknown', color: '#94a3b8', icon: '❓' };
+};
 
 async function signIn() {
     const e = document.getElementById('email').value;
@@ -40,6 +82,9 @@ async function checkUser() {
     const userDisplay = document.getElementById('user-info-display');
 
     if(user) {
+        // 1. Najpierw ładujemy definicje z bazy (Ważne!)
+        await fetchPotentialDefinitions();
+
         if(landing) landing.style.display = 'none';
         if(app) app.style.display = 'block';
 
@@ -90,11 +135,10 @@ async function logout() {
 }
 
 // UDOSTĘPNIAMY FUNKCJE DO HTML (onclick)
-// To rozwiązuje błąd "ReferenceError: Can't find variable"
 window.signIn = signIn;
 window.signUp = signUp;
 window.logout = logout;
-window.signOut = logout; // Alias, żeby działały obie nazwy
+window.signOut = logout;
 window.checkUser = checkUser;
 
 // Sprawdź stan sesji przy załadowaniu strony
