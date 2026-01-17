@@ -40,26 +40,16 @@ function cmToFtIn(cm) {
     return `${feet}'${inches}"`;
 }
 
-function getPotentialLabel(pot) {
-    const p = parseInt(pot) || 0;
-    if (p >= 96) return { label: 'G.O.A.T.', color: '#ff4500' };
-    if (p >= 92) return { label: 'All-Time Great', color: '#b8860b' };
-    if (p >= 88) return { label: 'Elite Franchise', color: '#d4af37' };
-    if (p >= 84) return { label: 'Star Performer', color: '#8b5cf6' };
-    if (p >= 79) return { label: 'High Prospect', color: '#10b981' };
-    if (p >= 74) return { label: 'Solid Starter', color: '#6366f1' };
-    if (p >= 68) return { label: 'Reliable Bench', color: '#64748b' };
-    if (p >= 60) return { label: 'Role Player', color: '#94a3b8' };
-    if (p >= 50) return { label: 'Deep Bench', color: '#cbd5e1' };
-    return { label: 'Project Player', color: '#94a3b8' };
-}
+// --- USUNIĘTO STARY getPotentialLabel - TERAZ KORZYSTAMY Z window.getPotentialData ---
 
 // --- 2. WEWNĘTRZNY RENDER WIERSZA ---
 
-function renderPlayerRowInternal(player, potLabel) {
+function renderPlayerRowInternal(player, potData) {
     const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.last_name}&backgroundColor=f0f2f5`;
     const currentOvr = player.overall_rating || 0;
-    const maxPot = player.potential || 1;
+    
+    // Obliczanie postępu względem potencjału liczbowego
+    const maxPot = parseInt(player.potential) || 100;
     const progressWidth = Math.min(Math.round((currentOvr / maxPot) * 100), 100);
 
     return `
@@ -110,9 +100,11 @@ function renderPlayerRowInternal(player, potLabel) {
             <td style="padding: 15px; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #2e7d32; font-size: 0.9em;">$${(player.salary || 0).toLocaleString()}</td>
             <td style="padding: 15px;">
                 <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <span style="font-weight: 800; color: ${potLabel.color}; font-size: 0.8em; white-space: nowrap;">${potLabel.label}</span>
+                    <span style="font-weight: 800; color: ${potData.color}; font-size: 0.8em; white-space: nowrap;">
+                        ${potData.icon} ${potData.label}
+                    </span>
                     <div style="width: 80px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
-                        <div style="width: ${progressWidth}%; height: 100%; background: ${potLabel.color};"></div>
+                        <div style="width: ${progressWidth}%; height: 100%; background: ${potData.color};"></div>
                     </div>
                     <span style="font-size: 9px; font-weight: 700; color: #94a3b8;">${progressWidth}% cap</span>
                 </div>
@@ -170,8 +162,9 @@ export async function renderRosterView(teamData, players) {
                     </thead>
                     <tbody>
                         ${safePlayers.map(p => {
-                            const potLabel = getPotentialLabel(p.potential);
-                            return renderPlayerRowInternal(p, potLabel);
+                            // KLUCZOWA ZMIANA: Korzystamy z globalnej funkcji zdefiniowanej w auth.js
+                            const potData = window.getPotentialData(p.potential);
+                            return renderPlayerRowInternal(p, potData);
                         }).join('')}
                     </tbody>
                 </table>
