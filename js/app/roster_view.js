@@ -84,11 +84,32 @@ export function renderRosterView(team, players) {
 
     container.innerHTML = html;
 
+    // --- OBSŁUGA KLIKNIĘĆ (PODPIĘCIE POD ROSTER ACTIONS) ---
+    
+    // 1. PROFILE
     container.querySelectorAll('.btn-profile-trigger').forEach((btn) => {
         btn.onclick = () => {
             const playerId = btn.getAttribute('data-id');
             const player = players.find(pl => String(pl.id) === String(playerId));
             if (player && window.RosterActions) window.RosterActions.showProfile(player);
+        };
+    });
+
+    // 2. TRAIN
+    container.querySelectorAll('.btn-train-trigger').forEach((btn) => {
+        btn.onclick = () => {
+            const playerId = btn.getAttribute('data-id');
+            const player = players.find(pl => String(pl.id) === String(playerId));
+            if (player && window.RosterActions) window.RosterActions.showTraining(player);
+        };
+    });
+
+    // 3. SELL
+    container.querySelectorAll('.btn-sell-trigger').forEach((btn) => {
+        btn.onclick = () => {
+            const playerId = btn.getAttribute('data-id');
+            const player = players.find(pl => String(pl.id) === String(playerId));
+            if (player && window.RosterActions) window.RosterActions.sellPlayer(player);
         };
     });
 }
@@ -156,8 +177,8 @@ function renderPlayerRow(p) {
             <td style="padding: 20px 25px; text-align: right; border-radius: 0 15px 15px 0; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9;">
                 <div style="display: flex; gap: 6px; justify-content: flex-end;">
                     <button class="btn-profile-trigger" data-id="${p.id}" style="background: #1a237e; color: white; border: none; padding: 8px 10px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.6rem; min-width: 60px;">Profile</button>
-                    <button style="background: #f1f5f9; color: #1a237e; border: 1px solid #e2e8f0; padding: 8px 10px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.6rem; min-width: 60px;">Train</button>
-                    <button style="background: white; color: #ef4444; border: 1px solid #fee2e2; padding: 8px 10px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.6rem; min-width: 60px;">Sell</button>
+                    <button class="btn-train-trigger" data-id="${p.id}" style="background: #f1f5f9; color: #1a237e; border: 1px solid #e2e8f0; padding: 8px 10px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.6rem; min-width: 60px;">Train</button>
+                    <button class="btn-sell-trigger" data-id="${p.id}" style="background: white; color: #ef4444; border: 1px solid #fee2e2; padding: 8px 10px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.6rem; min-width: 60px;">Sell</button>
                 </div>
             </td>
         </tr>
