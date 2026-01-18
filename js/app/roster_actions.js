@@ -5,7 +5,6 @@
 /**
  * Zwraca dane o potencjale. 
  * UWAGA: Ikony docelowo będą pobierane z bazy danych (panel admina).
- * Obecnie są to emoji, które łatwo zastąpisz ścieżkami do plików JPG/PNG.
  */
 window.getPotentialData = (val) => {
     const p = parseInt(val) || 0;
@@ -48,7 +47,6 @@ export const RosterActions = {
         if (modal) modal.remove();
     },
 
-    // Naprawiona metoda renderowania karty (używamy static-like call)
     _renderProfileCard: (label, val, color, extraHtml = '') => `
         <div style="background:white; padding:20px; border-radius:20px; border:1px solid #e2e8f0; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100px;">
             <small style="color:#94a3b8; font-weight:800; text-transform:uppercase; font-size:0.7em; margin-bottom:8px; display:block;">${label}</small>
@@ -61,11 +59,9 @@ export const RosterActions = {
         const potData = window.getPotentialData(player.potential);
         const progressWidth = Math.min(Math.round(((player.overall_rating || 0) / (player.potential || 1)) * 100), 100);
         
-        // Flaga (używamy pola country z bazy lub domyślnie pl)
         const countryCode = (player.country || 'pl').toLowerCase();
         const flagUrl = `https://flagcdn.com/w40/${countryCode}.png`;
 
-        // Pełna lista 12 umiejętności podzielona na 3 grupy (zgodnie z bazą)
         const skillGroups = [
             {
                 name: 'Attack',
@@ -142,4 +138,22 @@ export const RosterActions = {
                                 <div style="background:#f8fafc; padding:20px; border-radius:25px; border:1px solid #f1f5f9;">
                                     <h4 style="color:#94a3b8; font-size:0.75em; text-transform:uppercase; margin-bottom:15px; text-align:center;">${group.name}</h4>
                                     ${group.skills.map(s => `
-                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:white; padding:12px 15px;
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:white; padding:12px 15px; border-radius:15px; border:1px solid #e2e8f0;">
+                                            <span style="font-weight:700; color:#475569; font-size:0.85em;">${s.name}</span>
+                                            <span style="color:${getSkillColor(s.val)}; font-weight:900; font-size:1.1em;">${s.val || 0}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+};
+
+// Eksport do okna globalnego dla wywołań z HTML (np. onclick)
+window.RosterActions = RosterActions;
