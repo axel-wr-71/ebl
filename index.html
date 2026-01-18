@@ -218,7 +218,6 @@
 <script>
     let currentUserRole = null;
 
-    // Bezpieczne podpięcie zdarzeń logowania (bypass modułów)
     document.addEventListener('DOMContentLoaded', () => {
         const loginBtn = document.getElementById('btn-login-action');
         const signupBtn = document.getElementById('btn-signup-action');
@@ -237,6 +236,7 @@
     }
 
     async function switchTab(tabId) {
+        // UI/UX: Zmiana widoczności zakładek
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
         
@@ -246,16 +246,28 @@
         const btn = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
         if (btn) btn.classList.add('active');
 
+        // Backend: Ładowanie danych managera
         if (currentUserRole === 'manager') {
             try {
-                const { showRoster, showTraining, showMarket, showFinances } = await import('./js/app/app.js');
-                if (tabId === 'm-roster') await showRoster();
-                else if (tabId === 'm-training') await showTraining();
-                else if (tabId === 'm-market') await showMarket();
-                else if (tabId === 'm-finances') await showFinances();
-            } catch (e) { console.error("Błąd ładowania modułu managera:", e); }
+                // Nowa, bezpieczna metoda komunikacji z app.js
+                const appModule = await import('./js/app/app.js');
+                
+                const tabMap = {
+                    'm-roster': 'roster',
+                    'm-training': 'training',
+                    'm-market': 'market',
+                    'm-finances': 'finances'
+                };
+                
+                if (tabMap[tabId]) {
+                    await appModule.switchTab(tabMap[tabId]);
+                }
+            } catch (e) { 
+                console.error("[INDEX] Błąd modułu managera:", e); 
+            }
         }
         
+        // Logika Admina
         if (currentUserRole === 'admin' || currentUserRole === 'moderator') {
             const runAdminTab = () => {
                 if (window.switchAdminTab) {
@@ -270,10 +282,9 @@
     }
 
     function openNavSettings() {
-        alert("Tu otworzy się panel konfiguracji nawigacji (JSONB Config)");
+        alert("Panel konfiguracji nawigacji dostępny wkrótce.");
     }
 
-    // Nowa funkcja setupUI zintegrowana z app.js i wymogami komponentów
     window.setupUI = async function(userRole) {
         currentUserRole = userRole;
         const lp = document.getElementById('landing-page');
@@ -287,14 +298,8 @@
         if (userRole === 'admin' || userRole === 'moderator') {
             if (adminNav) adminNav.style.display = 'flex';
             if (managerNav) managerNav.style.display = 'none';
-            
-            if (userRole === 'moderator') {
-                const configBtn = document.querySelector('[onclick="switchTab(\'admin-tab-config\')"]');
-                if (configBtn) configBtn.style.display = 'none';
-            }
             switchTab('admin-tab-gen');
         } else {
-            // ROLA: MANAGER
             if (adminNav) adminNav.style.display = 'none';
             if (managerNav) managerNav.style.display = 'flex';
             
@@ -303,7 +308,7 @@
                 await initApp();
                 switchTab('m-roster');
             } catch (e) {
-                console.error("Critical: initApp failed", e);
+                console.error("[INDEX] Critical: initApp failed", e);
             }
         }
     };
