@@ -2,8 +2,7 @@
 import { RosterActions } from './roster_actions.js';
 
 /**
- * Funkcja pomocnicza do kolorowania statystyk (Skala 1-20)
- * Zoptymalizowana pod kątem czytelności w Safari na MacBooku
+ * Kolorowanie statystyk (Skala 1-20)
  */
 function getSkillColor(val) {
     const v = parseInt(val) || 0;
@@ -16,12 +15,9 @@ function getSkillColor(val) {
     if (v === 14) return '#64748b'; // Reliable Bench
     if (v === 13) return '#94a3b8'; // Role Player
     if (v >= 11)  return '#cbd5e1'; // Deep Bench
-    return '#94a3b8';               // Project Player / Reszta
+    return '#94a3b8';
 }
 
-/**
- * Renderuje pojedynczy kafelek umiejętności
- */
 function renderSkillMini(name, val) {
     return `
         <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;border-bottom:1px solid rgba(0,0,0,0.03);">
@@ -31,22 +27,24 @@ function renderSkillMini(name, val) {
 }
 
 /**
- * GŁÓWNA FUNKCJA RENDERUJĄCA WIDOK ROSTERA
+ * GŁÓWNA FUNKCJA RENDERUJĄCA
  */
-export async function renderRosterView(teamData, players) {
+export function renderRosterView(teamData, players) {
     const container = document.getElementById('roster-view-container');
-    if (!container) return;
+    if (!container) {
+        console.error("[UI] Nie znaleziono kontenera 'roster-view-container'");
+        return;
+    }
 
-    // Przypisanie akcji do okna globalnego dla obsługi kliknięć w buttony
+    // Obsługa akcji
     window.rosterAction = (type, id) => {
         const p = players.find(x => String(x.id) === String(id));
         if (p && RosterActions[type]) RosterActions[type](p);
     };
 
-    // Mapowanie zawodników na wiersze tabeli
-    let rowsHtml = players.map(p => {
-        // Obsługa relacji potencjału z bazy Supabase
-        // p.potential_definitions to wynik JOINa w app.js
+    // Budowanie wierszy
+    const rowsHtml = players.map(p => {
+        // Relacja potencjału (zgodnie z nowymi zasadami 1 GOAT/Elite na team)
         const pot = p.potential_definitions || { 
             label: 'Scouting...', 
             color_hex: '#94a3b8', 
@@ -54,14 +52,8 @@ export async function renderRosterView(teamData, players) {
             min_value: 100 
         };
         
-        // Obliczanie paska postępu względem CAP (min_value z definicji potencjału)
         const capValue = pot.min_value || 100;
         const progressWidth = Math.min(Math.round(((p.overall_rating || 0) / capValue) * 100), 100);
-
-        // Generowanie ikony (Emoji ma najwyższy priorytet dla szybkości renderowania w Safari)
-        const iconHtml = pot.emoji 
-            ? `<span style="font-size:14px;margin-right:4px;">${pot.emoji}</span>`
-            : `<div style="width:16px;height:16px;background:${pot.color_hex};border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:900;">${pot.label[0]}</div>`;
 
         return `
         <tr style="border-bottom:1px solid #f8f9fa;">
@@ -95,48 +87,42 @@ export async function renderRosterView(teamData, players) {
                     </div>
                 </div>
             </td>
-            
             <td style="padding:15px;font-weight:600;">${p.position}</td>
             <td style="padding:15px;">${p.age}</td>
-            <td style="padding:15px;color:#2e7d32;font-weight:700;">$${(p.salary || 0).toLocaleString()}</td>
-            
+            <td style="padding:15px;color:#2e7d32;font-weight:700;">${p.salary ? p.salary.toLocaleString() : '0'} $</td>
             <td style="padding:15px;">
                 <div style="display:flex;align-items:center;gap:6px;color:${pot.color_hex};font-weight:800;font-size:0.8em;text-transform:uppercase;">
-                    ${iconHtml} ${pot.label}
+                    ${pot.emoji || ''} ${pot.label}
                 </div>
                 <div style="width:80px;height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden;margin-top:4px;">
-                    <div style="width:${progressWidth}%;height:100%;background:${pot.color_hex}; transition: width 0.5s ease-in-out;"></div>
+                    <div style="width:${progressWidth}%;height:100%;background:${pot.color_hex}; transition: width 0.5s;"></div>
                 </div>
             </td>
-            
             <td style="padding:15px;">
                 <div style="width:42px;height:42px;border-radius:10px;background:#e8f5e9;color:#2e7d32;display:flex;align-items:center;justify-content:center;font-weight:900;border:2px solid #c8e6c9;">
                     ${p.overall_rating}
                 </div>
             </td>
-            
             <td style="padding:15px;text-align:center;">
                 <button onclick="window.rosterAction('showProfile', '${p.id}')" 
-                    style="background:white;border:1px solid #1a237e;padding:6px 12px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;transition: all 0.2s;">
+                    style="background:white;border:1px solid #1a237e;padding:6px 12px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;">
                     PROFILE
                 </button>
             </td>
         </tr>`;
     }).join('');
 
-    // Renderowanie kompletnego kontenera
     container.innerHTML = `
-        <div style="padding:30px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f4f7f6;min-height:100vh;">
+        <div style="padding:30px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7f6;min-height:100vh;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                 <h1 style="color:#1a237e;font-weight:800;margin:0;">ROSTER MANAGEMENT</h1>
                 <div style="background:#1a237e;color:white;padding:8px 16px;border-radius:8px;font-weight:600;">
                     ${teamData?.name || 'Your Team'}
                 </div>
             </div>
-            
             <div style="background:white;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.05);">
                 <table style="width:100%;border-collapse:collapse;text-align:left;">
-                    <thead style="background:#f8f9fa;color:#94a3b8;font-size:0.75em;text-transform:uppercase;letter-spacing:1px;">
+                    <thead style="background:#f8f9fa;color:#94a3b8;font-size:0.75em;text-transform:uppercase;">
                         <tr>
                             <th style="padding:15px 25px;">Player & Skills</th>
                             <th style="padding:15px;">Pos</th>
@@ -148,7 +134,7 @@ export async function renderRosterView(teamData, players) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${rowsHtml.length > 0 ? rowsHtml : '<tr><td colspan="7" style="padding:40px;text-align:center;color:#94a3b8;">Brak zawodników w kadrze. Sprawdź połączenie z bazą.</td></tr>'}
+                        ${rowsHtml}
                     </tbody>
                 </table>
             </div>
