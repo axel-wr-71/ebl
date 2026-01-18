@@ -63,27 +63,68 @@ export function renderRosterView(team, players) {
 }
 
 function renderPlayerRow(p) {
-    // Mapowanie skilli z bazy danych (image_7d9fa4.png)
-    const skills = {
-        attack: {
-            inside: p.skill_2pt ?? '-',
-            mid: p.skill_ft ?? '-',
-            three: p.skill_3pt ?? '-',
-            pass: p.skill_passing ?? '-'
-        },
-        defense: {
-            int: p.skill_block ?? '-',
-            per: p.skill_steal ?? '-',
-            steal: p.skill_steal ?? '-',
-            block: p.skill_block ?? '-'
-        },
-        general: {
-            oreb: p.skill_rebound ?? '-',
-            dreb: p.skill_rebound ?? '-',
-            dribble: p.skill_dribbling ?? '-',
-            ft: p.skill_ft ?? '-'
-        }
-    };
+    const isRookie = p.is_rookie || p.age <= 19;
+
+    return `
+        <tr style="border-bottom: 1px solid #f8fafc; vertical-align: middle;">
+            <td style="padding: 20px;">
+                <div style="display: flex; align-items: flex-start; gap: 15px;">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" 
+                         style="width: 65px; height: 65px; background: #f1f5f9; border-radius: 12px; border: 1px solid #e2e8f0; object-fit: cover;">
+                    
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <strong style="color: #1a237e; font-size: 1.1rem;">${p.first_name} ${p.last_name}</strong>
+                            ${isRookie ? '<span style="background:#fee2e2; color:#ef4444; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:4px; text-transform:uppercase;">Rookie</span>' : ''}
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; background: #f8fafc; padding: 10px; border-radius: 10px; font-size: 0.65rem; border: 1px solid #edf2f7; min-width: 350px;">
+                            <div>
+                                <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Attack</div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Inside (2PT)</span> <strong>${p.skill_2pt ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>3PT Shot</span> <strong>${p.skill_3pt ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Dunk</span> <strong>${p.skill_dunk ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Passing</span> <strong>${p.skill_passing ?? '-'}</strong></div>
+                            </div>
+                            <div>
+                                <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Defense</div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>1v1 Def</span> <strong>${p.skill_1on1_def ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Steal</span> <strong>${p.skill_steal ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Block</span> <strong>${p.skill_block ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>1v1 Off</span> <strong>${p.skill_1on1_off ?? '-'}</strong></div>
+                            </div>
+                            <div>
+                                <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">General</div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Rebound</span> <strong>${p.skill_rebound ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Dribble</span> <strong>${p.skill_dribbling ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Stamina</span> <strong>${p.skill_stamina ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Free Throw</span> <strong>${p.skill_ft ?? '-'}</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+            <td style="padding: 20px; font-weight: 700; color: #64748b;">${p.position}</td>
+            <td style="padding: 20px; font-weight: 700; color: #64748b;">${p.age}</td>
+            <td style="padding: 20px;">
+                <div style="border-bottom: 3px solid ${p.potential_definitions?.color_hex || '#3b82f6'}; display: inline-block; padding-bottom: 2px;">
+                    <span style="font-weight: 800; color: #1e293b; font-size: 0.85rem;">${p.potential_definitions?.label || 'Prospect'}</span>
+                </div>
+            </td>
+            <td style="padding: 20px; font-weight: 800; color: #059669;">$${(p.salary || 0).toLocaleString()}</td>
+            <td style="padding: 20px;">
+                <div style="width: 42px; height: 42px; background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #166534; font-size: 1.1rem;">
+                    ${p.overall_rating || '??'}
+                </div>
+            </td>
+            <td style="padding: 20px; text-align: right;">
+                <button class="btn-dev" style="background: white; border: 1px solid #e2e8f0; padding: 10px 18px; border-radius: 8px; font-weight: 800; color: #1a237e; cursor: pointer; text-transform: uppercase; font-size: 0.75rem;">
+                    Development
+                </button>
+            </td>
+        </tr>
+    `;
+}
 
     const isRookie = p.is_rookie || p.age <= 19;
 
