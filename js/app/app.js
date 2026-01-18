@@ -10,6 +10,9 @@ let cachedTeam = null;
 let cachedPlayers = null;
 let cachedProfile = null;
 
+/**
+ * Pobiera zalogowanego użytkownika z obsługą retry dla Safari na MacBooku
+ */
 async function getAuthenticatedUser() {
     let { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
@@ -21,7 +24,7 @@ async function getAuthenticatedUser() {
 }
 
 /**
- * KLUCZOWE: Dodano 'export', aby naprawić błąd SyntaxError z Twojego screena
+ * GŁÓWNA FUNKCJA INICJALIZUJĄCA - EXPORT JEST NIEZBĘDNY DLA MODUŁU LOGOWANIA
  */
 export async function initApp(force = false) {
     if (!force && cachedTeam && cachedPlayers) {
@@ -43,12 +46,12 @@ export async function initApp(force = false) {
             .from('teams').select('*').eq('id', profile.team_id).single();
         if (teamErr) throw teamErr;
 
-        // 3. Zawodnicy z relacją potencjału (Naprawione zapytanie JOIN)
+        // 3. Zawodnicy z relacją potencjału - jawne wskazanie klucza fk_potential_definition
         const { data: players, error: playersError } = await supabaseClient
             .from('players')
             .select(`
                 *,
-                potential_definitions:potential (
+                potential_definitions!fk_potential_definition (
                     id, label, color_hex, emoji, min_value
                 )
             `)
@@ -56,7 +59,7 @@ export async function initApp(force = false) {
 
         if (playersError) throw playersError;
 
-        // Cache'owanie danych
+        // Cache'owanie danych dla wydajności
         cachedProfile = profile; 
         cachedTeam = team; 
         cachedPlayers = players;
@@ -73,6 +76,9 @@ export async function initApp(force = false) {
     }
 }
 
+/**
+ * Aktualizacja nagłówka UI
+ */
 function updateUIHeader(profile) {
     const tName = document.getElementById('display-team-name');
     const lName = document.getElementById('display-league-name');
@@ -80,6 +86,9 @@ function updateUIHeader(profile) {
     if (lName) lName.innerText = profile.league_name || "EBL Professional";
 }
 
+/**
+ * Czyszczenie kontenerów przed renderowaniem nowego widoku
+ */
 function clearAllContainers() {
     ['roster-view-container', 'market-container', 'finances-container', 'training-container', 'app-main-view'].forEach(id => {
         const el = document.getElementById(id);
@@ -87,6 +96,9 @@ function clearAllContainers() {
     });
 }
 
+/**
+ * Globalne funkcje nawigacji widoków
+ */
 window.showRoster = async (force = false) => {
     const data = await initApp(force);
     if (data) {
@@ -96,9 +108,21 @@ window.showRoster = async (force = false) => {
 };
 
 window.switchTab = async (tabName) => {
-    if (tabName.includes('roster')) await window.showRoster();
-    // Tutaj możesz dodać obsługę pozostałych zakładek
+    const data = await initApp();
+    if (!data) return;
+
+    clearAllContainers();
+
+    if (tabName.includes('roster')) {
+        renderRosterView(data.team, data.players);
+    } else if (tabName.includes('market')) {
+        renderMarketView(data.team, data.players);
+    } else if (tabName.includes('finances')) {
+        renderFinancesView(data.team, data.players);
+    } else if (tabName.includes('training')) {
+        renderTrainingDashboard(data.players);
+    }
 };
 
-// Start aplikacji
+// Autostart aplikacji po załadowaniu DOM
 document.addEventListener('DOMContentLoaded', () => window.showRoster());
