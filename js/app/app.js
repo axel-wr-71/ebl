@@ -10,6 +10,18 @@ let cachedTeam = null;
 let cachedPlayers = null;
 let cachedProfile = null;
 
+// Pomocnicza funkcja czekająca na sesję (Safari Fix)
+async function getAuthenticatedUser() {
+    let { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+        // Druga próba po krótkim czasie
+        await new Promise(res => setTimeout(res, 300));
+        const retry = await supabaseClient.auth.getUser();
+        user = retry.data.user;
+    }
+    return user;
+}
+
 export async function initApp(forceRefresh = false) {
     if (!forceRefresh && cachedTeam && cachedPlayers && cachedProfile) {
         return { team: cachedTeam, players: cachedPlayers, profile: cachedProfile };
@@ -17,43 +29,27 @@ export async function initApp(forceRefresh = false) {
 
     try {
         await checkLeagueEvents();
-
-        // Safari Fix: Sprawdzamy sesję zamiast getUser, co jest szybsze przy starcie
-        const { data: { session } } = await supabaseClient.auth.getSession();
         
-        if (!session || !session.user) {
-            console.warn("Brak aktywnej sesji, próba pobrania usera...");
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (!user) throw new Error("Błąd autoryzacji - zaloguj się ponownie.");
+        const user = await getAuthenticatedUser();
+        if (!user) {
+            console.error("DEBUG: Sesja nie odnaleziona po 2 próbach.");
+            throw new Error("Błąd autoryzacji - zaloguj się ponownie.");
         }
 
-        const user = session ? session.user : (await supabaseClient.auth.getUser()).data.user;
+        // 1. Profil
+        const { data: profile, error: pErr } = await supabaseClient
+            .from('profiles').select('*').eq('id', user.id).single();
+        if (pErr || !profile) throw new Error("Nie znaleziono profilu.");
 
-        // 1. Pobieramy profil
-        const { data: profile, error: profileError } = await supabaseClient
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
+        // 2. Drużyna
+        const { data: team, error: tErr } = await supabaseClient
+            .from('teams').select('*').eq('id', profile.team_id).single();
+        if (tErr || !team) throw new Error("Nie można załadować drużyny.");
 
-        if (profileError || !profile) throw new Error("Nie znaleziono profilu użytkownika.");
-        
-        // 2. Pobieramy dane zespołu
-        const { data: team, error: teamError } = await supabaseClient
-            .from('teams')
-            .select('*')
-            .eq('id', profile.team_id)
-            .single();
-
-        if (teamError || !team) throw new Error("Nie można załadować danych drużyny.");
-
-        // 3. Pobieramy zawodników
-        const { data: players, error: playersError } = await supabaseClient
-            .from('players')
-            .select('*')
-            .eq('team_id', team.id);
-
-        if (playersError) throw playersError;
+        // 3. Zawodnicy
+        const { data: players, error: plErr } = await supabaseClient
+            .from('players').select('*').eq('team_id', team.id);
+        if (plErr) throw plErr;
 
         cachedProfile = profile;
         cachedTeam = team;
@@ -67,34 +63,37 @@ export async function initApp(forceRefresh = false) {
 
     } catch (err) {
         console.error("[APP INIT ERROR]", err.message);
-        // Jeśli to błąd autoryzacji, nie blokujmy renderowania błędów
-        const container = document.getElementById('app-main-view');
-        if (container) container.innerHTML = `<div style="color:white; padding:20px;">Sesja wygasła lub błąd: ${err.message}</div>`;
         return null;
     }
 }
 
 function updateUIHeader(profile) {
-    const teamNameEl = document.getElementById('display-team-name');
-    const leagueNameEl = document.getElementById('display-league-name');
-    if (teamNameEl) teamNameEl.innerText = profile.team_name || "Manager";
-    if (leagueNameEl) leagueNameEl.innerText = profile.league_name || "EBL Professional";
+    const tName = document.getElementById('display-team-name');
+    const lName = document.getElementById('display-league-name');
+    if (tName) tName.innerText = profile.team_name || "Manager";
+    if (lName) lName.innerText = profile.league_name || "EBL Professional";
 }
 
 function clearAllContainers() {
-    const containers = ['roster-view-container', 'market-container', 'finances-container', 'training-container', 'app-main-view'];
-    containers.forEach(id => {
+    // Lista kontenerów musi być zgodna z Twoim index.html
+    const ids = ['roster-view-container', 'market-container', 'finances-container', 'training-container', 'app-main-view'];
+    ids.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = '';
     });
 }
 
-// Widoki
-window.showRoster = async (forceRefresh = false) => {
-    const data = await initApp(forceRefresh);
+// Funkcje wywoływane przez switchTab
+window.showRoster = async (force = false) => {
+    const data = await initApp(force);
     if (data) {
         clearAllContainers();
-        renderRosterView(data.team, data.players);
+        // Sprawdzamy czy funkcja renderująca istnieje
+        if (typeof renderRosterView === 'function') {
+            renderRosterView(data.team, data.players);
+        } else {
+            console.error("Błąd: renderRosterView nie jest funkcją!");
+        }
     }
 };
 
@@ -106,26 +105,20 @@ window.showMarket = async () => {
     }
 };
 
-window.showTraining = async (forceRefresh = false) => {
-    const data = await initApp(forceRefresh);
-    if (data) {
-        clearAllContainers();
-        renderTrainingDashboard(data.team, data.players);
+window.switchTab = async (tabName) => {
+    console.log("[Safari] Przełączanie:", tabName);
+    if (tabName.includes('roster')) await window.showRoster();
+    if (tabName.includes('market')) await window.showMarket();
+    if (tabName.includes('training')) {
+        const data = await initApp();
+        if(data) { clearAllContainers(); renderTrainingDashboard(data.team, data.players); }
+    }
+    if (tabName.includes('finances')) {
+        const data = await initApp();
+        if(data) { clearAllContainers(); renderFinancesView(data.team); }
     }
 };
 
-window.switchTab = async (tabName) => {
-    console.log("[Safari Debug] Przełączanie na:", tabName);
-    
-    // Klasy active dla przycisków
-    document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
-    
-    if (tabName === 'm-roster' || tabName === 'roster') await window.showRoster();
-    if (tabName === 'm-market' || tabName === 'market') await window.showMarket();
-    if (tabName === 'm-training' || tabName === 'training') await window.showTraining();
-};
-
-// Start
 document.addEventListener('DOMContentLoaded', () => {
-    window.showRoster(); 
+    window.showRoster();
 });
