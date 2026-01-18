@@ -11,21 +11,20 @@ let cachedPlayers = null;
 let cachedProfile = null;
 
 /**
- * Pobiera użytkownika z obsługą specyfiki Safari na MacBooku.
+ * EKSPERCKA FUNKCJA SESJI (Safari Optimized)
+ * Czeka do 3 sekund na zainicjowanie sesji, sprawdzając ją co 200ms.
  */
-async function getAuthenticatedUser() {
-    let { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-        // Czekamy na stabilizację sesji w Safari
-        await new Promise(res => setTimeout(res, 500));
-        const retry = await supabaseClient.auth.getUser();
-        user = retry.data.user;
+async function waitForSession() {
+    for (let i = 0; i < 15; i++) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session && session.user) return session.user;
+        await new Promise(res => setTimeout(res, 200));
     }
-    return user;
+    return null;
 }
 
 /**
- * GŁÓWNA FUNKCJA INICJALIZUJĄCA
+ * GŁÓWNA INICJALIZACJA APLIKACJI
  */
 export async function initApp(force = false) {
     if (!force && cachedTeam && cachedPlayers && cachedProfile) {
@@ -33,27 +32,28 @@ export async function initApp(force = false) {
     }
 
     try {
-        console.log("[APP] Start inicjalizacji...");
+        console.log("[SYSTEM] Inicjalizacja danych...");
         await checkLeagueEvents();
-        const user = await getAuthenticatedUser();
+
+        // Kluczowa zmiana: czekamy na stabilną sesję
+        const user = await waitForSession();
         
         if (!user) {
-            console.error("[APP] Błąd: Brak zalogowanego użytkownika.");
+            console.error("[AUTH ERROR] Nie udało się uzyskać sesji po 3s prób.");
             return null;
         }
 
-        // 1. Pobieranie profilu
+        // 1. Pobieranie profilu i team_id
         const { data: profile, error: profErr } = await supabaseClient
             .from('profiles').select('*').eq('id', user.id).single();
         if (profErr) throw profErr;
 
-        // 2. Pobieranie drużyny
+        // 2. Pobieranie danych drużyny
         const { data: team, error: teamErr } = await supabaseClient
             .from('teams').select('*').eq('id', profile.team_id).single();
         if (teamErr) throw teamErr;
 
-        // 3. Pobieranie zawodników z jawnym powiązaniem klucza integer
-        console.log("[APP] Pobieranie zawodników dla zespołu:", team.name);
+        // 3. Pobieranie zawodników z relacją potencjału (jawny FK)
         const { data: players, error: playersError } = await supabaseClient
             .from('players')
             .select(`
@@ -65,8 +65,8 @@ export async function initApp(force = false) {
             .eq('team_id', team.id);
 
         if (playersError) {
-            console.error("[DB ERROR] Szczegóły relacji:", playersError.message);
-            // Fallback: pobieramy zawodników bez relacji, by nie blokować aplikacji
+            console.warn("[DB WARNING] Relacja FK zawiodła, stosuję fallback:", playersError.message);
+            // Fallback: pobieramy tylko graczy bez definicji, żeby nie blokować UI
             const { data: fallbackPlayers } = await supabaseClient
                 .from('players').select('*').eq('team_id', team.id);
             cachedPlayers = fallbackPlayers;
@@ -81,6 +81,7 @@ export async function initApp(force = false) {
         window.currentManager = profile;
 
         updateUIHeader(profile);
+        console.log("[SYSTEM] Dane załadowane pomyślnie.");
         return { team, players: cachedPlayers, profile };
 
     } catch (err) {
@@ -107,7 +108,6 @@ function clearAllContainers() {
 window.showRoster = async (force = false) => {
     const data = await initApp(force);
     if (data && data.players) {
-        console.log("[UI] Renderowanie rostera. Liczba graczy:", data.players.length);
         clearAllContainers();
         renderRosterView(data.team, data.players);
     }
@@ -123,4 +123,7 @@ window.switchTab = async (tabName) => {
     else if (tabName.includes('training')) renderTrainingDashboard(data.players);
 };
 
-document.addEventListener('DOMContentLoaded', () => window.showRoster());
+// Start aplikacji
+document.addEventListener('DOMContentLoaded', () => {
+    window.showRoster();
+});
