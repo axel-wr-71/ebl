@@ -14,7 +14,6 @@ let cachedProfile = null;
 async function getAuthenticatedUser() {
     let { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
-        // Druga próba po krótkim czasie
         await new Promise(res => setTimeout(res, 300));
         const retry = await supabaseClient.auth.getUser();
         user = retry.data.user;
@@ -36,20 +35,35 @@ export async function initApp(forceRefresh = false) {
             throw new Error("Błąd autoryzacji - zaloguj się ponownie.");
         }
 
-        // 1. Profil
+        // 1. Pobieranie profilu managera
         const { data: profile, error: pErr } = await supabaseClient
             .from('profiles').select('*').eq('id', user.id).single();
         if (pErr || !profile) throw new Error("Nie znaleziono profilu.");
 
-        // 2. Drużyna
+        // 2. Pobieranie danych drużyny
         const { data: team, error: tErr } = await supabaseClient
             .from('teams').select('*').eq('id', profile.team_id).single();
         if (tErr || !team) throw new Error("Nie można załadować drużyny.");
 
-        // 3. Zawodnicy
+        // 3. Pobieranie zawodników WRAZ z ich potencjałem z bazy danych (JOIN)
+        // Pamiętam: potential_types to tabela słownikowa (label, color, icon)
         const { data: players, error: plErr } = await supabaseClient
-            .from('players').select('*').eq('team_id', team.id);
-        if (plErr) throw plErr;
+            .from('players')
+            .select(`
+                *,
+                potential_types (
+                    label,
+                    color,
+                    icon,
+                    max_value
+                )
+            `)
+            .eq('team_id', team.id);
+
+        if (plErr) {
+            console.error("Błąd pobierania graczy z JOIN:", plErr);
+            throw plErr;
+        }
 
         cachedProfile = profile;
         cachedTeam = team;
@@ -75,7 +89,6 @@ function updateUIHeader(profile) {
 }
 
 function clearAllContainers() {
-    // Lista kontenerów musi być zgodna z Twoim index.html
     const ids = ['roster-view-container', 'market-container', 'finances-container', 'training-container', 'app-main-view'];
     ids.forEach(id => {
         const el = document.getElementById(id);
@@ -88,8 +101,8 @@ window.showRoster = async (force = false) => {
     const data = await initApp(force);
     if (data) {
         clearAllContainers();
-        // Sprawdzamy czy funkcja renderująca istnieje
         if (typeof renderRosterView === 'function') {
+            // Przekazujemy dane, gdzie players mają już w sobie obiekt potential_types
             renderRosterView(data.team, data.players);
         } else {
             console.error("Błąd: renderRosterView nie jest funkcją!");
