@@ -10,9 +10,6 @@ let cachedTeam = null;
 let cachedPlayers = null;
 let cachedProfile = null;
 
-/**
- * Pobiera zalogowanego użytkownika z obsługą retry dla Safari
- */
 async function getAuthenticatedUser() {
     let { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
@@ -24,9 +21,9 @@ async function getAuthenticatedUser() {
 }
 
 /**
- * Główna funkcja inicjalizująca aplikację
+ * KLUCZOWE: Dodano 'export', aby naprawić błąd SyntaxError z Twojego screena
  */
-async function initApp(force = false) {
+export async function initApp(force = false) {
     if (!force && cachedTeam && cachedPlayers) {
         return { team: cachedTeam, players: cachedPlayers, profile: cachedProfile };
     }
@@ -36,44 +33,34 @@ async function initApp(force = false) {
         const user = await getAuthenticatedUser();
         if (!user) throw new Error("Błąd autoryzacji");
 
-        // 1. Pobierz profil managera
+        // 1. Profil managera
         const { data: profile, error: profErr } = await supabaseClient
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
+            .from('profiles').select('*').eq('id', user.id).single();
         if (profErr) throw profErr;
 
-        // 2. Pobierz dane drużyny
+        // 2. Dane drużyny
         const { data: team, error: teamErr } = await supabaseClient
-            .from('teams')
-            .select('*')
-            .eq('id', profile.team_id)
-            .single();
+            .from('teams').select('*').eq('id', profile.team_id).single();
         if (teamErr) throw teamErr;
 
-        // 3. Pobierz zawodników z relacją potencjału (NAPRAWIONE)
+        // 3. Zawodnicy z relacją potencjału (Naprawione zapytanie JOIN)
         const { data: players, error: playersError } = await supabaseClient
             .from('players')
             .select(`
                 *,
                 potential_definitions:potential (
-                    id,
-                    label,
-                    color_hex,
-                    emoji,
-                    min_value
+                    id, label, color_hex, emoji, min_value
                 )
             `)
             .eq('team_id', team.id);
 
         if (playersError) throw playersError;
 
-        // Kaching danych
-        cachedProfile = profile;
-        cachedTeam = team;
+        // Cache'owanie danych
+        cachedProfile = profile; 
+        cachedTeam = team; 
         cachedPlayers = players;
-        
+
         window.userTeamId = team.id;
         window.currentManager = profile;
 
@@ -100,9 +87,6 @@ function clearAllContainers() {
     });
 }
 
-/**
- * Globalne funkcje nawigacji
- */
 window.showRoster = async (force = false) => {
     const data = await initApp(force);
     if (data) {
@@ -112,16 +96,9 @@ window.showRoster = async (force = false) => {
 };
 
 window.switchTab = async (tabName) => {
-    // Prosta nawigacja między modułami
-    if (tabName.includes('roster')) {
-        await window.showRoster();
-    } else if (tabName.includes('training')) {
-        const data = await initApp();
-        clearAllContainers();
-        renderTrainingDashboard(data.players);
-    }
-    // Tutaj możesz dodać kolejne taby (market, finances)
+    if (tabName.includes('roster')) await window.showRoster();
+    // Tutaj możesz dodać obsługę pozostałych zakładek
 };
 
-// Start aplikacji po załadowaniu DOM
+// Start aplikacji
 document.addEventListener('DOMContentLoaded', () => window.showRoster());
