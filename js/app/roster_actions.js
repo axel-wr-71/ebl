@@ -1,6 +1,8 @@
 // js/app/roster_actions.js
 
-// Funkcje pomocnicze (Globalne dla łatwego dostępu)
+/**
+ * Funkcje pomocnicze (Globalne dla łatwego dostępu w widokach)
+ */
 window.getPotentialData = (val) => {
     const p = parseInt(val) || 0;
     if (p >= 96) return { label: 'G.O.A.T.', color: '#ff4500', icon: '👑' };
@@ -44,7 +46,6 @@ export const RosterActions = {
         console.log("[ACTION] Przejście do treningu dla:", player.last_name);
         if (window.switchTab) {
             window.switchTab('m-training');
-            // Opcjonalnie: tutaj można dodać logikę auto-scrolla do konkretnego gracza
         }
     },
 
@@ -53,7 +54,6 @@ export const RosterActions = {
         const confirmSell = confirm(`Czy na pewno chcesz wystawić na listę transferową zawodnika ${player.first_name} ${player.last_name}?`);
         if (confirmSell) {
             alert(`Zgłoszenie sprzedaży dla ${player.last_name} zostało wysłane do zarządu.`);
-            // Tutaj dodamy w przyszłości: await supabase.from('players').update({ on_sale: true }).eq('id', player.id);
         }
     },
 
@@ -113,9 +113,9 @@ export const RosterActions = {
         modalHtml += '<img src="' + flagUrl + '" style="width:30px; height:20px; border-radius:4px; object-fit:cover; border:1px solid rgba(255,255,255,0.2);">';
         if (player.is_rookie) modalHtml += '<span style="background:#ef4444; color:white; font-size:10px; padding:4px 10px; border-radius:6px; font-weight:900; letter-spacing:1px; border:1px solid rgba(255,255,255,0.3);">ROOKIE</span>';
         modalHtml += '</div><p style="margin:8px 0 0 0; opacity:0.8; font-size:1.1em; font-weight:500;">' + player.position + ' | ' + (player.height || '--') + ' cm (' + cmToFtIn(player.height) + ') | ' + player.age + ' Years Old</p></div>';
-        modalHtml += '<div style="text-align:center; margin-right:60px;"><div style="width:80px; height:80px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;"><span style="color:#1a237e; font-size:2.2em; font-weight:900;">' + player.overall_rating + '</span></div><span style="font-size:0.7em; font-weight:800; text-transform:uppercase; letter-spacing:1px; opacity:0.9;">Overall Rating</span></div>';
+        modalHtml += '<div style="text-align:center; margin-right:60px;"><div style="width:80px; height:80px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;"><span style="color:#1a237e; font-size:2.2em; font-weight:900;">' + (player.overall_rating || '??') + '</span></div><span style="font-size:0.7em; font-weight:800; text-transform:uppercase; letter-spacing:1px; opacity:0.9;">Overall Rating</span></div>';
         
-        // Przycisk zamknięcia - poprawiony na odwołanie do window.RosterActions
+        // Przycisk zamknięcia
         modalHtml += '<button onclick="window.RosterActions.closeModal()" style="position:absolute; top:30px; right:30px; background:rgba(255,255,255,0.1); border:none; color:white; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button></div>';
         
         modalHtml += '<div style="padding:40px; overflow-y:auto;">';
@@ -147,4 +147,5 @@ export const RosterActions = {
     }
 };
 
+// Rejestracja globalna dla pełnej kompatybilności
 window.RosterActions = RosterActions;
