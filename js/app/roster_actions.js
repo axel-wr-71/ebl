@@ -123,37 +123,37 @@ export const RosterActions = {
                     <div style="padding:40px; overflow-y:auto;">
                         
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px; margin-bottom:40px;">
-                            ${RosterActions._renderProfileCard("Potential Class", `${potData.icon} ${potData.label}`, potData.color, `
+                            ${RosterActions._renderProfileCard("Potential Class", \`\${potData.icon} \${potData.label}\`, potData.color, \`
                                 <div style="width: 200px; height: 6px; background: #e2e8f0; border-radius: 10px; margin-top: 15px; overflow: hidden;">
-                                    <div style="width: ${progressWidth}%; height: 100%; background: ${potData.color};"></div>
+                                    <div style="width: \${progressWidth}%; height: 100%; background: \${potData.color};"></div>
                                 </div>
-                                <span style="font-size: 11px; font-weight: 800; color: #94a3b8; margin-top: 8px;">${progressWidth}% of potential reached</span>
-                            `)}
-                            ${RosterActions._renderProfileCard("Annual Salary", `$${(player.salary || 0).toLocaleString()}`, "#2e7d32")}
+                                <span style="font-size: 11px; font-weight: 800; color: #94a3b8; margin-top: 8px;">\${progressWidth}% of potential reached</span>
+                            \`)}
+                            ${RosterActions._renderProfileCard("Annual Salary", \`$\${(player.salary || 0).toLocaleString()}\`, "#2e7d32")}
                         </div>
 
                         <h3 style="color:#1a237e; font-size:0.9em; text-transform:uppercase; letter-spacing:2px; margin-bottom:20px; border-left:4px solid #1a237e; padding-left:15px;">Technical Evaluation</h3>
                         <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:30px;">
-                            ${skillGroups.map(group => `
+                            \${skillGroups.map(group => \`
                                 <div style="background:#f8fafc; padding:20px; border-radius:25px; border:1px solid #f1f5f9;">
-                                    <h4 style="color:#94a3b8; font-size:0.75em; text-transform:uppercase; margin-bottom:15px; text-align:center;">${group.name}</h4>
-                                    ${group.skills.map(s => `
+                                    <h4 style="color:#94a3b8; font-size:0.75em; text-transform:uppercase; margin-bottom:15px; text-align:center;">\${group.name}</h4>
+                                    \${group.skills.map(s => \`
                                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:white; padding:12px 15px; border-radius:15px; border:1px solid #e2e8f0;">
-                                            <span style="font-weight:700; color:#475569; font-size:0.85em;">${s.name}</span>
-                                            <span style="color:${getSkillColor(s.val)}; font-weight:900; font-size:1.1em;">${s.val || 0}</span>
+                                            <span style="font-weight:700; color:#475569; font-size:0.85em;">\${s.name}</span>
+                                            <span style="color:\${getSkillColor(s.val)}; font-weight:900; font-size:1.1em;">\${s.val || 0}</span>
                                         </div>
-                                    `).join('')}
+                                    \`).join('')}
                                 </div>
-                            `).join('')}
+                            \`).join('')}
                         </div>
                     </div>
                 </div>
             </div>
-        `;
+        \`;
 
         document.body.insertAdjacentHTML('beforeend', modalHtml);
     }
-};
+}; // <--- TUTAJ BYŁ BRAK KLAMRY DOMYKAJĄCEJ OBIEKT
 
-// Eksport do okna globalnego dla wywołań z HTML (np. onclick)
+// Eksport do okna globalnego dla wywołań z HTML
 window.RosterActions = RosterActions;
