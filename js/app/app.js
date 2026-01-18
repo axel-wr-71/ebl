@@ -7,64 +7,55 @@ import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 
 /**
- * Pobieranie sesji z wymuszonym odświeżeniem dla Safari
+ * Pobiera usera bez wyrzucania błędów blokujących UI
  */
-async function getAuthenticatedUser() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (user) return user;
-    
-    // Drugi stopień - sesja z cookie
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    return session?.user || null;
+async function getUserSilent() {
+    try {
+        const { data } = await supabaseClient.auth.getUser();
+        if (data?.user) return data.user;
+        
+        // Druga próba po krótkiej pauzie (specyfika Safari)
+        await new Promise(r => setTimeout(r, 800));
+        const retry = await supabaseClient.auth.getSession();
+        return retry.data?.session?.user || null;
+    } catch (e) { return null; }
 }
 
-/**
- * GŁÓWNA INICJALIZACJA
- */
 export async function initApp() {
     try {
-        console.log("[APP] Start inicjalizacji...");
-        await checkLeagueEvents();
-        
-        const user = await getAuthenticatedUser();
+        const user = await getUserSilent();
         if (!user) {
-            console.error("[APP] Błąd: Brak sesji.");
+            console.log("[APP] Oczekiwanie na stabilizację sesji...");
             return null;
         }
 
-        // 1. Profil
+        // Pobieramy profil
         const { data: profile } = await supabaseClient
             .from('profiles').select('*').eq('id', user.id).single();
 
-        // 2. Drużyna
-        const { data: team } = await supabaseClient
-            .from('teams').select('*').eq('id', profile.team_id).single();
+        if (!profile?.team_id) return null;
 
-        // 3. Zawodnicy - Tu jest Twoje 12 osób z logów
-        console.log(`[APP] Pobieranie zawodników dla: ${team?.name}`);
-        const { data: players, error: plErr } = await supabaseClient
-            .from('players')
-            .select(`
+        // Pobieramy drużynę i zawodników w jednym kroku (oszczędność czasu)
+        const [teamRes, playersRes] = await Promise.all([
+            supabaseClient.from('teams').select('*').eq('id', profile.team_id).single(),
+            supabaseClient.from('players').select(`
                 *,
-                potential_definitions!fk_potential_definition (
-                    id, label, color_hex, emoji, min_value
-                )
-            `)
-            .eq('team_id', team.id);
+                potential_definitions!fk_potential_definition (*)
+            `).eq('team_id', profile.team_id)
+        ]);
 
-        if (plErr) throw plErr;
+        const team = teamRes.data;
+        const players = playersRes.data || [];
 
-        // Globalne przypisania dla akcji w widokach
-        window.userTeamId = team.id;
+        // Globalne dane
+        window.userTeamId = team?.id;
         window.currentManager = profile;
 
         updateUIHeader(profile);
-        
-        // KLUCZOWE: Zwracamy obiekt z danymi bezpośrednio
         return { team, players, profile };
 
     } catch (err) {
-        console.error("[APP INIT ERROR]", err.message);
+        console.warn("[APP] Cichy błąd inicjalizacji:", err.message);
         return null;
     }
 }
@@ -77,26 +68,22 @@ function updateUIHeader(profile) {
 }
 
 window.showRoster = async () => {
-    console.log("[UI] Próba wyświetlenia rostera...");
     const data = await initApp();
-    
-    // Sprawdzamy czy data i players fizycznie istnieją
     if (data && data.players && data.players.length > 0) {
-        console.log(`[UI] Renderowanie ${data.players.length} zawodników.`);
-        
-        // Czyścimy kontenery przed renderem
-        const container = document.getElementById('roster-view-container');
-        if (container) container.innerHTML = ''; 
-        
         renderRosterView(data.team, data.players);
     } else {
-        console.error("[UI] Błąd: initApp zwrócił puste dane zawodników.");
+        // Jeśli pusto, spróbuj jeszcze raz za sekundę (autostart)
+        setTimeout(() => window.showRoster(), 1000);
     }
 };
 
 window.switchTab = async (tabName) => {
     const data = await initApp();
     if (!data) return;
+    
+    // Czyścimy widok przed zmianą (standard UX)
+    const container = document.getElementById('roster-view-container');
+    if (container) container.innerHTML = '<div class="p-8 text-center text-slate-400">Ładowanie...</div>';
 
     if (tabName.includes('roster')) renderRosterView(data.team, data.players);
     else if (tabName.includes('market')) renderMarketView(data.team, data.players);
@@ -104,4 +91,5 @@ window.switchTab = async (tabName) => {
     else if (tabName.includes('training')) renderTrainingDashboard(data.players);
 };
 
+// Start aplikacji bez blokowania
 document.addEventListener('DOMContentLoaded', () => window.showRoster());
