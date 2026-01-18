@@ -11,30 +11,26 @@ let cachedPlayers = null;
 let cachedProfile = null;
 
 /**
- * EKSPERCKIE POBIERANIE SESJI (Safari Fix)
- * Jeśli getUser() zawodzi, próbujemy getSession(), co w Safari wymusza odczyt cookie.
+ * Stabilizacja sesji dla Safari na MacBooku.
  */
 async function getAuthenticatedUser() {
-    // Próba 1: Bezpośredni użytkownik
     let { data: { user } } = await supabaseClient.auth.getUser();
-    if (user) return user;
-
-    // Próba 2: Sprawdzenie sesji (Safari często tu trzyma dane)
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session?.user) return session.user;
-
-    // Próba 3: Krótki polling (czekamy na asynchroniczne załadowanie SDK)
-    for (let i = 0; i < 5; i++) {
-        await new Promise(res => setTimeout(res, 400));
-        const retry = await supabaseClient.auth.getUser();
-        if (retry.data.user) return retry.data.user;
+    if (!user) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session?.user) return session.user;
+        
+        // Polling dla Safari
+        for (let i = 0; i < 5; i++) {
+            await new Promise(res => setTimeout(res, 500));
+            const retry = await supabaseClient.auth.getUser();
+            if (retry.data.user) return retry.data.user;
+        }
     }
-    
-    return null;
+    return user;
 }
 
 /**
- * GŁÓWNA INICJALIZACJA
+ * GŁÓWNA INICJALIZACJA - Pobiera dane i trzyma je w cache
  */
 export async function initApp(force = false) {
     if (!force && cachedTeam && cachedPlayers && cachedProfile) {
@@ -42,28 +38,27 @@ export async function initApp(force = false) {
     }
 
     try {
-        console.log("[SYSTEM] Inicjalizacja komponentów...");
+        console.log("[APP] Start inicjalizacji...");
         await checkLeagueEvents();
-
         const user = await getAuthenticatedUser();
         
         if (!user) {
-            console.error("[CRITICAL] Brak autoryzacji. Spróbuj zalogować się ponownie.");
+            console.error("[APP] Krytyczny błąd: Brak sesji użytkownika.");
             return null;
         }
 
-        // 1. Pobieranie profilu
+        // 1. Profil
         const { data: profile, error: profErr } = await supabaseClient
             .from('profiles').select('*').eq('id', user.id).single();
         if (profErr) throw profErr;
 
-        // 2. Pobieranie drużyny
+        // 2. Drużyna
         const { data: team, error: teamErr } = await supabaseClient
             .from('teams').select('*').eq('id', profile.team_id).single();
         if (teamErr) throw teamErr;
 
-        // 3. Pobieranie zawodników z relacją potencjału
-        // Używamy JAWNEGO aliasu relacji fk_potential_definition
+        // 3. Zawodnicy (Z jawny wskazaniem klucza obcego)
+        console.log(`[APP] Pobieranie zawodników dla zespołu: ${team.name}`);
         const { data: players, error: playersError } = await supabaseClient
             .from('players')
             .select(`
@@ -75,10 +70,10 @@ export async function initApp(force = false) {
             .eq('team_id', team.id);
 
         if (playersError) {
-            console.warn("[DB] Relacja potencjału niedostępna, ładuję dane podstawowe.");
-            const { data: fallback } = await supabaseClient
+            console.warn("[APP] Błąd relacji, fallback na dane proste.");
+            const { data: simplePlayers } = await supabaseClient
                 .from('players').select('*').eq('team_id', team.id);
-            cachedPlayers = fallback || [];
+            cachedPlayers = simplePlayers || [];
         } else {
             cachedPlayers = players;
         }
@@ -90,11 +85,12 @@ export async function initApp(force = false) {
         window.currentManager = profile;
 
         updateUIHeader(profile);
-        console.log("[SYSTEM] Dane załadowane: " + cachedPlayers.length + " zawodników.");
-        return { team, players: cachedPlayers, profile };
+        console.log(`[APP] System gotowy. Liczba zawodników: ${cachedPlayers.length}`);
+        
+        return { team: cachedTeam, players: cachedPlayers, profile: cachedProfile };
 
     } catch (err) {
-        console.error("[SYSTEM ERROR]", err.message);
+        console.error("[APP INIT ERROR]", err.message);
         return null;
     }
 }
@@ -103,7 +99,7 @@ function updateUIHeader(profile) {
     const tName = document.getElementById('display-team-name');
     const lName = document.getElementById('display-league-name');
     if (tName) tName.innerText = profile.team_name || "Manager";
-    if (lName) lName.innerText = profile.league_name || "Serbian Super League";
+    if (lName) lName.innerText = profile.league_name || "Serbia Super League";
 }
 
 function clearAllContainers() {
@@ -114,25 +110,34 @@ function clearAllContainers() {
     });
 }
 
+/**
+ * Punkt wejścia do Rostera - Tu naprawiłem logikę przekazywania danych
+ */
 window.showRoster = async (force = false) => {
     const data = await initApp(force);
-    if (data && data.players) {
+    
+    // Kluczowa zmiana: Sprawdzamy czy data istnieje i czy ma zawodników
+    if (data && data.players && data.players.length > 0) {
+        console.log("[UI] Wywołuję renderRosterView dla", data.players.length, "osób.");
         clearAllContainers();
         renderRosterView(data.team, data.players);
+    } else {
+        console.error("[UI] Błąd: Brak danych zawodników do wyświetlenia mimo inicjalizacji.");
+        const container = document.getElementById('roster-view-container');
+        if (container) container.innerHTML = '<div class="p-4 text-white">Błąd ładowania zawodników. Odśwież stronę (Cmd+R).</div>';
     }
 };
 
 window.switchTab = async (tabName) => {
     const data = await initApp();
     if (!data) return;
+
     clearAllContainers();
+
     if (tabName.includes('roster')) renderRosterView(data.team, data.players);
     else if (tabName.includes('market')) renderMarketView(data.team, data.players);
     else if (tabName.includes('finances')) renderFinancesView(data.team, data.players);
     else if (tabName.includes('training')) renderTrainingDashboard(data.players);
 };
 
-// Start aplikacji
-document.addEventListener('DOMContentLoaded', () => {
-    window.showRoster();
-});
+document.addEventListener('DOMContentLoaded', () => window.showRoster());
