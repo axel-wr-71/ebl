@@ -11,20 +11,30 @@ let cachedPlayers = null;
 let cachedProfile = null;
 
 /**
- * EKSPERCKA OBSŁUGA SESJI DLA SAFARI
- * Czeka na usera, dopóki Supabase nie zwróci poprawnej sesji.
+ * EKSPERCKIE POBIERANIE SESJI (Safari Fix)
+ * Jeśli getUser() zawodzi, próbujemy getSession(), co w Safari wymusza odczyt cookie.
  */
-async function getStableUser() {
-    for (let i = 0; i < 10; i++) {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (user) return user;
-        await new Promise(r => setTimeout(r, 300)); // Polling co 300ms
+async function getAuthenticatedUser() {
+    // Próba 1: Bezpośredni użytkownik
+    let { data: { user } } = await supabaseClient.auth.getUser();
+    if (user) return user;
+
+    // Próba 2: Sprawdzenie sesji (Safari często tu trzyma dane)
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session?.user) return session.user;
+
+    // Próba 3: Krótki polling (czekamy na asynchroniczne załadowanie SDK)
+    for (let i = 0; i < 5; i++) {
+        await new Promise(res => setTimeout(res, 400));
+        const retry = await supabaseClient.auth.getUser();
+        if (retry.data.user) return retry.data.user;
     }
+    
     return null;
 }
 
 /**
- * GŁÓWNA FUNKCJA INICJALIZUJĄCA
+ * GŁÓWNA INICJALIZACJA
  */
 export async function initApp(force = false) {
     if (!force && cachedTeam && cachedPlayers && cachedProfile) {
@@ -32,12 +42,13 @@ export async function initApp(force = false) {
     }
 
     try {
-        console.log("[APP] Start inicjalizacji...");
+        console.log("[SYSTEM] Inicjalizacja komponentów...");
         await checkLeagueEvents();
+
+        const user = await getAuthenticatedUser();
         
-        const user = await getStableUser();
         if (!user) {
-            console.error("[APP] Krytyczny błąd: Brak sesji użytkownika po próbach.");
+            console.error("[CRITICAL] Brak autoryzacji. Spróbuj zalogować się ponownie.");
             return null;
         }
 
@@ -46,19 +57,13 @@ export async function initApp(force = false) {
             .from('profiles').select('*').eq('id', user.id).single();
         if (profErr) throw profErr;
 
-        // 2. Pobieranie drużyny (Sprawdzamy team_id z profilu)
-        if (!profile.team_id) {
-            console.error("[APP] Profil nie ma przypisanego team_id.");
-            return null;
-        }
-
+        // 2. Pobieranie drużyny
         const { data: team, error: teamErr } = await supabaseClient
             .from('teams').select('*').eq('id', profile.team_id).single();
         if (teamErr) throw teamErr;
 
-        // 3. Pobieranie zawodników - Jawny JOIN z kategorią potencjału
-        console.log("[APP] Pobieranie zawodników dla zespołu:", team.name || team.team_name);
-        
+        // 3. Pobieranie zawodników z relacją potencjału
+        // Używamy JAWNEGO aliasu relacji fk_potential_definition
         const { data: players, error: playersError } = await supabaseClient
             .from('players')
             .select(`
@@ -70,28 +75,26 @@ export async function initApp(force = false) {
             .eq('team_id', team.id);
 
         if (playersError) {
-            console.warn("[APP] Błąd relacji potencjału, ładuję dane bez definicji:", playersError.message);
-            const { data: fallbackPlayers } = await supabaseClient
+            console.warn("[DB] Relacja potencjału niedostępna, ładuję dane podstawowe.");
+            const { data: fallback } = await supabaseClient
                 .from('players').select('*').eq('team_id', team.id);
-            cachedPlayers = fallbackPlayers || [];
+            cachedPlayers = fallback || [];
         } else {
             cachedPlayers = players;
         }
 
-        // Cache'owanie danych
         cachedProfile = profile; 
         cachedTeam = team; 
 
-        // Globalne zmienne pomocnicze
         window.userTeamId = team.id;
         window.currentManager = profile;
 
         updateUIHeader(profile);
-        console.log("[APP] System gotowy. Liczba zawodników:", cachedPlayers.length);
-        return { team: cachedTeam, players: cachedPlayers, profile: cachedProfile };
+        console.log("[SYSTEM] Dane załadowane: " + cachedPlayers.length + " zawodników.");
+        return { team, players: cachedPlayers, profile };
 
     } catch (err) {
-        console.error("[APP CRITICAL ERROR]", err.message);
+        console.error("[SYSTEM ERROR]", err.message);
         return null;
     }
 }
@@ -100,7 +103,7 @@ function updateUIHeader(profile) {
     const tName = document.getElementById('display-team-name');
     const lName = document.getElementById('display-league-name');
     if (tName) tName.innerText = profile.team_name || "Manager";
-    if (lName) lName.innerText = profile.league_name || "EBL Professional";
+    if (lName) lName.innerText = profile.league_name || "Serbian Super League";
 }
 
 function clearAllContainers() {
@@ -116,8 +119,6 @@ window.showRoster = async (force = false) => {
     if (data && data.players) {
         clearAllContainers();
         renderRosterView(data.team, data.players);
-    } else {
-        console.warn("[UI] Brak danych do wyświetlenia rostera.");
     }
 };
 
@@ -131,7 +132,7 @@ window.switchTab = async (tabName) => {
     else if (tabName.includes('training')) renderTrainingDashboard(data.players);
 };
 
-// Start aplikacji przy załadowaniu DOM
+// Start aplikacji
 document.addEventListener('DOMContentLoaded', () => {
     window.showRoster();
 });
