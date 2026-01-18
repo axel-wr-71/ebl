@@ -31,10 +31,24 @@ export async function initApp() {
             return { ...p, potential_definitions: potDef };
         });
 
+        // --- POPRAWKA WYŚWIETLANIA NAZWY ---
+        const teamName = team?.team_name || team?.name || "Twoja Drużyna";
+        const leagueName = team?.league_name || "Super League";
+
+        // 1. Środkowy nagłówek w Roster Management
         const tName = document.getElementById('display-team-name');
         const lName = document.getElementById('display-league-name');
-        if (tName) tName.innerText = team?.name || "Twoja Drużyna";
-        if (lName) lName.innerText = "Super League";
+        if (tName) tName.innerText = teamName;
+        if (lName) lName.innerText = leagueName;
+
+        // 2. Górny prawy róg (Pasek Nawigacji)
+        // Szukamy elementu b wewnątrz sekcji team-info (zgodnie z Twoim screenem nr 1)
+        const globalTeamDisplay = document.querySelector('.team-info b');
+        const globalLeagueDisplay = document.querySelector('.team-info span[style*="color: #ff4500"], #global-league-name');
+        
+        if (globalTeamDisplay) globalTeamDisplay.innerText = teamName;
+        if (globalLeagueDisplay) globalLeagueDisplay.innerText = leagueName;
+        // ----------------------------------
 
         return { team, players };
     } catch (err) {
