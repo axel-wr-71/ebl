@@ -5,21 +5,10 @@
     <title>Elite Basket League</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/market.css">
-    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .landing-hero {
-            position: relative;
-            width: 100%;
-            height: 100vh;
-            background: url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=1600') no-repeat center center fixed;
-            background-size: cover;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            font-family: 'Inter', sans-serif;
-        }
+        .landing-hero { position: relative; width: 100%; height: 100vh; background: url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=1600') no-repeat center center fixed; background-size: cover; display: flex; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif; }
         .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1; }
         .landing-header { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; }
         .media-logo { height: 80px; width: auto; object-fit: contain; }
@@ -38,43 +27,17 @@
         .btn-login:hover { background: #ff6d00; }
         .btn-signup { background: #444; color: white; }
         .btn-signup:hover { background: #222; }
-        .hero-gallery { position: relative; z-index: 2; display: flex; gap: 20px; margin-top: 40px; }
-        .hero-gallery img { width: 160px; height: 100px; object-fit: cover; border: 2px solid white; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: 0.3s; }
         
-        .nav-container { 
-            display: flex; 
-            justify-content: center; 
-            gap: 5px; 
-            padding: 0 20px; 
-            margin-top: 15px; 
-            flex-wrap: wrap; 
-        }
-        
+        .nav-container { display: flex; justify-content: center; gap: 5px; padding: 0 20px; margin-top: 15px; flex-wrap: wrap; }
         .btn-tab { padding: 12px 25px; border: none; background: #e0e0e0; cursor: pointer; border-radius: 12px 12px 0 0; font-weight: 800; transition: 0.3s; color: #666; font-size: 0.85rem; letter-spacing: 0.5px; }
         .btn-tab.active { background: #1a237e; color: white; }
         .tab-content { display: none; min-height: 80vh; background: #f4f7f6; }
         .tab-content.active { display: block; }
         
-        header.app-header {
-            background: white;
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .main-logo { height: 45px; width: auto; }
+        header.app-header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; }
+        .main-logo { height: 45px; width: auto; background: #eee; border-radius: 4px; }
         .btn-logout { background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        
-        .btn-settings-nav {
-            background: #eee;
-            border: none;
-            border-radius: 12px 12px 0 0;
-            padding: 12px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            transition: 0.3s;
-        }
+        .btn-settings-nav { background: #eee; border: none; border-radius: 12px 12px 0 0; padding: 12px; cursor: pointer; font-size: 1.2rem; transition: 0.3s; }
     </style>
 </head>
 <body>
@@ -83,26 +46,25 @@
     <div class="hero-overlay"></div>
     <header class="landing-header">
         <div class="header-left">
-            <img src="logo_EBL.png" class="media-logo" alt="Logo">
+            <div style="font-weight:900; color:white; font-size:1.5rem;">EBL</div>
         </div>
         <div class="header-right">
             <div class="lang-switcher-top">
-                <img src="https://flagcdn.com/w40/pl.png" id="flag-pl" onclick="setLanguage('pl')" class="lang-flag active" alt="PL">
-                <img src="https://flagcdn.com/w40/us.png" id="flag-en" onclick="setLanguage('en')" class="lang-flag" alt="EN">
+                <img src="https://flagcdn.com/w40/pl.png" class="lang-flag active" alt="PL">
+                <img src="https://flagcdn.com/w40/us.png" class="lang-flag" alt="EN">
             </div>
         </div>
     </header>
-
     <main class="hero-content">
-        <h1 class="main-title" data-i18n="welcome_title">ELITE BASKET LEAGUE</h1>
+        <h1 class="main-title">ELITE BASKET LEAGUE</h1>
         <div class="auth-box">
-            <h2 data-i18n="login_header">Panel Managera</h2>
+            <h2>Panel Managera</h2>
             <div class="auth-inputs">
-                <input type="email" id="email" placeholder="Email" data-i18n="email_placeholder">
-                <input type="password" id="password" placeholder="Hasło" data-i18n="password_placeholder">
+                <input type="email" id="email" placeholder="Email">
+                <input type="password" id="password" placeholder="Hasło">
                 <div class="auth-buttons">
-                    <button id="btn-login-action" class="btn-main btn-login" data-i18n="btn_login">ZALOGUJ SIĘ</button>
-                    <button id="btn-signup-action" class="btn-main btn-signup" data-i18n="btn_signup">ZAŁÓŻ KONTO</button>
+                    <button id="btn-login-action" class="btn-main btn-login">ZALOGUJ SIĘ</button>
+                    <button id="btn-signup-action" class="btn-main btn-signup">ZAŁÓŻ KONTO</button>
                 </div>
             </div>
         </div>
@@ -112,9 +74,6 @@
 <div id="game-app" style="display:none;">
     <header class="app-header">
         <div style="display: flex; align-items: center; gap: 20px;">
-            <div onclick="location.reload()" style="cursor: pointer;">
-                <img src="logo_EBL.png" alt="Logo" class="main-logo">
-            </div>
             <div style="font-weight:900; color:#1a237e; font-size: 1.4rem; letter-spacing: -1px;">ELITE <span style="color:#e65100">BUZZER</span> LEAGUE</div>
         </div>
         <div style="display: flex; align-items: center; gap: 40px;">
@@ -128,106 +87,41 @@
                     <span id="display-league-name" style="color: #e65100; font-weight: 800;">---</span>
                 </div>
             </div>
-            <button id="btn-logout-action" class="btn-logout" data-i18n="logout">WYLOGUJ</button>
+            <button id="btn-logout-action" class="btn-logout">WYLOGUJ</button>
         </div>
     </header>
 
-    <div id="admin-nav" class="nav-container" style="display:none;">
-        <button class="btn-tab active" onclick="switchTab('admin-tab-gen')">GENEROWANIE</button>
-        <button class="btn-tab" onclick="switchTab('admin-tab-players')">BAZA ZAWODNIKÓW</button>
-        <button class="btn-tab" onclick="switchTab('admin-tab-config')">USTAWIENIA LIGI</button>
-        <button class="btn-tab" onclick="switchTab('admin-tab-media')">MEDIA</button>
+    <div id="manager-nav" class="nav-container">
+        <button class="btn-tab active" data-tab="m-roster">ZAWODNICY</button>
+        <button class="btn-tab" data-tab="m-training">TRENING</button>
+        <button class="btn-tab" data-tab="m-market">RYNEK</button>
+        <button class="btn-tab" data-tab="m-finances">FINANSE</button>
     </div>
 
-    <div id="manager-nav" class="nav-container" style="display:none;">
-        <button class="btn-tab active" onclick="switchTab('m-roster')">ZAWODNICY</button>
-        <button class="btn-tab" onclick="switchTab('m-training')">TRENING</button>
-        <button class="btn-tab" onclick="switchTab('m-market')">RYNEK</button>
-        <button class="btn-tab" onclick="switchTab('m-schedule')">TERMINARZ</button>
-        <button class="btn-tab" onclick="switchTab('m-draft')">DRAFT</button>
-        <button class="btn-tab" onclick="switchTab('m-finances')">FINANSE</button>
-        <button class="btn-settings-nav" onclick="openNavSettings()">⚙️</button>
-    </div>
-
-    <div id="m-roster" class="tab-content">
+    <div id="m-roster" class="tab-content active">
         <div id="roster-view-container"></div>
     </div>
-    <div id="m-training" class="tab-content"><div id="app-main-view"></div></div>
-    <div id="m-market" class="tab-content"><div id="market-container"></div></div>
-    <div id="m-finances" class="tab-content"><div id="finances-container"></div></div>
-
-    <div id="admin-tab-gen" class="tab-content" style="padding: 30px;">
-        <h3>Generator Świata</h3>
-        <button class="btn-main btn-login" onclick="initWorld()">GENERUJ ŚWIAT I LIGI</button>
+    <div id="m-training" class="tab-content">
+        <div id="training-view-container"></div>
     </div>
-    <div id="admin-tab-players" class="tab-content" style="padding: 30px;"><div id="admin-players-table-container"></div></div>
-    <div id="admin-tab-config" class="tab-content" style="padding: 30px;"><div id="admin-league-config-container"></div></div>
-    <div id="admin-tab-media" class="tab-content" style="padding: 30px;"><div id="admin-media-manager-container"></div></div>
+    <div id="m-market" class="tab-content">
+        <div id="market-view-container"></div>
+    </div>
+    <div id="m-finances" class="tab-content">
+        <div id="finances-view-container"></div>
+    </div>
 </div>
 
-<script src="js/lang.js"></script>
 <script type="module" src="js/auth.js"></script>
-<script type="module" src="js/admin.js"></script>
-<script src="js/world_gen.js"></script>
-<script type="module" src="index.js"></script>
-
-<script>
-    let currentUserRole = null;
-
-    // Obsługa przycisków
-    document.addEventListener('DOMContentLoaded', () => {
-        const loginBtn = document.getElementById('btn-login-action');
-        const signupBtn = document.getElementById('btn-signup-action');
-        const logoutBtn = document.getElementById('btn-logout-action');
-
-        if(loginBtn) loginBtn.onclick = () => { if(window.signIn) window.signIn(); };
-        if(signupBtn) signupBtn.onclick = () => { if(window.signUp) window.signUp(); };
-        if(logoutBtn) logoutBtn.onclick = () => { if(window.logout) window.logout(); };
+<script type="module">
+    import { switchTab } from './js/app/app.js';
+    // Podpinamy switchTab pod przyciski
+    document.querySelectorAll('.btn-tab').forEach(btn => {
+        btn.onclick = () => {
+            const tabId = btn.getAttribute('data-tab');
+            switchTab(tabId);
+        };
     });
-
-    async function switchTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
-        
-        const target = document.getElementById(tabId);
-        if (target) target.classList.add('active');
-        const btn = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
-        if (btn) btn.classList.add('active');
-
-        if (currentUserRole === 'manager') {
-            try {
-                const appModule = await import('./js/app/app.js');
-                const mapping = {'m-roster':'roster','m-training':'training','m-market':'market','m-finances':'finances'};
-                if (mapping[tabId]) await appModule.switchTab(mapping[tabId]);
-            } catch (e) { console.error("Błąd tab:", e); }
-        }
-    }
-
-    // GŁÓWNA FUNKCJA SETUPU - WYWOŁYWANA Z AUTH.JS
-    window.setupUI = async function(userRole) {
-        currentUserRole = userRole;
-        document.getElementById('landing-page').style.display = 'none';
-        document.getElementById('game-app').style.display = 'block';
-
-        if (userRole === 'admin' || userRole === 'moderator') {
-            document.getElementById('admin-nav').style.display = 'flex';
-            document.getElementById('manager-nav').style.display = 'none';
-            switchTab('admin-tab-gen');
-        } else {
-            document.getElementById('admin-nav').style.display = 'none';
-            document.getElementById('manager-nav').style.display = 'flex';
-            
-            try {
-                const { initApp } = await import('./js/app/app.js');
-                // Czekamy na initApp (pobranie danych zawodników)
-                await initApp(); 
-                // Dopiero po sukcesie initApp przełączamy na roster
-                switchTab('m-roster');
-            } catch (e) {
-                console.error("Błąd inicjalizacji managera:", e);
-            }
-        }
-    };
 </script>
 </body>
 </html>
