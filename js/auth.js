@@ -6,15 +6,10 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 export const supabaseClient = _supabase;
 window.supabase = _supabase;
 
-// Importujemy inicjalizację aplikacji dla Managera
-// Ścieżka relatywna: jesteśmy w /js/, idziemy do /js/app/app.js
 import { initApp } from './app/app.js';
 
 window.POTENTIAL_MAP = [];
 
-/**
- * Pobiera definicje potencjałów (np. GOAT, Elite) z bazy
- */
 async function fetchPotentialDefinitions() {
     try {
         const { data, error } = await _supabase
@@ -23,28 +18,14 @@ async function fetchPotentialDefinitions() {
             .order('min_value', { ascending: false });
         if (error) throw error;
         window.POTENTIAL_MAP = data || [];
+        console.log("[AUTH] Potencjały załadowane:", window.POTENTIAL_MAP.length);
     } catch (err) {
         console.error("Błąd potencjałów:", err);
         window.POTENTIAL_MAP = [{ min_value: 0, label: 'Player', color_hex: '#94a3b8', emoji: '👤' }];
     }
 }
 
-/**
- * Zwraca sformatowane dane potencjału dla zawodnika
- */
-window.getPotentialData = (val) => {
-    const p = parseInt(val) || 0;
-    const map = window.POTENTIAL_MAP || [];
-    const def = map.find(d => p >= d.min_value);
-    return def ? { label: def.label, color: def.color_hex, icon: def.emoji || '🏀' } : { label: 'Prospect', color: '#94a3b8', icon: '👤' };
-};
-
-/**
- * Funkcja ustawiająca interfejs zależnie od roli
- */
 window.setupUI = async (role) => {
-    console.log("[AUTH] Konfiguracja UI dla roli:", role);
-    
     const landingPage = document.getElementById('landing-page');
     const gameApp = document.getElementById('game-app');
     const adminNav = document.getElementById('admin-nav');
@@ -58,98 +39,51 @@ window.setupUI = async (role) => {
         if (managerNav) managerNav.style.display = 'none';
         if (typeof window.switchTab === 'function') window.switchTab('admin-tab-gen');
     } else {
-        // ROLA: MANAGER
         if (adminNav) adminNav.style.display = 'none';
         if (managerNav) managerNav.style.display = 'flex';
         
-        // URUCHOMIENIE SILNIKA APP
-        try {
-            await initApp();
-            if (typeof window.switchTab === 'function') window.switchTab('m-roster');
-        } catch (e) {
-            console.error("Błąd inicjalizacji aplikacji managera:", e);
-        }
+        await initApp();
+        if (typeof window.switchTab === 'function') window.switchTab('m-roster');
     }
 };
-
-async function signIn() {
-    const emailField = document.getElementById('email');
-    const passwordField = document.getElementById('password');
-    
-    if (!emailField || !passwordField) return;
-
-    const e = emailField.value;
-    const p = passwordField.value;
-    
-    if (!e || !p) return alert("Wypełnij pola!");
-    
-    const { error } = await _supabase.auth.signInWithPassword({ email: e, password: p });
-    if (error) alert("Błąd logowania: " + error.message);
-    else await window.checkUser();
-}
-
-async function signUp() {
-    const emailField = document.getElementById('email');
-    const passwordField = document.getElementById('password');
-    
-    if (!emailField || !passwordField) return;
-
-    const e = emailField.value;
-    const p = passwordField.value;
-    
-    if (!e || !p) return alert("Wypełnij pola!");
-    
-    const { error } = await _supabase.auth.signUp({ email: e, password: p });
-    if (error) alert(error.message);
-    else alert("Konto stworzone! Sprawdź pocztę (również spam).");
-}
 
 async function checkUser() {
     const { data: { user } } = await _supabase.auth.getUser();
     
     if (user) {
-        let { data: profile, error } = await _supabase
+        // Najpierw potencjały, potem UI
+        await fetchPotentialDefinitions();
+        
+        let { data: profile } = await _supabase
             .from('profiles')
             .select('*')
             .eq('id', user.id)
             .single();
 
-        if (error || !profile) {
-            console.warn("Profil nie istnieje, tworzę domyślny...");
+        if (!profile) {
             const { data: newProfile } = await _supabase
                 .from('profiles')
                 .insert([{ id: user.id, email: user.email, role: 'manager' }])
-                .select()
-                .single();
+                .select().single();
             profile = newProfile;
         }
 
-        await fetchPotentialDefinitions();
-        const userRole = profile?.role || 'manager';
-        await window.setupUI(userRole);
-
+        await window.setupUI(profile?.role || 'manager');
     } else {
-        const landing = document.getElementById('landing-page');
-        const app = document.getElementById('game-app');
-        if (landing) landing.style.display = 'block';
-        if (app) app.style.display = 'none';
+        if (document.getElementById('landing-page')) document.getElementById('landing-page').style.display = 'block';
+        if (document.getElementById('game-app')) document.getElementById('game-app').style.display = 'none';
     }
 }
 
-async function logout() {
-    await _supabase.auth.signOut();
-    location.reload();
-}
-
-// EKSPORT FUNKCJI DO OKNA GLOBALNEGO
-window.signIn = signIn;
-window.signUp = signUp;
-window.logout = logout;
+// Globalne funkcje logowania
+window.signIn = async () => {
+    const e = document.getElementById('email')?.value;
+    const p = document.getElementById('password')?.value;
+    const { error } = await _supabase.auth.signInWithPassword({ email: e, password: p });
+    if (error) alert("Błąd: " + error.message);
+    else await checkUser();
+};
+window.logout = async () => { await _supabase.auth.signOut(); location.reload(); };
 window.checkUser = checkUser;
 
-// Start systemu
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => window.checkUser());
-} else {
-    window.checkUser();
-}
+document.addEventListener('DOMContentLoaded', () => checkUser());
