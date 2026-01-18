@@ -20,10 +20,28 @@ async function getAuthenticatedUser() {
     return user;
 }
 
-export async function initApp(forceRefresh = false) {
-    if (!forceRefresh && cachedTeam && cachedPlayers && cachedProfile) {
-        return { team: cachedTeam, players: cachedPlayers, profile: cachedProfile };
-    }
+// js/app/app.js
+
+// ... wewnątrz funkcji initApp lub tam gdzie pobierasz graczy:
+const { data: playersData, error: playersError } = await supabase
+    .from('players')
+    .select(`
+        *,
+        potential_definitions (
+            id,
+            label,
+            color_hex,
+            emoji,
+            min_value
+        )
+    `)
+    .eq('team_id', myTeamId);
+
+// Sprawdź czy nie masz tu gdzieś zmiennej "plErr" - jeśli tak, zmień na playersError
+if (playersError) {
+    console.error("Błąd zawodników:", playersError);
+    return;
+}
 
     try {
         await checkLeagueEvents();
