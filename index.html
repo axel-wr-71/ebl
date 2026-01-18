@@ -103,8 +103,8 @@
                 <input type="email" id="email" placeholder="Email" data-i18n="email_placeholder">
                 <input type="password" id="password" placeholder="Hasło" data-i18n="password_placeholder">
                 <div class="auth-buttons">
-                    <button class="btn-main btn-login" onclick="signIn()" data-i18n="btn_login">ZALOGUJ SIĘ</button>
-                    <button class="btn-main btn-signup" onclick="signUp()" data-i18n="btn_signup">ZAŁÓŻ KONTO</button>
+                    <button id="btn-login-action" class="btn-main btn-login" data-i18n="btn_login">ZALOGUJ SIĘ</button>
+                    <button id="btn-signup-action" class="btn-main btn-signup" data-i18n="btn_signup">ZAŁÓŻ KONTO</button>
                 </div>
             </div>
         </div>
@@ -135,7 +135,7 @@
                     <span id="display-league-name" style="color: #e65100; font-weight: 800;">---</span>
                 </div>
             </div>
-            <button onclick="logout()" class="btn-logout" data-i18n="logout">WYLOGUJ</button>
+            <button id="btn-logout-action" class="btn-logout" data-i18n="logout">WYLOGUJ</button>
         </div>
     </header>
 
@@ -218,6 +218,17 @@
 <script>
     let currentUserRole = null;
 
+    // Bezpieczne podpięcie zdarzeń logowania (bypass modułów)
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginBtn = document.getElementById('btn-login-action');
+        const signupBtn = document.getElementById('btn-signup-action');
+        const logoutBtn = document.getElementById('btn-logout-action');
+
+        if(loginBtn) loginBtn.onclick = () => { if(window.signIn) window.signIn(); };
+        if(signupBtn) signupBtn.onclick = () => { if(window.signUp) window.signUp(); };
+        if(logoutBtn) logoutBtn.onclick = () => { if(window.logout) window.logout(); };
+    });
+
     function setLanguage(lang) {
         document.querySelectorAll('.lang-flag').forEach(f => f.classList.remove('active'));
         const selected = document.getElementById(`flag-${lang}`);
@@ -244,56 +255,11 @@
                 else if (tabId === 'm-finances') await showFinances();
             } catch (e) { console.error("Błąd ładowania modułu managera:", e); }
         }
-        
-        if (currentUserRole === 'admin') {
-            const runAdminTab = () => {
-                if (window.switchAdminTab) {
-                    if (tabId === 'admin-tab-players') window.switchAdminTab('players');
-                    if (tabId === 'admin-tab-config') window.switchAdminTab('leagues');
-                    if (tabId === 'admin-tab-media') window.switchAdminTab('media');
-                    if (tabId === 'admin-tab-gen') window.switchAdminTab('dashboard');
-                }
-            };
-            if (!window.switchAdminTab) setTimeout(runAdminTab, 200); else runAdminTab();
-        }
     }
 
     function openNavSettings() {
         alert("Tu otworzy się panel konfiguracji nawigacji (JSONB Config)");
     }
-
-    // Nowa funkcja setupUI zintegrowana z app.js
-    window.setupUI = async function(userRole) {
-        currentUserRole = userRole;
-        document.getElementById('landing-page').style.display = 'none';
-        document.getElementById('game-app').style.display = 'block';
-
-        const adminNav = document.getElementById('admin-nav');
-        const managerNav = document.getElementById('manager-nav');
-
-        if (userRole === 'admin' || userRole === 'moderator') {
-            adminNav.style.display = 'flex';
-            managerNav.style.display = 'none';
-            if (userRole === 'moderator') {
-                const configBtn = document.querySelector('[onclick="switchTab(\'admin-tab-config\')"]');
-                if (configBtn) configBtn.style.display = 'none';
-            }
-            switchTab('admin-tab-gen');
-        } else {
-            // ROLA: MANAGER
-            adminNav.style.display = 'none';
-            managerNav.style.display = 'flex';
-            
-            // Dynamiczny import inicjalizacji z nowego app.js
-            try {
-                const { initApp } = await import('./js/app/app.js');
-                await initApp();
-                switchTab('m-roster');
-            } catch (e) {
-                console.error("Critical: initApp failed", e);
-            }
-        }
-    };
 </script>
 
 </body>
