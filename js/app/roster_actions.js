@@ -65,87 +65,155 @@ export const RosterActions = {
             '</div>';
     },
 
-    showProfile: (player) => {
+// js/app/roster_actions.js
+import { supabaseClient } from '../auth.js';
+
+export const RosterActions = {
+    closeModal: () => {
+        const modal = document.getElementById('roster-modal-overlay');
+        if (modal) modal.remove();
+    },
+
+    showProfile: async (player) => {
+        // 1. POBIERANIE DANYCH Z NOWEGO SILNIKA STATYSTYK
+        const [statsRes, historyRes] = await Promise.all([
+            supabaseClient.from('vw_player_season_stats').select('*').eq('player_id', player.id).single(),
+            supabaseClient.from('player_stats').select('*').eq('player_id', player.id).order('created_at', { ascending: false }).limit(10)
+        ]);
+
+        const seasonStats = statsRes.data || {};
+        const gameHistory = historyRes.data || [];
         const potData = window.getPotentialData(player.potential);
-        const progressWidth = Math.min(Math.round(((player.overall_rating || 0) / (player.potential || 1)) * 100), 100);
-        const countryCode = (player.country || 'pl').toLowerCase();
-        const flagUrl = 'https://flagcdn.com/w40/' + countryCode + '.png';
+        const currentSeason = 2026; // Twoja aktualna data z kontekstu
 
-        const skillGroups = [
-            {
-                name: 'Attack',
-                skills: [
-                    { name: 'Jump Shot', val: player.skill_2pt },
-                    { name: '3PT Range', val: player.skill_3pt },
-                    { name: 'Dunking', val: player.skill_dunk },
-                    { name: 'Passing', val: player.skill_passing }
-                ]
-            },
-            {
-                name: 'Defense',
-                skills: [
-                    { name: '1on1 Def', val: player.skill_1on1_def },
-                    { name: 'Rebound', val: player.skill_rebound },
-                    { name: 'Blocking', val: player.skill_block },
-                    { name: 'Stealing', val: player.skill_steal }
-                ]
-            },
-            {
-                name: 'General',
-                skills: [
-                    { name: 'Handling', val: player.skill_dribbling },
-                    { name: '1on1 Off', val: player.skill_1on1_off },
-                    { name: 'Stamina', val: player.skill_stamina },
-                    { name: 'Free Throw', val: player.skill_ft }
-                ]
-            }
-        ];
+        let modalHtml = `
+            <div id="roster-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,10,0.85); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);">
+                <div style="background:#f8fafc; width:1150px; max-height:92vh; border-radius:32px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 40px 100px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.1);">
+                    
+                    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 35px 50px; display: flex; align-items: center; justify-content: space-between; border-bottom: 4px solid #3b82f6;">
+                        <div style="display: flex; align-items: center; gap: 30px;">
+                            <div style="position:relative;">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${player.last_name}" style="width:110px; height:110px; background:white; border-radius:24px; border:3px solid #3b82f6; padding:4px;">
+                                <div style="position:absolute; bottom:-10px; right:-10px; background:#3b82f6; color:white; padding:4px 10px; border-radius:8px; font-weight:900; font-size:12px;">${player.position}</div>
+                            </div>
+                            <div>
+                                <h1 style="margin:0; color:white; font-size:2.4rem; font-weight:900; letter-spacing:-1px;">${player.first_name} ${player.last_name} ${player.is_rookie ? '<span style="color:#ef4444; font-size:14px; margin-left:10px;">[ROOKIE]</span>' : ''}</h1>
+                                <p style="margin:5px 0 0 0; color:#94a3b8; font-size:1.1rem; font-weight:500;">${player.height} cm | ${player.age} Years Old | ${player.country}</p>
+                            </div>
+                        </div>
+                        
+                        <div style="display:flex; gap:30px; background:rgba(255,255,255,0.05); padding:15px 30px; border-radius:20px; border:1px solid rgba(255,255,255,0.1);">
+                            ${RosterActions._renderHeaderStat("PPG", seasonStats.ppg || 0)}
+                            ${RosterActions._renderHeaderStat("RPG", seasonStats.rpg || 0)}
+                            ${RosterActions._renderHeaderStat("APG", seasonStats.apg || 0)}
+                            <div style="width:1px; background:rgba(255,255,255,0.1); margin:0 10px;"></div>
+                            ${RosterActions._renderHeaderStat("OVR", player.overall_rating, "#3b82f6")}
+                        </div>
+                        <button onclick="window.RosterActions.closeModal()" style="background:none; border:none; color:white; font-size:32px; cursor:pointer; opacity:0.6; transition:0.2s;">&times;</button>
+                    </div>
 
-        let modalHtml = '<div id="roster-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,10,0.8); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(10px);">';
-        modalHtml += '<div style="background:white; width:1000px; max-height:95vh; border-radius:40px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 40px 80px rgba(0,0,0,0.4);">';
-        
-        // Header modala
-        modalHtml += '<div style="background:#1a237e; color:white; padding:40px 50px; display:flex; align-items:center; position:relative;">';
-        modalHtml += '<img src="https://api.dicebear.com/7.x/avataaars/svg?seed=' + player.last_name + '" style="width:120px; height:120px; background:white; border-radius:30px; padding:5px; border:4px solid #3b82f6;">';
-        modalHtml += '<div style="margin-left:30px; flex-grow:1;">';
-        modalHtml += '<div style="display:flex; align-items:center; gap:15px;">';
-        modalHtml += '<h1 style="margin:0; font-size:2.5em; font-weight:900;">' + player.first_name + ' ' + player.last_name + '</h1>';
-        modalHtml += '<img src="' + flagUrl + '" style="width:30px; height:20px; border-radius:4px; object-fit:cover; border:1px solid rgba(255,255,255,0.2);">';
-        if (player.is_rookie) modalHtml += '<span style="background:#ef4444; color:white; font-size:10px; padding:4px 10px; border-radius:6px; font-weight:900; letter-spacing:1px; border:1px solid rgba(255,255,255,0.3);">ROOKIE</span>';
-        modalHtml += '</div><p style="margin:8px 0 0 0; opacity:0.8; font-size:1.1em; font-weight:500;">' + player.position + ' | ' + (player.height || '--') + ' cm (' + cmToFtIn(player.height) + ') | ' + player.age + ' Years Old</p></div>';
-        modalHtml += '<div style="text-align:center; margin-right:60px;"><div style="width:80px; height:80px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;"><span style="color:#1a237e; font-size:2.2em; font-weight:900;">' + (player.overall_rating || '??') + '</span></div><span style="font-size:0.7em; font-weight:800; text-transform:uppercase; letter-spacing:1px; opacity:0.9;">Overall Rating</span></div>';
-        
-        // Przycisk zamknięcia
-        modalHtml += '<button onclick="window.RosterActions.closeModal()" style="position:absolute; top:30px; right:30px; background:rgba(255,255,255,0.1); border:none; color:white; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button></div>';
-        
-        modalHtml += '<div style="padding:40px; overflow-y:auto;">';
-        modalHtml += '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px; margin-bottom:40px;">';
-        
-        // Potential Card
-        const potExtra = '<div style="width: 200px; height: 6px; background: #e2e8f0; border-radius: 10px; margin-top: 15px; overflow: hidden;"><div style="width: ' + progressWidth + '%; height: 100%; background: ' + potData.color + ';"></div></div><span style="font-size: 11px; font-weight: 800; color: #94a3b8; margin-top: 8px;">' + progressWidth + '% of potential reached</span>';
-        modalHtml += RosterActions._renderProfileCard("Potential Class", potData.icon + ' ' + potData.label, potData.color, potExtra);
-        
-        // Salary Card
-        modalHtml += RosterActions._renderProfileCard("Annual Salary", '$' + (player.salary || 0).toLocaleString(), "#2e7d32");
-        
-        modalHtml += '</div><h3 style="color:#1a237e; font-size:0.9em; text-transform:uppercase; letter-spacing:2px; margin-bottom:20px; border-left:4px solid #1a237e; padding-left:15px;">Technical Evaluation</h3>';
-        modalHtml += '<div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:30px;">';
-        
-        skillGroups.forEach(group => {
-            modalHtml += '<div style="background:#f8fafc; padding:20px; border-radius:25px; border:1px solid #f1f5f9;">';
-            modalHtml += '<h4 style="color:#94a3b8; font-size:0.75em; text-transform:uppercase; margin-bottom:15px; text-align:center;">' + group.name + '</h4>';
-            group.skills.forEach(s => {
-                modalHtml += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:white; padding:12px 15px; border-radius:15px; border:1px solid #e2e8f0;">';
-                modalHtml += '<span style="font-weight:700; color:#475569; font-size:0.85em;">' + s.name + '</span>';
-                modalHtml += '<span style="color:' + getSkillColor(s.val) + '; font-weight:900; font-size:1.1em;">' + (s.val || 0) + '</span></div>';
-            });
-            modalHtml += '</div>';
-        });
+                    <div style="padding:40px; overflow-y:auto; flex-grow:1; background:#f1f5f9;">
+                        
+                        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:25px; margin-bottom:45px;">
+                            ${RosterActions._renderSkillBlock('Attack', player, ['2pt', '3pt', 'dunk', 'passing'])}
+                            ${RosterActions._renderSkillBlock('Defense', player, ['1on1_def', 'rebound', 'block', 'steal'])}
+                            ${RosterActions._renderSkillBlock('General', player, ['dribbling', '1on1_off', 'stamina', 'ft'])}
+                        </div>
 
-        modalHtml += '</div></div></div></div>';
+                        <div style="background:white; padding:35px; border-radius:24px; border:1px solid #e2e8f0; margin-bottom:45px; box-shadow:0 10px 30px rgba(0,0,0,0.03);">
+                            <h3 style="margin-top:0; display:flex; align-items:center; gap:10px; color:#1e293b;">
+                                <span style="background:#ef4444; width:4px; height:24px; border-radius:2px;"></span>
+                                Individual Training Specialization - Season ${currentSeason}
+                            </h3>
+                            <div style="display:flex; gap:20px; align-items:center;">
+                                <select id="train-choice" ${player.training_locked_season === currentSeason ? 'disabled' : ''} style="flex-grow:1; padding:15px; border-radius:12px; border:2px solid #f1f5f9; font-weight:700; background:#f8fafc;">
+                                    <option value="skill_3pt" ${player.individual_training_skill === 'skill_3pt' ? 'selected' : ''}>Elite Three Point Range</option>
+                                    <option value="skill_dunk" ${player.individual_training_skill === 'skill_dunk' ? 'selected' : ''}>Inside Scoring & Dunks</option>
+                                    <option value="skill_1on1_def" ${player.individual_training_skill === 'skill_1on1_def' ? 'selected' : ''}>Lockdown Defense</option>
+                                    <option value="skill_passing" ${player.individual_training_skill === 'skill_passing' ? 'selected' : ''}>Playmaking & Vision</option>
+                                </select>
+                                <button onclick="window.RosterActions.saveTraining('${player.id}')" ${player.training_locked_season === currentSeason ? 'disabled' : ''} style="background:${player.training_locked_season === currentSeason ? '#94a3b8' : '#1e293b'}; color:white; padding:15px 40px; border-radius:12px; font-weight:800; border:none; cursor:pointer;">
+                                    ${player.training_locked_season === currentSeason ? 'LOCKED' : 'SAVE CHOICE'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="background:white; border-radius:24px; border:1px solid #e2e8f0; overflow:hidden;">
+                            <div style="padding:20px 30px; background:#f8fafc; border-bottom:1px solid #e2e8f0; font-weight:800; color:#64748b;">RECENT PERFORMANCES</div>
+                            <table style="width:100%; border-collapse:collapse; text-align:left;">
+                                <thead>
+                                    <tr style="background:#fff; color:#94a3b8; font-size:11px; text-transform:uppercase; letter-spacing:1px;">
+                                        <th style="padding:15px 30px;">Date</th>
+                                        <th>Opponent</th>
+                                        <th>Min</th>
+                                        <th>PTS</th>
+                                        <th>REB</th>
+                                        <th>AST</th>
+                                        <th>FG%</th>
+                                        <th style="padding:15px 30px;">Game Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${gameHistory.length > 0 ? gameHistory.map(g => `
+                                        <tr style="border-top:1px solid #f1f5f9; font-weight:600; color:#1e293b;">
+                                            <td style="padding:15px 30px;">${new Date(g.created_at).toLocaleDateString()}</td>
+                                            <td>vs Team X</td>
+                                            <td>${g.minutes_played}</td>
+                                            <td>${g.points}</td>
+                                            <td>${g.rebounds}</td>
+                                            <td>${g.assists}</td>
+                                            <td>${((g.fg_made / (g.fg_attempted || 1)) * 100).toFixed(0)}%</td>
+                                            <td style="padding:15px 30px;"><span style="background:${g.game_score > 15 ? '#dcfce7' : '#f1f5f9'}; color:${g.game_score > 15 ? '#15803d' : '#1e293b'}; padding:4px 10px; border-radius:6px;">${g.game_score || '0.0'}</span></td>
+                                        </tr>
+                                    `).join('') : '<tr><td colspan="8" style="padding:30px; text-align:center; color:#94a3b8;">No data for current season</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
         document.body.insertAdjacentHTML('beforeend', modalHtml);
+    },
+
+    saveTraining: async (playerId) => {
+        const skill = document.getElementById('train-choice').value;
+        const { error } = await supabaseClient.from('players').update({
+            individual_training_skill: skill,
+            training_locked_season: 2026
+        }).eq('id', playerId);
+
+        if (!error) {
+            alert("Training specialization locked for Season 2026!");
+            RosterActions.closeModal();
+            // Możesz tu dodać odświeżenie widoku
+        }
+    },
+
+    _renderHeaderStat: (label, val, color = "#fff") => `
+        <div style="text-align:center;">
+            <div style="color:${color}; font-size:1.6rem; font-weight:900;">${val}</div>
+            <div style="color:#94a3b8; font-size:0.6rem; font-weight:800; text-transform:uppercase;">${label}</div>
+        </div>
+    `,
+
+    _renderSkillBlock: (title, player, keys) => {
+        const labels = {
+            '2pt': 'Jump Shot', '3pt': '3PT Range', 'dunk': 'Dunking', 'passing': 'Passing',
+            '1on1_def': '1on1 Def', 'rebound': 'Rebound', 'block': 'Blocking', 'steal': 'Stealing',
+            'dribbling': 'Handling', '1on1_off': '1on1 Off', 'stamina': 'Stamina', 'ft': 'Free Throw'
+        };
+        let html = `<div style="background:white; padding:25px; border-radius:24px; border:1px solid #e2e8f0;">
+            <h4 style="margin:0 0 20px 0; color:#94a3b8; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">${title}</h4>`;
+        keys.forEach(k => {
+            const v = player['skill_' + k] || 0;
+            html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-weight:700; color:#475569; font-size:0.9rem;">${labels[k]}</span>
+                <span style="background:#f1f5f9; padding:4px 12px; border-radius:8px; font-weight:900; color:#1e293b;">${v}</span>
+            </div>`;
+        });
+        return html + `</div>`;
     }
 };
 
-// Rejestracja globalna dla pełnej kompatybilności
 window.RosterActions = RosterActions;
