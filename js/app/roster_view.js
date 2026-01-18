@@ -2,20 +2,20 @@
 import { supabaseClient } from '../auth.js';
 import { RosterActions } from './roster_actions.js';
 
-// --- 1. FUNKCJE POMOCNICZE (STYLE I ETYKIETY) ---
+// --- 1. FUNKCJE POMOCNICZE ---
 
 function getSkillColor(val) {
     const v = parseInt(val) || 0;
-    if (v >= 19) return '#d4af37'; 
-    if (v >= 17) return '#8b5cf6'; 
-    if (v >= 15) return '#10b981'; 
-    if (v >= 13) return '#06b6d4'; 
-    if (v >= 11) return '#3b82f6'; 
-    if (v >= 9)  return '#64748b'; 
-    if (v >= 7)  return '#475569'; 
-    if (v >= 5)  return '#f59e0b'; 
-    if (v >= 3)  return '#f97316'; 
-    return '#ef4444';             
+    if (v >= 19) return '#d4af37'; // GOAT / Gold
+    if (v >= 17) return '#8b5cf6'; // Elite / Purple
+    if (v >= 15) return '#10b981'; // Great / Green
+    if (v >= 13) return '#06b6d4'; // Good / Cyan
+    if (v >= 11) return '#3b82f6'; // Solid / Blue
+    if (v >= 9)  return '#64748b'; // Average
+    if (v >= 7)  return '#475569'; // Below Avg
+    if (v >= 5)  return '#f59e0b'; // Poor
+    if (v >= 3)  return '#f97316'; // Weak
+    return '#ef4444';             // Awful
 }
 
 function renderSkillMini(name, val) {
@@ -29,9 +29,6 @@ function renderSkillMini(name, val) {
     `;
 }
 
-/**
- * Przelicza centymetry na format stopy'cale (np. 211cm -> 6'11")
- */
 function cmToFtIn(cm) {
     if (!cm) return '--';
     const inchesTotal = cm * 0.393701;
@@ -40,9 +37,7 @@ function cmToFtIn(cm) {
     return `${feet}'${inches}"`;
 }
 
-// --- USUNIĘTO STARY getPotentialLabel - TERAZ KORZYSTAMY Z window.getPotentialData ---
-
-// --- 2. WEWNĘTRZNY RENDER WIERSZA ---
+// --- 2. WEWNĘTRZNY RENDER WIERSZA (PEŁNY UI) ---
 
 function renderPlayerRowInternal(player, potData) {
     const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.last_name}&backgroundColor=f0f2f5`;
@@ -121,30 +116,43 @@ function renderPlayerRowInternal(player, potData) {
     `;
 }
 
-// --- 3. GŁÓWNA FUNKCJA EKSPORTOWANA ---
+// --- 3. GŁÓWNA FUNKCJA ---
 
 export async function renderRosterView(teamData, players) {
     const container = document.getElementById('roster-view-container');
-    if (!container) return;
+    if (!container) {
+        console.error("Błąd: Nie znaleziono kontenera roster-view-container");
+        return;
+    }
 
     const safePlayers = Array.isArray(players) ? players : [];
 
+    // Definiujemy akcje globalnie dla przycisków
     window.rosterAction = (type, playerId) => {
         const player = safePlayers.find(p => String(p.id) === String(playerId));
         if (!player) return;
 
-        if (type === 'profile') {
-            RosterActions.showProfile(player);
-        } else if (type === 'sell') {
-            RosterActions.showSellConfirm(player);
-        } else if (type === 'training') {
-            RosterActions.showTraining(player);
-        }
+        if (type === 'profile') RosterActions.showProfile(player);
+        else if (type === 'sell') RosterActions.showSellConfirm(player);
+        else if (type === 'training') RosterActions.showTraining(player);
     };
+
+    // Budujemy wiersze tabeli
+    let rowsHtml = '';
+    safePlayers.forEach(p => {
+        // Zabezpieczenie Safari przed brakiem funkcji potencjału
+        const potData = window.getPotentialData ? window.getPotentialData(p.potential) : { label: 'Scouting...', color: '#94a3b8', icon: '?' };
+        rowsHtml += renderPlayerRowInternal(p, potData);
+    });
 
     container.innerHTML = `
         <div style="padding: 30px; background: #f4f7f6; min-height: 100vh; font-family: 'Inter', sans-serif;">
-            <h1 style="color: #1a237e; font-weight: 800; margin-bottom: 20px;">ROSTER MANAGEMENT</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h1 style="color: #1a237e; font-weight: 800; margin: 0;">ROSTER MANAGEMENT</h1>
+                <div style="background: white; padding: 10px 20px; border-radius: 12px; border: 1px solid #e2e8f0; font-weight: 700; color: #64748b;">
+                    Squad Size: <span style="color: #1a237e;">${safePlayers.length} / 12</span>
+                </div>
+            </div>
             
             <div style="background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); overflow: hidden;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
@@ -161,11 +169,7 @@ export async function renderRosterView(teamData, players) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${safePlayers.map(p => {
-                            // KLUCZOWA ZMIANA: Korzystamy z globalnej funkcji zdefiniowanej w auth.js
-                            const potData = window.getPotentialData(p.potential);
-                            return renderPlayerRowInternal(p, potData);
-                        }).join('')}
+                        ${rowsHtml || '<tr><td colspan="8" style="padding: 40px; text-align: center; color: #94a3b8;">No players found in your roster.</td></tr>'}
                     </tbody>
                 </table>
             </div>
