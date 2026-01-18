@@ -124,8 +124,17 @@
             </div>
             <div style="font-weight:900; color:#1a237e; font-size: 1.4rem; letter-spacing: -1px;">ELITE <span style="color:#e65100">BUZZER</span> LEAGUE</div>
         </div>
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <div id="user-info-display" style="font-weight: 600; color: #555;"></div>
+        <div style="display: flex; align-items: center; gap: 40px;">
+            <div id="manager-header-info" style="display: flex; gap: 20px; font-size: 0.9rem;">
+                <div style="display: flex; flex-direction: column;">
+                    <span style="color: #94a3b8; font-size: 0.7rem; font-weight: 800;">TEAM</span>
+                    <span id="display-team-name" style="color: #1a237e; font-weight: 800;">---</span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="color: #94a3b8; font-size: 0.7rem; font-weight: 800;">LEAGUE</span>
+                    <span id="display-league-name" style="color: #e65100; font-weight: 800;">---</span>
+                </div>
+            </div>
             <button onclick="logout()" class="btn-logout" data-i18n="logout">WYLOGUJ</button>
         </div>
     </header>
@@ -199,7 +208,6 @@
 <script type="module" src="js/admin.js"></script>
 <script src="js/world_gen.js"></script>
 <script src="js/draft.js"></script>
-<script src="js/manager.js"></script>
 <script type="module" src="index.js"></script>
 
 <script type="module">
@@ -254,33 +262,38 @@
         alert("Tu otworzy się panel konfiguracji nawigacji (JSONB Config)");
     }
 
+    // Nowa funkcja setupUI zintegrowana z app.js
     window.setupUI = async function(userRole) {
-    currentUserRole = userRole;
-    document.getElementById('landing-page').style.display = 'none';
-    document.getElementById('game-app').style.display = 'block';
+        currentUserRole = userRole;
+        document.getElementById('landing-page').style.display = 'none';
+        document.getElementById('game-app').style.display = 'block';
 
-    const adminNav = document.getElementById('admin-nav');
-    const managerNav = document.getElementById('manager-nav');
+        const adminNav = document.getElementById('admin-nav');
+        const managerNav = document.getElementById('manager-nav');
 
-    if (userRole === 'admin' || userRole === 'moderator') {
-        adminNav.style.display = 'flex';
-        managerNav.style.display = 'none';
-        
-        // Jeśli moderator, możemy ukryć niektóre przyciski w menu admina
-        if (userRole === 'moderator') {
-            // Przykład: moderator nie widzi przycisku "Ustawienia ligi"
-            const configBtn = document.querySelector('[onclick="switchTab(\'admin-tab-config\')"]');
-            if (configBtn) configBtn.style.display = 'none';
+        if (userRole === 'admin' || userRole === 'moderator') {
+            adminNav.style.display = 'flex';
+            managerNav.style.display = 'none';
+            if (userRole === 'moderator') {
+                const configBtn = document.querySelector('[onclick="switchTab(\'admin-tab-config\')"]');
+                if (configBtn) configBtn.style.display = 'none';
+            }
+            switchTab('admin-tab-gen');
+        } else {
+            // ROLA: MANAGER
+            adminNav.style.display = 'none';
+            managerNav.style.display = 'flex';
+            
+            // Dynamiczny import inicjalizacji z nowego app.js
+            try {
+                const { initApp } = await import('./js/app/app.js');
+                await initApp();
+                switchTab('m-roster');
+            } catch (e) {
+                console.error("Critical: initApp failed", e);
+            }
         }
-        
-        switchTab('admin-tab-gen');
-    } else {
-        adminNav.style.display = 'none';
-        managerNav.style.display = 'flex';
-        if (typeof window.initManagerData === 'function') await window.initManagerData();
-        switchTab('m-roster');
-    }
-};
+    };
 </script>
 
 </body>
