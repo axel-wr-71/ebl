@@ -10,6 +10,33 @@ import { initApp, switchTab } from './app/app.js';
 
 window.POTENTIAL_MAP = [];
 
+// FUNKCJA NAPRAWIAJĄCA NAZWĘ DRUŻYNY W PRAWYM GÓRNYM ROGU
+async function fetchManagerTeam(userId) {
+    try {
+        // Pobieramy dane drużyny i ligi przypisanej do managera
+        const { data: team, error } = await _supabase
+            .from('teams')
+            .select('team_name, league_name')
+            .eq('manager_id', userId)
+            .single();
+
+        if (error) throw error;
+
+        if (team) {
+            // Szukamy kontenerów w prawym górnym rogu (zgodnie ze strukturą Safari/MacBook)
+            const headerTeamName = document.querySelector('.team-info b, header b');
+            const headerLeagueName = document.querySelector('.team-info span[style*="color: #ff4500"], #global-league-name');
+
+            if (headerTeamName) headerTeamName.textContent = team.team_name;
+            if (headerLeagueName) headerLeagueName.textContent = team.league_name;
+            
+            console.log("[AUTH] Nagłówek zaktualizowany:", team.team_name);
+        }
+    } catch (err) {
+        console.warn("[AUTH] Nie udało się pobrać danych drużyny do nagłówka:", err.message);
+    }
+}
+
 async function fetchPotentialDefinitions() {
     try {
         const { data, error } = await _supabase
@@ -49,6 +76,8 @@ export async function checkUser() {
     
     if (user) {
         await fetchPotentialDefinitions();
+        // DODANE: Pobranie nazwy drużyny do nagłówka zaraz po sprawdzeniu użytkownika
+        await fetchManagerTeam(user.id);
         
         let { data: profile } = await _supabase
             .from('profiles')
