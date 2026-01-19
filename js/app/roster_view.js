@@ -1,11 +1,20 @@
 // js/app/roster_view.js
 
 /**
- * Helper: Pobieranie flagi
+ * Helper: Pobieranie flagi z obsługą błędnych kodów (np. Grecja EL -> GR)
  */
 function getFlagUrl(countryCode) {
     if (!countryCode) return '';
-    return `https://flagsapi.com/${countryCode.toUpperCase()}/flat/64.png`;
+    
+    let code = countryCode.toUpperCase().trim();
+    
+    // Specyficzna poprawka dla Grecji
+    if (code === 'EL') code = 'GR';
+    
+    // Debugowanie - jeśli flaga nie działa, sprawdź konsolę w Safari
+    // console.log("Próba pobrania flagi dla kodu:", code);
+    
+    return `https://flagsapi.com/${code}/flat/64.png`;
 }
 
 /**
