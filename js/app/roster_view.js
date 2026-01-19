@@ -5,15 +5,11 @@
  */
 function getFlagUrl(countryCode) {
     if (!countryCode) return '';
+    const code = String(countryCode).toLowerCase().trim();
+    const finalCode = (code === 'el') ? 'gr' : code;
     
-    // FlagCDN wymaga małych liter
-    let code = String(countryCode).toLowerCase().trim();
-    
-    // Obsługa specyficznego kodu Grecji (EL -> GR)
-    if (code === 'el') code = 'gr';
-    
-    // Zwracamy link do FlagCDN (szerokość 80px dla ostrości na MacBooku)
-    return `https://flagcdn.com/w80/${code}.png`;
+    // Ścieżka relatywna do pliku index.html
+    return `assets/flags/${finalCode}.png`;
 }
 
 /**
