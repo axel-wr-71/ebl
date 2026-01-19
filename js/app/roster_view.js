@@ -7,7 +7,7 @@ function getFlagUrl(countryCode) {
     if (!countryCode) return '';
     let code = countryCode.toUpperCase().trim();
     if (code === 'EL') code = 'GR'; // Obsługa specyficznego kodu Grecji
-    return `https://flagsapi.com/${code}/flat/64.png`;
+    return `https://flagsapi.com/${code}/shiny/64.png`;
 }
 
 /**
