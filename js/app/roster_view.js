@@ -80,8 +80,8 @@ export function renderRosterView(team, players) {
                 return `
                 <div style="background: linear-gradient(135deg, #1a237e 0%, #283593 100%); border-radius: 15px; padding: 25px; display: flex; align-items: center; gap: 20px; color: white; box-shadow: 0 10px 20px rgba(26,35,126,0.1);">
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${star.last_name}" style="width: 75px; height: 75px; background: white; border-radius: 12px; border: 3px solid rgba(255,255,255,0.2); object-fit: cover;">
-                        ${flagUrl ? `<img src="${flagUrl}" style="width: 24px; height: auto; border-radius: 2px; border: 1px solid white;">` : ''}
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${star.last_name}"object-fit: cover;">
+                        ${flagUrl ? `<img src="${flagUrl}" style="width: 24px; height: auto; border-radius: 2px; border: 1px solid white;">`; style="width: 75px; height: 75px; background: white; border-radius: 12px; border: 3px solid rgba(255,255,255,0.2);  ''}
                     </div>
                     <div>
                         <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #ffab40; font-weight: 800;">
