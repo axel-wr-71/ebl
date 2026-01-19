@@ -1,28 +1,38 @@
 // js/app/roster_view.js
 
 /**
- * Helper: Pobieranie flagi (Klucz: country)
+ * Helper: Pobieranie flagi z FlagCDN (Opcja 1)
  */
 function getFlagUrl(countryCode) {
     if (!countryCode) return '';
-    let code = countryCode.toUpperCase().trim();
-    if (code === 'EL') code = 'GR'; // Obsługa specyficznego kodu Grecji
-    return `https://flagsapi.com/${code}/shiny/64.png`;
+    
+    // FlagCDN wymaga małych liter
+    let code = String(countryCode).toLowerCase().trim();
+    
+    // Obsługa specyficznego kodu Grecji (EL -> GR)
+    if (code === 'el') code = 'gr';
+    
+    // Zwracamy link do FlagCDN (szerokość 80px dla ostrości na MacBooku)
+    return `https://flagcdn.com/w80/${code}.png`;
 }
 
 /**
- * Helper: Styl kwadratów pozycji
+ * Helper: Styl kwadratów pozycji (Z zachowaniem koloru dla C)
  */
 function getPositionStyle(pos) {
     const styles = {
-        'PG': '#1e40af', 'SG': '#5b21b6', 'SF': '#065f46', 'PF': '#9a3412', 'C': '#F5AD27'
+        'PG': '#1e40af', 
+        'SG': '#5b21b6', 
+        'SF': '#065f46', 
+        'PF': '#9a3412', 
+        'C': '#F5AD27' 
     };
     const color = styles[pos] || '#334155';
     return `background: ${color}; color: white; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 0.8rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); box-shadow: 0 2px 4px rgba(0,0,0,0.1);`;
 }
 
 /**
- * Helper: Styl plakietek OVR
+ * Helper: Styl plakietek OVR (Pełna Twoja skala)
  */
 function getOvrStyle(ovr) {
     if (ovr >= 90) return { bg: '#fffbeb', border: '#f59e0b', color: '#92400e' };
@@ -67,12 +77,15 @@ export function renderRosterView(team, players) {
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 0 20px 30px 20px;">
             ${topStars.map((star, idx) => {
                 const potData = window.getPotentialData ? window.getPotentialData(star.potential) : { label: 'Prospect', icon: '', color: '#3b82f6' };
-                const flagUrl = getFlagUrl(star.country);
+                // Sprawdzamy kraj dla gwiazd
+                const countryCode = star.country || star.nationality || "";
+                const flagUrl = getFlagUrl(countryCode);
+                
                 return `
                 <div style="background: linear-gradient(135deg, #1a237e 0%, #283593 100%); border-radius: 15px; padding: 25px; display: flex; align-items: center; gap: 20px; color: white; box-shadow: 0 10px 20px rgba(26,35,126,0.1);">
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${star.last_name}" style="width: 75px; height: 75px; background: white; border-radius: 12px; border: 3px solid rgba(255,255,255,0.2); object-fit: cover;">
-                        ${flagUrl ? `<img src="${flagUrl}" style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid white;">` : ''}
+                        ${flagUrl ? `<img src="${flagUrl}" style="width: 24px; height: auto; border-radius: 2px; border: 1px solid white;">` : ''}
                     </div>
                     <div>
                         <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #ffab40; font-weight: 800;">
@@ -138,7 +151,10 @@ function renderPlayerRow(p) {
     const potData = window.getPotentialData ? window.getPotentialData(p.potential) : { label: 'Prospect', icon: '', color: '#3b82f6' };
     const ovr = calculateOVR(p);
     const ovrStyle = getOvrStyle(ovr);
-    const flagUrl = getFlagUrl(p.country);
+    
+    // Próba pobrania kraju z różnych kluczy
+    const countryCode = p.country || p.nationality || p.country_code || "";
+    const flagUrl = getFlagUrl(countryCode);
 
     const heightCm = p.height || 0;
     const inchesTotal = heightCm * 0.393701;
@@ -152,7 +168,7 @@ function renderPlayerRow(p) {
                 <div style="display: flex; align-items: flex-start; gap: 15px;">
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 60px;">
                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" style="width: 60px; height: 60px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-                        ${flagUrl ? `<img src="${flagUrl}" style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid #e2e8f0; object-fit: cover;">` : ''}
+                        ${flagUrl ? `<img src="${flagUrl}" style="width: 22px; height: auto; border-radius: 2px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">` : ''}
                     </div>
                     <div style="flex: 1;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
