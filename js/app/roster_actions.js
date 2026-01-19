@@ -42,15 +42,14 @@ export const RosterActions = {
         if (modal) modal.remove();
     },
 
-    // Pobieranie aktualnego sezonu z bazy lub globalnego stanu
     getCurrentSeason: () => {
-        return window.gameState?.currentSeason || new Date().getFullYear();
+        return window.gameState?.currentSeason || 2026;
     },
 
     showProfile: async (player) => {
         const currentSeason = RosterActions.getCurrentSeason();
 
-        // 1. Pobieranie danych (Sezon dynamiczny w zapytaniu)
+        // 1. Pobieranie danych
         const [statsRes, historyRes] = await Promise.all([
             supabaseClient.from('vw_player_season_stats').select('*').eq('player_id', player.id).single(),
             supabaseClient.from('player_stats').select('*').eq('player_id', player.id).order('created_at', { ascending: false }).limit(10)
@@ -71,7 +70,10 @@ export const RosterActions = {
                                 <div style="position:absolute; bottom:-10px; right:-10px; background:#3b82f6; color:white; padding:4px 10px; border-radius:8px; font-weight:900; font-size:12px;">${player.position}</div>
                             </div>
                             <div>
-                                <h1 style="margin:0; color:white; font-size:2.4rem; font-weight:900; letter-spacing:-1px;">${player.first_name} ${player.last_name}</h1>
+                                <h1 style="margin:0; color:white; font-size:2.4rem; font-weight:900; letter-spacing:-1px;">
+                                    ${player.first_name} ${player.last_name}
+                                    ${player.is_rookie ? '<span style="background:#ef4444; font-size:12px; padding:3px 8px; border-radius:6px; vertical-align:middle; margin-left:10px;">ROOKIE</span>' : ''}
+                                </h1>
                                 <p style="margin:5px 0 0 0; color:#94a3b8; font-size:1.1rem; font-weight:500;">
                                     ${player.height} cm (${cmToFtIn(player.height)}) | ${player.age} Years Old | ${player.country}
                                 </p>
@@ -88,7 +90,7 @@ export const RosterActions = {
                         <button onclick="window.RosterActions.closeModal()" style="background:none; border:none; color:white; font-size:32px; cursor:pointer; opacity:0.6; transition:0.2s;">&times;</button>
                     </div>
 
-                    <div style="padding:40px; overflow-y:auto; flex-grow:1; background:#f1f5f9;">
+                    <div id="modal-content-scroll" style="padding:40px; overflow-y:auto; flex-grow:1; background:#f1f5f9;">
                         
                         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; margin-bottom:40px;">
                             ${RosterActions._renderProfileCard("Potential", potData.icon + ' ' + potData.label, potData.color)}
@@ -102,20 +104,20 @@ export const RosterActions = {
                             ${RosterActions._renderSkillBlock('General', player, ['dribbling', '1on1_off', 'stamina', 'ft'])}
                         </div>
 
-                        <div style="background:white; padding:35px; border-radius:24px; border:1px solid #e2e8f0; margin-bottom:45px;">
-                            <h3 style="margin-top:0; color:#1e293b; font-size:1.1rem; text-transform:uppercase;">
-                                Season ${currentSeason} Specialization
+                        <div id="training-section" style="background:white; padding:35px; border-radius:24px; border:2px solid #3b82f6; margin-bottom:45px; box-shadow:0 10px 30px rgba(59,130,246,0.1);">
+                            <h3 style="margin-top:0; color:#1e293b; font-size:1.1rem; text-transform:uppercase; display:flex; align-items:center; gap:10px;">
+                                🎯 Season ${currentSeason} Individual Focus
                             </h3>
                             <div style="display:flex; gap:20px;">
-                                <select id="train-choice" ${player.training_locked_season >= currentSeason ? 'disabled' : ''} style="flex-grow:1; padding:15px; border-radius:12px; border:2px solid #f1f5f9; font-weight:700;">
+                                <select id="train-choice" ${player.training_locked_season >= currentSeason ? 'disabled' : ''} style="flex-grow:1; padding:15px; border-radius:12px; border:2px solid #f1f5f9; font-weight:700; font-family:inherit; font-size:1rem;">
                                     <option value="skill_3pt" ${player.individual_training_skill === 'skill_3pt' ? 'selected' : ''}>Elite Three Point Range</option>
                                     <option value="skill_dunk" ${player.individual_training_skill === 'skill_dunk' ? 'selected' : ''}>Inside Scoring & Dunks</option>
                                     <option value="skill_1on1_def" ${player.individual_training_skill === 'skill_1on1_def' ? 'selected' : ''}>Lockdown Defense</option>
                                     <option value="skill_passing" ${player.individual_training_skill === 'skill_passing' ? 'selected' : ''}>Playmaking & Vision</option>
                                 </select>
                                 <button onclick="window.RosterActions.saveTraining('${player.id}')" ${player.training_locked_season >= currentSeason ? 'disabled' : ''} 
-                                    style="background:${player.training_locked_season >= currentSeason ? '#94a3b8' : '#1e293b'}; color:white; padding:15px 40px; border-radius:12px; font-weight:800; border:none; cursor:pointer;">
-                                    ${player.training_locked_season >= currentSeason ? 'LOCKED' : 'SAVE'}
+                                    style="background:${player.training_locked_season >= currentSeason ? '#94a3b8' : '#1e293b'}; color:white; padding:15px 40px; border-radius:12px; font-weight:800; border:none; cursor:pointer; transition:0.3s;">
+                                    ${player.training_locked_season >= currentSeason ? 'LOCKED' : 'CONFIRM TRAINING'}
                                 </button>
                             </div>
                         </div>
@@ -150,7 +152,7 @@ export const RosterActions = {
                                                 </span>
                                             </td>
                                         </tr>
-                                    `}).join('') : '<tr><td colspan="7" style="padding:40px; text-align:center;">No data.</td></tr>'}
+                                    `}).join('') : '<tr><td colspan="7" style="padding:40px; text-align:center; color:#94a3b8;">No game data available for this player.</td></tr>'}
                                 </tbody>
                             </table>
                         </div>
@@ -159,6 +161,9 @@ export const RosterActions = {
             </div>
         `;
         document.body.insertAdjacentHTML('beforeend', modalHtml);
+        // Safari UX Fix: Zawsze na górę po otwarciu
+        const scrollDiv = document.getElementById('modal-content-scroll');
+        if(scrollDiv) scrollDiv.scrollTop = 0;
     },
 
     saveTraining: async (playerId) => {
@@ -170,9 +175,11 @@ export const RosterActions = {
         }).eq('id', playerId);
 
         if (!error) {
-            alert(`Training locked for Season ${currentSeason}!`);
+            alert(`✅ Training focus locked for Season ${currentSeason}!`);
             RosterActions.closeModal();
             if (window.loadRoster) window.loadRoster();
+        } else {
+            alert("Error: Could not save training focus.");
         }
     },
 
