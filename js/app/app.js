@@ -4,6 +4,7 @@ import { renderRosterView } from './roster_view.js';
 import { renderTrainingDashboard } from './training_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
+import { renderAdminView } from './admin_view.js'; // Dodano import widoku admina
 
 // KRYTYCZNY IMPORT DLA PRZYCISKÓW
 import { RosterActions } from './roster_actions.js';
@@ -84,7 +85,8 @@ export async function initApp() {
         if (globalTeamDisplay) globalTeamDisplay.innerText = teamName;
         if (globalLeagueDisplay) globalLeagueDisplay.innerText = leagueName;
 
-        return { team, players };
+        // Zwracamy również profil, aby switchTab mógł sprawdzić rolę (Admin/Manager/Moderator)
+        return { team, players, profile };
     } catch (err) {
         console.error("[APP] Błąd krytyczny initApp:", err);
         return null;
@@ -110,6 +112,7 @@ export async function switchTab(tabId) {
     else if (tabId === 'm-training') renderTrainingDashboard(data.players);
     else if (tabId === 'm-market') renderMarketView(data.team, data.players);
     else if (tabId === 'm-finances') renderFinancesView(data.team, data.players);
+    else if (tabId === 'm-admin') renderAdminView(data.profile); // Dodano obsługę widoku admina
 }
 
 window.switchTab = switchTab;
