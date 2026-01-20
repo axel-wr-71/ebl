@@ -82,7 +82,6 @@ export const RosterActions = {
     showProfile: async (player) => {
         const currentSeason = RosterActions.getCurrentSeason();
 
-        // Usuwamy stary modal jeśli istnieje
         const oldModal = document.getElementById('roster-modal-overlay');
         if (oldModal) oldModal.remove();
 
@@ -98,9 +97,9 @@ export const RosterActions = {
         const potData = window.getPotentialData(player.potential);
         const isLocked = player.training_locked_season >= currentSeason;
         
-        // Dynamiczna flaga narodowości
-        const flagCode = player.nationality_code ? player.nationality_code.toLowerCase() : 'un';
-        const flagUrl = `https://flagcdn.com/w40/${flagCode}.png`;
+        // Wykorzystanie zdefiniowanej ścieżki do lokalnych plików PNG
+        const finalCode = player.nationality_code ? player.nationality_code.toLowerCase() : 'un';
+        const flagUrl = `assets/flags/${finalCode}.png`;
 
         let modalHtml = `
             <div id="roster-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,10,0.85); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px);">
@@ -114,7 +113,7 @@ export const RosterActions = {
                             </div>
                             <div>
                                 <h1 style="margin:0; color:white; font-size:2.2rem; font-weight:900; letter-spacing:-1px; display: flex; align-items: center; gap: 12px;">
-                                    <img src="${flagUrl}" style="width:32px; height:auto; border-radius:4px; border:1px solid rgba(255,255,255,0.2);" alt="${player.nationality_code}">
+                                    <img src="${flagUrl}" style="width:36px; height:auto; border-radius:4px;" alt="${finalCode}">
                                     ${player.first_name} ${player.last_name}
                                     ${player.is_rookie ? '<span style="background:#ef4444; font-size:11px; padding:3px 8px; border-radius:6px; vertical-align:middle; margin-left:10px;">ROOKIE</span>' : ''}
                                 </h1>
@@ -245,8 +244,6 @@ export const RosterActions = {
         const message = `Set <b>${skillLabel}</b> as the primary focus for <b>Season ${currentSeason}</b>? This action cannot be undone.`;
 
         this.showConfirm(message, async () => {
-            console.log("--- START: SAVING TRAINING ---");
-            
             const { error: upError } = await supabaseClient
                 .from('players')
                 .update({
@@ -256,8 +253,7 @@ export const RosterActions = {
                 .eq('id', playerId);
 
             if (upError) {
-                console.error("❌ BŁĄD TABELI PLAYERS:", upError);
-                alert(`Database Error (players): ${upError.message}`);
+                alert(`Database Error: ${upError.message}`);
                 return;
             }
 
@@ -269,14 +265,13 @@ export const RosterActions = {
                     skill_focused: skill
                 });
 
-            const { data: updatedPlayer, error: fetchError } = await supabaseClient
+            const { data: updatedPlayer } = await supabaseClient
                 .from('players')
                 .select('*')
                 .eq('id', playerId)
                 .single();
 
-            if (!fetchError && updatedPlayer) {
-                console.log("✅ Dane odświeżone, przeładowuję profil.");
+            if (updatedPlayer) {
                 if (window.loadRoster) window.loadRoster();
                 this.showProfile(updatedPlayer);
             } else {
