@@ -35,13 +35,8 @@
         .nav-container { display: flex; justify-content: center; gap: 5px; padding: 0 20px; margin-top: 15px; flex-wrap: wrap; }
         .btn-tab { padding: 12px 25px; border: none; background: #e0e0e0; cursor: pointer; border-radius: 12px 12px 0 0; font-weight: 800; transition: 0.3s; color: #666; font-size: 0.85rem; letter-spacing: 0.5px; }
         .btn-tab.active { background: #1a237e; color: white; }
-        
-        /* Styl dla głównego kontenera widoków */
-        #app-main-view { 
-            min-height: 80vh; 
-            background: #f4f7f6; 
-            width: 100%;
-        }
+        .tab-content { display: none; min-height: 80vh; background: #f4f7f6; }
+        .tab-content.active { display: block; }
         
         header.app-header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; }
         .btn-logout { background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
@@ -76,7 +71,7 @@
     </main>
 </div>
 
-<div id="game-app" class="auth-state-pending" style="display: none;">
+<div id="game-app" class="auth-state-pending">
     <header class="app-header">
         <div style="display: flex; align-items: center; gap: 20px;">
             <div style="font-weight:900; color:#1a237e; font-size: 1.4rem; letter-spacing: -1px;">ELITE <span style="color:#e65100">BUZZER</span> LEAGUE</div>
@@ -100,11 +95,13 @@
         <button class="btn-tab active" data-tab="m-roster">ZAWODNICY</button>
         <button class="btn-tab" data-tab="m-training">TRENING</button>
         <button class="btn-tab" data-tab="m-market">RYNEK</button>
-        <button class="btn-tab" data-tab="m-media">MEDIA</button> 
-        <button class="btn-tab" data-tab="m-finances">FINANSE</button>
+        <button class="btn-tab" data-tab="m-media">MEDIA</button> <button class="btn-tab" data-tab="m-finances">FINANSE</button>
     </div>
 
-    <main id="app-main-view"></main>
+    <div id="m-roster" class="tab-content active"><div id="roster-view-container"></div></div>
+    <div id="m-training" class="tab-content"><div id="training-view-container"></div></div>
+    <div id="m-market" class="tab-content"><div id="market-view-container"></div></div>
+    <div id="m-media" class="tab-content"><div id="media-view-container"></div></div> <div id="m-finances" class="tab-content"><div id="finances-view-container"></div></div>
 </div>
 
 <script type="module">
@@ -118,10 +115,12 @@
         const landing = document.getElementById('landing-page');
         const app = document.getElementById('game-app');
 
-        // Przełączanie widoczności
+        // Usuwamy blokady i ustawiamy display
+        landing.classList.add('auth-state-pending');
         landing.style.display = 'none';
-        app.style.display = 'block';
+        
         app.classList.remove('auth-state-pending');
+        app.style.display = 'block';
         
         // Inicjalizacja danych i pokazanie pierwszej zakładki
         await initApp();
