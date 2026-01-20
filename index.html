@@ -55,20 +55,64 @@
             </div>
         </div>
     </header>
-    <main class="hero-content">
-        <h1 class="main-title">ELITE BASKET LEAGUE</h1>
-        <div class="auth-box">
-            <h2>Panel Managera</h2>
-            <div class="auth-inputs">
-                <input type="email" id="email" placeholder="Email">
-                <input type="password" id="password" placeholder="Hasło">
-                <div class="auth-buttons">
-                    <button id="btn-login-action" class="btn-main btn-login">ZALOGUJ SIĘ</button>
-                    <button id="btn-signup-action" class="btn-main btn-signup">ZAŁÓŻ KONTO</button>
-                </div>
-            </div>
-        </div>
-    </main>
+    <main id="game-content-area">
+    <section id="m-roster" class="tab-content active">
+        <div class="drag-handle">⠿ MOVE SECTION</div>
+        <div id="roster-view-container"></div>
+    </section>
+    
+    <section id="m-training" class="tab-content">
+        <div class="drag-handle">⠿ MOVE SECTION</div>
+        <div id="training-view-container"></div>
+    </section>
+
+    <section id="m-market" class="tab-content">
+        <div class="drag-handle">⠿ MOVE SECTION</div>
+        <div id="market-view-container"></div>
+    </section>
+
+    <section id="m-media" class="tab-content">
+        <div class="drag-handle">⠿ MOVE SECTION</div>
+        <div id="media-view-container"></div>
+    </section>
+
+    <section id="m-finances" class="tab-content">
+        <div class="drag-handle">⠿ MOVE SECTION</div>
+        <div id="finances-view-container"></div>
+    </section>
+</main>
+
+<style>
+    /* Style dla uchwytów Drag & Drop */
+    .drag-handle {
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        color: #94a3b8;
+        padding: 5px;
+        text-align: center;
+        font-size: 0.65rem;
+        font-weight: 800;
+        cursor: grab; /* Zmienia kursor na "łapkę" */
+        border-radius: 8px 8px 0 0;
+        margin-bottom: -1px;
+        transition: 0.2s;
+    }
+    
+    .drag-handle:hover {
+        background: #e2e8f0;
+        color: #64748b;
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+
+    /* Opcjonalne: Styl dla elementu, który jest akurat przeciągany */
+    .sortable-ghost {
+        opacity: 0.4;
+        border: 2px dashed #1a237e;
+    }
+</style>
 </div>
 
 <div id="game-app" class="auth-state-pending">
