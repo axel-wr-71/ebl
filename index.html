@@ -37,18 +37,10 @@
         .btn-tab { padding: 12px 25px; border: none; background: #e0e0e0; cursor: pointer; border-radius: 12px 12px 0 0; font-weight: 800; transition: 0.3s; color: #666; font-size: 0.85rem; letter-spacing: 0.5px; }
         .btn-tab.active { background: #1a237e; color: white; }
         
-        /* Obszar roboczy dla sekcji */
-        #game-content-area {
-            min-height: 80vh;
-            background: #f4f7f6;
-            width: 100%;
-            padding-bottom: 50px;
-        }
-
-        .tab-content { display: none; margin-bottom: 10px; }
+        .tab-content { display: none; min-height: 80vh; background: #f4f7f6; }
         .tab-content.active { display: block; }
-
-        /* POPRAWIONE Style dla uchwytów Drag & Drop */
+        
+        /* Style dla uchwytów Drag & Drop */
         .drag-handle {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -60,32 +52,13 @@
             font-weight: 800;
             cursor: grab;
             border-radius: 12px 12px 0 0;
-            margin: 0; /* Usunięto marginesy boczne dla lepszego przylegania */
+            margin: 0;
             letter-spacing: 1px;
-            transition: 0.2s;
             display: none;
         }
-        
-        .tab-content.active .drag-handle {
-            display: block;
-        }
+        .tab-content.active .drag-handle { display: block; }
+        .sortable-ghost { opacity: 0.2; background: #1a237e !important; }
 
-        .drag-handle:hover {
-            background: #1a237e;
-            color: white;
-            border-color: #1a237e;
-        }
-
-        .drag-handle:active {
-            cursor: grabbing;
-        }
-
-        /* Styl dla elementu "ducha" podczas przeciągania */
-        .sortable-ghost {
-            opacity: 0.1;
-            background: #1a237e !important;
-        }
-        
         header.app-header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; }
         .btn-logout { background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     </style>
@@ -119,7 +92,7 @@
     </main>
 </div>
 
-<div id="game-app" class="auth-state-pending" style="display: none;">
+<div id="game-app" class="auth-state-pending">
     <header class="app-header">
         <div style="display: flex; align-items: center; gap: 20px;">
             <div style="font-weight:900; color:#1a237e; font-size: 1.4rem; letter-spacing: -1px;">ELITE <span style="color:#e65100">BUZZER</span> LEAGUE</div>
@@ -147,32 +120,32 @@
         <button class="btn-tab" data-tab="m-finances">FINANSE</button>
     </div>
 
-    <main id="game-content-area">
-        <section id="m-roster" class="tab-content active">
+    <div id="game-content-area">
+        <div id="m-roster" class="tab-content active">
             <div class="drag-handle">⠿ PRZECIĄGNIJ, ABY ZMIENIĆ UKŁAD</div>
             <div id="roster-view-container"></div>
-        </section>
+        </div>
         
-        <section id="m-training" class="tab-content">
+        <div id="m-training" class="tab-content">
             <div class="drag-handle">⠿ PRZECIĄGNIJ, ABY ZMIENIĆ UKŁAD</div>
             <div id="training-view-container"></div>
-        </section>
+        </div>
 
-        <section id="m-market" class="tab-content">
+        <div id="m-market" class="tab-content">
             <div class="drag-handle">⠿ PRZECIĄGNIJ, ABY ZMIENIĆ UKŁAD</div>
             <div id="market-view-container"></div>
-        </section>
+        </div>
 
-        <section id="m-media" class="tab-content">
+        <div id="m-media" class="tab-content">
             <div class="drag-handle">⠿ PRZECIĄGNIJ, ABY ZMIENIĆ UKŁAD</div>
             <div id="media-view-container"></div>
-        </section>
+        </div> 
 
-        <section id="m-finances" class="tab-content">
+        <div id="m-finances" class="tab-content">
             <div class="drag-handle">⠿ PRZECIĄGNIJ, ABY ZMIENIĆ UKŁAD</div>
             <div id="finances-view-container"></div>
-        </section>
-    </main>
+        </div>
+    </div>
 </div>
 
 <script type="module">
@@ -180,19 +153,19 @@
     import { switchTab, initApp, initDragAndDrop } from './js/app/app.js';
 
     window.setupUI = async function(role) {
-        console.log("[SETUP] Uruchamianie interfejsu...");
+        console.log("[SETUP] Uruchamianie interfejsu dla:", role);
         
         const landing = document.getElementById('landing-page');
         const app = document.getElementById('game-app');
 
         landing.style.display = 'none';
-        app.style.display = 'block';
         app.classList.remove('auth-state-pending');
+        app.style.display = 'block';
         
         await initApp();
         await switchTab('m-roster');
-        
-        // Aktywacja Drag & Drop po załadowaniu wszystkiego
+
+        // Bezpieczne uruchomienie przeciągania
         if (typeof initDragAndDrop === 'function') {
             initDragAndDrop();
         }
