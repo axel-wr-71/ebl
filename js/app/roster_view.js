@@ -87,7 +87,7 @@ export function renderRosterView(team, players) {
                         </span>
                         <h2 style="margin: 5px 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px;">
                             ${star.first_name} ${star.last_name}
-                            ${flagUrl ? `<img src="${flagUrl}" style="width: 28px; height: auto; border-radius: 3px; border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 2px 4px rgba(0,0,0,0.2);">` : ''}
+                            ${flagUrl ? `<img src="${flagUrl}" style="width: 22px; height: auto; border-radius: 2px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">` : ''}
                         </h2>
                         <span style="font-size: 0.9rem; opacity: 0.8; display: flex; align-items: center; gap: 8px;">
                             <div style="${getPositionStyle(star.position)}; width: 24px; height: 24px; font-size: 0.55rem;">${star.position}</div> | <strong>${potData.label} ${potData.icon}</strong>
