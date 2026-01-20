@@ -11,7 +11,6 @@ import { RosterActions } from './roster_actions.js';
 // Rejestracja globalna natychmiast po załadowaniu
 window.RosterActions = RosterActions;
 window.potentialDefinitions = {}; // Globalny słownik definicji
-window.gameState = window.gameState || {}; // Inicjalizacja globalnego stanu gry
 
 /**
  * Pobiera definicje potencjału z bazy danych Supabase
@@ -58,9 +57,6 @@ export async function initApp() {
             console.warn("[APP] Manager nie ma przypisanej drużyny!");
             return null;
         }
-
-        // Zapisujemy teamId do globalnego stanu dla modułów treningowych
-        window.gameState.teamId = profile.team_id;
 
         const [teamRes, playersRes] = await Promise.all([
             supabaseClient.from('teams').select('*').eq('id', profile.team_id).single(),
@@ -110,9 +106,8 @@ export async function switchTab(tabId) {
     const data = await initApp();
     if (!data) return;
 
-    // POPRAWKA: Przekazujemy oba argumenty (team i players) do Dashboardu
     if (tabId === 'm-roster') renderRosterView(data.team, data.players);
-    else if (tabId === 'm-training') renderTrainingDashboard(data.team, data.players); 
+    else if (tabId === 'm-training') renderTrainingDashboard(data.players);
     else if (tabId === 'm-market') renderMarketView(data.team, data.players);
     else if (tabId === 'm-finances') renderFinancesView(data.team, data.players);
 }
