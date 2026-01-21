@@ -1,204 +1,175 @@
 // js/app/training_view.js
 import { supabaseClient } from '../auth.js';
 
-let currentCalendarDate = new Date();
-
 /**
- * Main function to render the refreshed Training Center
+ * Zaktualizowany moduł treningowy:
+ * - 12 zawodników (pełny skład)
+ * - Indywidualne profile treningowe
+ * - Sekcja Personelu (Offense, Defense, General)
+ * - Kalendarz i Historia
  */
-export async function renderTrainingDashboard(teamData, players) {
+export async function renderTrainingDashboard(teamData, players, currentWeek = 0) {
     const appContainer = document.getElementById('app-main-view');
     if (!appContainer) return;
 
     try {
-        // Fetch training history for the calendar
-        const { data: history, error: historyError } = await supabaseClient
+        // Pobieranie historii treningów dla kalendarza
+        const { data: history } = await supabaseClient
             .from('training_history')
             .select('*')
             .eq('team_id', teamData.id)
             .order('training_date', { ascending: false });
 
-        if (historyError) console.warn("Could not fetch history:", historyError);
-
-        // Dynamiczna nazwa zespołu
-        const teamDisplayName = teamData.name || "My Team";
+        const isOffSeason = currentWeek >= 15;
 
         appContainer.innerHTML = `
-            <div class="training-container" style="padding: 30px; color: #333; font-family: 'Inter', sans-serif; background: #f4f7f6; min-height: 100vh;">
-                <header style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="training-container" style="padding: 30px; font-family: 'Inter', sans-serif; background: #f4f7f6; min-height: 100vh;">
+                
+                <header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <h1 style="font-size: 2.2em; font-weight: 800; color: #1a237e; margin:0; letter-spacing: -1px;">TRAINING <span style="color: #e65100;">HUB</span></h1>
+                        <h1 style="font-size: 2em; font-weight: 900; color: #1a237e; margin:0;">CENTRE DE FORMATION</h1>
+                        <p style="margin:5px 0 0 0; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                            Season 1 • <span style="color: #e65100;">Week ${currentWeek}</span> • ${getWeekStatusLabel(currentWeek)}
+                        </p>
                     </div>
-                    <div style="background: #1a237e; color: white; padding: 12px 24px; border-radius: 50px; box-shadow: 0 4px 15px rgba(26, 35, 126, 0.2); font-weight: bold; font-size: 0.9em; display: flex; align-items: center; gap: 10px;">
-                        🏀 ${teamDisplayName.toUpperCase()}
+                    <div style="background: white; padding: 15px 25px; border-radius: 12px; border: 1px solid #e0e0e0; text-align: right;">
+                        <div style="font-size: 0.7em; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Weekly Session Count</div>
+                        <div style="font-size: 1.2em; font-weight: 900; color: #1a237e;">5 / 5 Sessions</div>
                     </div>
                 </header>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 40px;">
-                    ${renderFocusCard('MONDAY', teamData.monday_training_focus)}
-                    ${renderFocusCard('FRIDAY', teamData.friday_training_focus)}
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+                    ${renderStaffMember('OFFENSE', 'Technical Specialist', teamData.coach_offense_lvl || 1, '#e65100')}
+                    ${renderStaffMember('DEFENSE', 'Defensive Coordinator', teamData.coach_defense_lvl || 1, '#1a237e')}
+                    ${renderStaffMember('GENERAL', 'Performance Coach', teamData.coach_general_lvl || 1, '#455a64')}
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 25px;">
-                    <div style="background: white; border-radius: 20px; padding: 30px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
-                        <h3 style="margin-bottom: 25px; font-size: 1.1em; font-weight: 700; color: #1a237e; text-transform: uppercase; letter-spacing: 1px;">
-                            🚀 Latest Impact
-                        </h3>
-                        <div id="player-training-list">
-                            ${renderImprovedPlayers(players)}
+                <div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 30px;">
+                    
+                    <div style="background: white; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.02); overflow: hidden;">
+                        <div style="padding: 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin:0; font-size: 0.9em; font-weight: 800; color: #1a237e; text-transform: uppercase;">Player Training Focus (Full Roster)</h3>
+                            <span style="font-size: 0.75em; color: #64748b;">Max 3 players per position</span>
+                        </div>
+                        <div style="max-height: 600px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead style="background: #ffffff; position: sticky; top: 0; z-index: 10;">
+                                    <tr style="text-align: left; font-size: 0.7em; color: #94a3b8; border-bottom: 1px solid #f1f5f9;">
+                                        <th style="padding: 15px 20px;">PLAYER</th>
+                                        <th style="padding: 15px 20px;">SKILL SET FOCUS</th>
+                                        <th style="padding: 15px 20px; text-align: right;">EST. GROWTH</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${players.slice(0, 12).map(p => renderPlayerRow(p, isOffSeason)).join('')}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
-                    <div style="background: white; border-radius: 20px; padding: 30px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
-                        <div id="calendar-container">
+                    <div style="display: flex; flex-direction: column; gap: 30px;">
+                        <div style="background: white; border-radius: 20px; padding: 25px; border: 1px solid #e2e8f0;">
+                            <h3 style="margin: 0 0 20px 0; font-size: 0.9em; font-weight: 800; color: #1a237e; text-transform: uppercase;">Activity Calendar</h3>
                             ${renderCalendar(currentCalendarDate, history || [])}
+                        </div>
+
+                        <div style="background: white; border-radius: 20px; padding: 25px; border: 1px solid #e2e8f0;">
+                            <h3 style="margin: 0 0 15px 0; font-size: 0.9em; font-weight: 800; color: #1a237e; text-transform: uppercase;">Latest Progress Logs</h3>
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                ${renderSimpleLogs(players)}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         `;
     } catch (err) {
-        console.error("Dashboard Render Error:", err);
-        appContainer.innerHTML = `<div style="padding:20px; color:red;">Error loading training hub. Check console.</div>`;
+        console.error("Critical Render Error:", err);
     }
 }
 
-function getNextTrainingDate(dayName) {
-    const days = { 'MONDAY': 1, 'FRIDAY': 5 };
-    const targetDay = days[dayName];
-    let result = new Date();
-    result.setDate(result.getDate() + (targetDay + 7 - result.getDay()) % 7);
-    if (result <= new Date()) result.setDate(result.getDate() + 7);
-    return result.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function renderFocusCard(day, currentFocus) {
-    // Te dane docelowo będą definiowane w sekcji Media (Admin)
-    const focusOptions = {
-        'SHARP_SHOOTER': { img: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400', label: 'Sharp Shooter' },
-        'PAINT_PROTECTOR': { img: 'https://images.unsplash.com/photo-1519861531473-920036214751?w=400', label: 'Paint Protector' },
-        'PERIMETER_DEFENDER': { img: 'https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=400', label: 'Perimeter Def' },
-        'PLAYMAKING_FOCUS': { img: 'https://images.unsplash.com/photo-1518063311540-30b8acb1d7a8?w=400', label: 'Playmaking' },
-        'BIG_MAN_INSIDE': { img: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400', label: 'Big Man Inside' },
-        'ISOLATION_SCORER': { img: 'https://images.unsplash.com/photo-1466193341027-56e68017ee2d?w=400', label: 'ISO Scorer' }
-    };
-
-    const selected = focusOptions[currentFocus] || { img: 'https://images.unsplash.com/photo-1544919982-b61976f0ba43?w=400', label: 'Not Set' };
-    const nextDate = getNextTrainingDate(day);
-
+function renderStaffMember(title, role, lvl, color) {
     return `
-        <div style="background: white; padding: 25px; border-radius: 20px; border: 1px solid #e0e0e0; box-shadow: 0 10px 20px rgba(0,0,0,0.02);">
-            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-                <img id="focus-img-${day}" src="${selected.img}" style="width: 100px; height: 100px; border-radius: 15px; object-fit: cover; border: 3px solid #f0f2f5;">
-                <div>
-                    <div style="font-size: 0.75em; color: #999; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">${day} Session</div>
-                    <div id="focus-label-${day}" style="font-size: 1.5em; font-weight: 800; color: #1a237e; margin: 2px 0;">${selected.label}</div>
-                    <div style="font-size: 0.85em; color: #e65100; font-weight: 700;">📅 Next: ${nextDate}</div>
-                </div>
-            </div>
-            
-            <div style="display: flex; gap: 10px;">
-                <select id="select-${day}" onchange="window.updateFocusPreview('${day}', this.value)" style="flex: 1; background: #f8f9fa; border: 1px solid #ddd; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; outline: none;">
-                    ${Object.entries(focusOptions).map(([key, obj]) => `
-                        <option value="${key}" ${currentFocus === key ? 'selected' : ''}>${obj.label}</option>
-                    `).join('')}
-                </select>
-                <button onclick="window.saveTrainingManual('${day}')" style="background: #1a237e; color: white; border: none; padding: 0 25px; border-radius: 12px; font-weight: bold; cursor: pointer;">SAVE</button>
+        <div style="background: white; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px;">
+            <div style="width: 50px; height: 50px; background: ${color}; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 1.2em;">${lvl}</div>
+            <div>
+                <div style="font-size: 0.75em; font-weight: 800; color: ${color};">${title}</div>
+                <div style="font-size: 0.85em; font-weight: 700; color: #1a237e;">${role}</div>
             </div>
         </div>
     `;
 }
 
-function renderImprovedPlayers(players) {
-    const improved = players.filter(p => parseFloat(p.last_training_growth || 0) > 0);
+function renderPlayerRow(p, isLocked) {
+    const growth = ((p.is_rookie ? 0.08 : 0.05) * (p.potential_cat === 'GOAT' ? 1.5 : 1)).toFixed(3);
     
-    if (improved.length === 0) {
-        return `<div style="text-align: center; color: #999; padding: 40px; border: 2px dashed #f0f0f0; border-radius: 15px;">
-                    No growth data recorded from last session.
-                </div>`;
-    }
-
-    return improved.map(player => `
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f8f9fa;">
-            <div>
-                <div style="font-weight: 700; color: #1a237e;">${player.last_name.toUpperCase()}</div>
-                <div style="font-size: 0.75em; color: #999;">Potential: ${player.potential}</div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <div style="font-family: monospace; font-weight: 800; color: #2ecc71; background: #e8f5e9; padding: 5px 10px; border-radius: 8px;">
-                    +${parseFloat(player.last_training_growth).toFixed(3)}
-                </div>
-            </div>
-        </div>
-    `).join('');
+    return `
+        <tr style="border-bottom: 1px solid #f8fafc; transition: background 0.2s;" onmouseover="this.style.background='#fcfdfe'" onmouseout="this.style.background='transparent'">
+            <td style="padding: 15px 20px;">
+                <div style="font-weight: 800; color: #1a237e; font-size: 0.9em;">${p.last_name}</div>
+                <div style="font-size: 0.7em; color: #94a3b8;">${p.position} | Age: ${p.age} | ${p.potential_cat}</div>
+            </td>
+            <td style="padding: 15px 20px;">
+                <select onchange="window.saveTrainingFocus(${p.id}, this.value)" ${isLocked ? 'disabled' : ''} 
+                    style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.8em; font-weight: 600; background: #fff; cursor: pointer;">
+                    <option value="GENERAL" ${p.current_training_focus === 'GENERAL' ? 'selected' : ''}>General Training</option>
+                    <option value="OFFENSE" ${p.current_training_focus === 'OFFENSE' ? 'selected' : ''}>Offensive Skills</option>
+                    <option value="DEFENSE" ${p.current_training_focus === 'DEFENSE' ? 'selected' : ''}>Defensive Drills</option>
+                    <option value="PHYSICAL" ${p.current_training_focus === 'PHYSICAL' ? 'selected' : ''}>Strength & Conditioning</option>
+                </select>
+            </td>
+            <td style="padding: 15px 20px; text-align: right;">
+                <span style="font-family: monospace; font-weight: 900; color: #059669; background: #ecfdf5; padding: 4px 8px; border-radius: 6px; font-size: 0.85em;">+${growth}</span>
+            </td>
+        </tr>
+    `;
 }
 
 function renderCalendar(date, history) {
     const month = date.getMonth();
     const year = date.getFullYear();
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     return `
-        <div style="text-align: center;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <button onclick="window.changeMonth(-1)" style="border: 1px solid #eee; background: white; width: 35px; height: 35px; border-radius: 10px; cursor: pointer;">&lt;</button>
-                <h4 style="margin:0; font-weight: 800; color: #1a237e; text-transform: uppercase; font-size: 0.9em;">${monthNames[month]} ${year}</h4>
-                <button onclick="window.changeMonth(1)" style="border: 1px solid #eee; background: white; width: 35px; height: 35px; border-radius: 10px; cursor: pointer;">&gt;</button>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;">
-                ${['S','M','T','W','T','F','S'].map(d => `<div style="font-size: 0.7em; font-weight: 800; color: #cbd5e0;">${d}</div>`).join('')}
-                ${Array(firstDay).fill('<div></div>').join('')}
-                ${Array.from({ length: daysInMonth }, (_, i) => {
-                    const day = i + 1;
-                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const hasSession = history.some(h => h.training_date === dateStr);
-                    return `<div style="height: 30px; display: flex; align-items: center; justify-content: center; font-size: 0.85em; border-radius: 6px; ${hasSession ? 'background: #e65100; color: white; font-weight: bold;' : 'color: #777'}">${day}</div>`;
-                }).join('')}
-            </div>
+        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center;">
+            ${['S','M','T','W','T','F','S'].map(d => `<div style="font-size: 0.65em; font-weight: 800; color: #94a3b8; padding-bottom: 10px;">${d}</div>`).join('')}
+            ${Array(firstDay).fill('<div></div>').join('')}
+            ${Array.from({ length: daysInMonth }, (_, i) => {
+                const day = i + 1;
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const hasSession = history.some(h => h.training_date === dateStr);
+                return `<div style="height: 28px; line-height: 28px; font-size: 0.75em; border-radius: 5px; ${hasSession ? 'background: #1a237e; color: white; font-weight: bold;' : 'color: #64748b'}">${day}</div>`;
+            }).join('')}
         </div>
     `;
 }
 
+function renderSimpleLogs(players) {
+    return players.filter(p => p.last_training_growth > 0).slice(0, 5).map(p => `
+        <div style="display: flex; justify-content: space-between; font-size: 0.8em; padding: 8px 0; border-bottom: 1px dotted #e2e8f0;">
+            <span style="font-weight: 700; color: #1a237e;">${p.last_name}</span>
+            <span style="color: #059669; font-weight: 800;">+${parseFloat(p.last_training_growth).toFixed(3)} EXP</span>
+        </div>
+    `).join('') || '<div style="font-size: 0.8em; color: #94a3b8; text-align: center;">No sessions recorded today.</div>';
+}
+
+function getWeekStatusLabel(week) {
+    if (week === 0) return "Pre-season Friendlies";
+    if (week === 6) return "All-Star Event";
+    if (week >= 11 && week <= 14) return "Playoff Intensity";
+    if (week === 15) return "Off-season / Draft";
+    return "Regular Season Training";
+}
+
 // --- WINDOW FUNCTIONS ---
-
-window.updateFocusPreview = (day, val) => {
-    // Te URL będą pobierane dynamicznie z bazy w wersji Media Component
-    const focusOptions = {
-        'SHARP_SHOOTER': 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400',
-        'PAINT_PROTECTOR': 'https://images.unsplash.com/photo-1519861531473-920036214751?w=400',
-        'PERIMETER_DEFENDER': 'https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=400',
-        'PLAYMAKING_FOCUS': 'https://images.unsplash.com/photo-1518063311540-30b8acb1d7a8?w=400',
-        'BIG_MAN_INSIDE': 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400',
-        'ISOLATION_SCORER': 'https://images.unsplash.com/photo-1466193341027-56e68017ee2d?w=400'
-    };
-    const imgEl = document.getElementById(`focus-img-${day}`);
-    const labelEl = document.getElementById(`focus-label-${day}`);
-    if (imgEl) imgEl.src = focusOptions[val];
-    if (labelEl) labelEl.innerText = val.replace(/_/g, ' ');
-};
-
-window.saveTrainingManual = async (day) => {
-    const select = document.getElementById(`select-${day}`);
-    const val = select.value;
-    const column = day === 'MONDAY' ? 'monday_training_focus' : 'friday_training_focus';
-    
+window.saveTrainingFocus = async (playerId, focus) => {
     try {
         const { error } = await supabaseClient
-            .from('teams')
-            .update({ [column]: val })
-            .eq('id', window.userTeamId);
-
+            .from('players')
+            .update({ current_training_focus: focus })
+            .eq('id', playerId);
         if (error) throw error;
-        alert(`Training plan for ${day} saved successfully!`);
-    } catch (e) {
-        console.error(e);
-        alert("Error saving training plan.");
-    }
-};
-
-window.changeMonth = (val) => {
-    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + val);
-    location.reload(); 
+        console.log(`Focus updated for player ${playerId}: ${focus}`);
+    } catch (e) { console.error("Error updating focus:", e); }
 };
