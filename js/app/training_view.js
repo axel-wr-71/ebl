@@ -40,15 +40,6 @@ function getTrainingDayInfo(dayName) {
     };
 }
 
-function calculateTotalSkills(p) {
-    const skills = [
-        p.skill_2pt, p.skill_3pt, p.skill_dunk, p.skill_ft, p.skill_passing, 
-        p.skill_dribbling, p.skill_stamina, p.skill_rebound, p.skill_block, 
-        p.skill_steal, p.skill_1on1_off, p.skill_1on1_def
-    ];
-    return skills.reduce((a, b) => (a || 0) + (parseInt(b) || 0), 0);
-}
-
 // --- RENDEROWANIE WIDOKU ---
 
 export async function renderTrainingView(team, players) {
@@ -59,6 +50,14 @@ export async function renderTrainingView(team, players) {
     const friInfo = getTrainingDayInfo('Friday');
     const staffEff = ((team.coach_general_lvl || 0) * 2.5).toFixed(1);
     const currentSeason = team.current_season || 1;
+
+    // Pobieranie historii treningów drużynowych
+    const { data: teamHistory } = await supabaseClient
+        .from('team_training_history')
+        .select('*')
+        .eq('team_id', team.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
 
     let html = `
         <div style="padding: 25px; display: flex; justify-content: space-between; align-items: flex-end;">
@@ -73,25 +72,35 @@ export async function renderTrainingView(team, players) {
             </div>
         </div>
 
-        <div style="margin: 0 25px 30px 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+        <div style="margin: 0 25px 25px 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
             ${renderDayColumn('Monday', monInfo, team.monday_training_focus, team.id)}
             ${renderDayColumn('Friday', friInfo, team.friday_training_focus, team.id)}
         </div>
 
-        <div style="margin: 0 25px 40px 25px;">
-            <h3 style="color: #1e293b; font-size: 0.9rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">Weekly Growth & Base Focus</h3>
-            <table style="width: 100%; border-collapse: separate; border-spacing: 0 8px;">
-                <tbody>
-                    ${players.map(p => renderWeeklyRow(p)).join('')}
-                </tbody>
-            </table>
-        </div>
+        <div style="margin: 0 25px 30px 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+            <div style="background: white; border-radius: 20px; padding: 20px; border: 1px solid #e2e8f0;">
+                <h3 style="margin: 0 0 15px 0; font-size: 0.8rem; color: #1e293b; text-transform: uppercase;">Team Training History</h3>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    ${teamHistory && teamHistory.length > 0 ? teamHistory.map(h => `
+                        <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: #f8fafc; border-radius: 8px; font-size: 0.75rem;">
+                            <span style="font-weight: 700;">${AVAILABLE_DRILLS.find(d => d.id === h.drill_id)?.name || h.drill_id}</span>
+                            <span style="color: #64748b;">Week ${h.week_number}</span>
+                        </div>
+                    `).join('') : '<p style="color:#94a3b8; font-size:0.7rem;">No history data found.</p>'}
+                </div>
+            </div>
 
-        <hr style="margin: 40px 25px; border: none; border-top: 2px dashed #e2e8f0;">
+            <div style="background: white; border-radius: 20px; padding: 20px; border: 1px solid #e2e8f0;">
+                <h3 style="margin: 0 0 15px 0; font-size: 0.8rem; color: #1e293b; text-transform: uppercase;">Month Schedule (Mon/Fri)</h3>
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center;">
+                    ${renderCalendar(team)}
+                </div>
+            </div>
+        </div>
 
         <div style="margin: 0 25px 50px 25px;">
             <h3 style="color: #1e293b; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">🎯 Seasonal Skill Specialization</h3>
-            <p style="color: #94a3b8; font-size: 0.75rem; margin-bottom: 20px;">You can set one major skill focus per player every season. This action is permanent for the duration of the season.</p>
+            <p style="color: #94a3b8; font-size: 0.75rem; margin-bottom: 20px;">You can set one major skill focus per player every season. This action is permanent.</p>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 ${players.map(p => renderSeasonalCard(p, currentSeason)).join('')}
@@ -125,29 +134,26 @@ function renderDayColumn(day, info, currentFocus, teamId) {
     `;
 }
 
-function renderWeeklyRow(p) {
-    const currentTotal = calculateTotalSkills(p);
-    return `
-        <tr style="background: white; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
-            <td style="padding: 12px 20px; border-radius: 12px 0 0 12px; width: 30%;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" style="width: 30px; height: 30px; border-radius: 6px;">
-                    <span style="font-weight: 700; color: #1a237e; font-size: 0.85rem;">${p.first_name} ${p.last_name}</span>
-                </div>
-            </td>
-            <td style="text-align: center; color: #64748b; font-size: 0.75rem; font-weight: 600;">Points: ${currentTotal} / ${p.max_total_cap || 240}</td>
-            <td style="padding: 10px;">
-                <select onchange="window.updateWeeklyFocus('${p.id}', this.value)" style="width: 100%; padding: 5px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 0.7rem;">
-                    <option value="GENERAL" ${p.individual_training_skill === 'GENERAL' ? 'selected' : ''}>General Focus</option>
-                    <option value="OFFENSE" ${p.individual_training_skill === 'OFFENSE' ? 'selected' : ''}>Offense Focus</option>
-                    <option value="DEFENSE" ${p.individual_training_skill === 'DEFENSE' ? 'selected' : ''}>Defense Focus</option>
-                </select>
-            </td>
-            <td style="padding-right: 20px; text-align: right; border-radius: 0 12px 12px 0;">
-                <span style="font-weight: 900; color: #059669; font-size: 0.8rem;">+${(p.last_training_growth || 0).toFixed(3)}</span>
-            </td>
-        </tr>
-    `;
+function renderCalendar(team) {
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    let daysHtml = '';
+    
+    for (let i = 1; i <= daysInMonth; i++) {
+        const date = new Date(now.getFullYear(), now.getMonth(), i);
+        const dayOfWeek = date.getDay(); // 1 = Mon, 5 = Fri
+        let content = i;
+        let style = "font-size: 0.65rem; padding: 5px; border-radius: 5px; color: #cbd5e1;";
+
+        if (dayOfWeek === 1 || dayOfWeek === 5) {
+            const isSet = (dayOfWeek === 1 && team.monday_training_focus) || (dayOfWeek === 5 && team.friday_training_focus);
+            content = isSet ? '✅' : '❌';
+            style = "font-size: 0.65rem; padding: 5px; border-radius: 5px; background: #f1f5f9; font-weight: bold; color: #1e293b;";
+        }
+
+        daysHtml += `<div style="${style}">${content}</div>`;
+    }
+    return daysHtml;
 }
 
 function renderSeasonalCard(p, currentSeason) {
@@ -185,8 +191,7 @@ window.saveSeasonalFocus = async function(playerId, currentSeason) {
     const skill = document.getElementById(`seasonal-choice-${playerId}`).value;
     const skillLabel = SKILL_LABELS[skill.replace('skill_', '')];
 
-    // System Confirm
-    const confirmBox = confirm(`Confirm: Set ${skillLabel} as Season ${currentSeason} focus? This cannot be changed later.`);
+    const confirmBox = confirm(`Confirm: Set ${skillLabel} as Season ${currentSeason} focus?`);
     if (!confirmBox) return;
 
     try {
@@ -200,14 +205,13 @@ window.saveSeasonalFocus = async function(playerId, currentSeason) {
 
         if (error) throw error;
 
-        // Log to history
         await supabaseClient.from('player_training_history').insert({
             player_id: playerId,
             season_number: currentSeason,
             skill_focused: skill
         });
 
-        alert("Focus saved successfully!");
+        alert("Focus saved!");
         location.reload(); 
     } catch (err) {
         alert("Error: " + err.message);
@@ -221,5 +225,6 @@ window.selectDrill = async (teamId, day, drillId) => {
 };
 
 window.updateWeeklyFocus = async (playerId, focusValue) => {
+    // Usunięto location.reload(), aby uniknąć przeskakiwania kart
     await supabaseClient.from('players').update({ individual_training_skill: focusValue }).eq('id', playerId);
 };
