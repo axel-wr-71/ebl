@@ -26,17 +26,17 @@ async function fetchPotentialDefinitions() {
                 label: d.label, 
                 emoji: d.emoji || '', 
                 color_hex: d.color_hex || '#3b82f6',
-                min_value: d.min_value
-            } : { label: 'Prospect', emoji: '', color_hex: '#94a3b8', min_value: 0 };
+                min_value: d.min_value || 0
+            } : { label: 'Prospect', emoji: '👤', color_hex: '#94a3b8', min_value: 0 };
         };
     } catch (err) {
-        console.error("[APP] Błąd potencjału:", err);
+        console.error("[APP] Błąd słownika potencjału:", err);
     }
 }
 
 export async function initApp() {
     try {
-        if (Object.keys(window.potentialDefinitions).length === 0) {
+        if (!window.potentialDefinitions || Object.keys(window.potentialDefinitions).length === 0) {
             await fetchPotentialDefinitions();
         }
 
@@ -59,11 +59,6 @@ export async function initApp() {
             return { ...p, potential_definitions: potDef };
         });
 
-        // Aktualizacja nagłówka
-        const teamName = team?.team_name || "Twoja Drużyna";
-        const tName = document.getElementById('display-team-name');
-        if (tName) tName.innerText = teamName;
-
         return { team, players };
     } catch (err) {
         console.error("[APP] initApp Error:", err);
@@ -72,37 +67,51 @@ export async function initApp() {
 }
 
 export async function switchTab(tabId) {
-    // 1. Najpierw pobierz dane (zanim cokolwiek zmienisz w UI)
-    const data = await initApp();
-    if (!data) return;
+    console.log("[NAV] Przełączam na:", tabId);
+    
+    // 1. Natychmiastowa reakcja wizualna (przyciski)
+    document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
 
-    // 2. Dopiero gdy mamy dane, przełącz klasy widoczności
+    // 2. Pobierz dane
+    const data = await initApp();
+    
+    // 3. Obsługa błędów danych
+    if (!data) {
+        console.error("[APP] Nie udało się załadować danych dla zakładki:", tabId);
+        return;
+    }
+
+    // 4. Przełącz widoczność kontenerów
     document.querySelectorAll('.tab-content').forEach(t => {
         t.classList.remove('active');
-        t.style.display = 'none'; // Dodatkowe zabezpieczenie Safari
+        t.style.display = 'none';
     });
-    document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
     
     const targetTab = document.getElementById(tabId);
     if (targetTab) {
         targetTab.classList.add('active');
         targetTab.style.display = 'block';
     }
-    
-    const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
-    if (activeBtn) activeBtn.classList.add('active');
 
-    // 3. Renderuj widok (kontenery są już puste lub gotowe na nową treść)
-    if (tabId === 'm-roster') {
-        renderRosterView(data.team, data.players);
-    } else if (tabId === 'm-training') {
-        renderTrainingView(data.team, data.players, 1);
-    } else if (tabId === 'm-market') {
-        renderMarketView(data.team, data.players);
-    } else if (tabId === 'm-media') {
-        renderMediaView(data.team, data.players);
-    } else if (tabId === 'm-finances') {
-        renderFinancesView(data.team, data.players);
+    // 5. Renderowanie (z domyślnymi wartościami dla bezpieczeństwa)
+    try {
+        if (tabId === 'm-roster') {
+            renderRosterView(data.team, data.players);
+        } else if (tabId === 'm-training') {
+            // Dodajemy bezpieczne pobieranie tygodnia, jeśli nie istnieje w obiekcie team
+            const week = data.team?.current_week || 1; 
+            renderTrainingView(data.team, data.players, week);
+        } else if (tabId === 'm-market') {
+            renderMarketView(data.team, data.players);
+        } else if (tabId === 'm-media') {
+            renderMediaView(data.team, data.players);
+        } else if (tabId === 'm-finances') {
+            renderFinancesView(data.team, data.players);
+        }
+    } catch (renderError) {
+        console.error("[APP] Błąd podczas renderowania widoku:", renderError);
     }
 }
 
