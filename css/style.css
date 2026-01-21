@@ -2,7 +2,7 @@
 :root {
     --nba-orange: #f58426;
     --nba-blue: #1a237e;
-    --bg-light: #f4f7f6; /* Zmieniony na delikatny szary */
+    --bg-light: #f4f7f6;
     --text-dark: #2c3e50;
     --danger: #e74c3c;
     --white: #ffffff;
@@ -17,43 +17,83 @@ body {
     background: var(--bg-light); 
     color: var(--text-dark); 
     margin: 0; 
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
-/* NAVBAR TABS (CENTERED & MODERN) */
+html, body {
+    height: 100%;
+    padding: 0;
+}
+
+/* NAVBAR TABS (MODERN ELITE DESIGN) */
 .nav-tabs-container {
     display: flex;
-    justify-content: center; /* Wycentrowanie zakładek */
-    gap: 15px;
-    padding: 25px 0;
-    background: var(--white);
-    border-bottom: 1px solid var(--border-color);
+    justify-content: center;
+    gap: 20px;
+    padding: 30px 0;
+    background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 .tab-btn {
-    padding: 12px 28px;
-    border-radius: 50px; /* Pill shape */
-    border: 1px solid var(--border-color);
-    background: var(--white);
-    color: #666;
+    padding: 14px 32px;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    color: #4a5568;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+}
+
+/* Subtelny wskaźnik aktywności przed tekstem */
+.tab-btn::before {
+    content: '•';
+    color: var(--nba-orange);
+    font-size: 18px;
+    opacity: 0.4;
+    transition: opacity 0.3s;
 }
 
 .tab-btn:hover {
-    background: #f8f9fa;
-    transform: translateY(-2px);
-    border-color: var(--nba-orange);
+    background: var(--white);
+    transform: translateY(-4px);
+    border-color: rgba(245, 132, 38, 0.4);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    color: var(--nba-blue);
+}
+
+.tab-btn:hover::before {
+    opacity: 1;
 }
 
 .tab-btn.active {
-    background: var(--accent-orange);
+    background: var(--nba-blue);
     color: var(--white);
-    border-color: var(--accent-orange);
-    box-shadow: 0 4px 15px rgba(230, 81, 0, 0.3);
+    border-color: var(--nba-blue);
+    box-shadow: 0 8px 25px rgba(26, 35, 126, 0.25);
+}
+
+.tab-btn.active::before {
+    color: var(--nba-orange);
+    opacity: 1;
+}
+
+.tab-btn:active {
+    transform: scale(0.95);
 }
 
 /* NAGŁÓWEK */
@@ -90,7 +130,7 @@ header {
 }
 .btn:hover { background: var(--accent-orange); }
 
-/* WIDOK TRENINGU - DODATKI DO PLIKU JS */
+/* WIDOK TRENINGU */
 .training-container select {
     appearance: none;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
@@ -130,19 +170,6 @@ header {
 /* POTENCJAŁ */
 .pot-bar-wrapper { height: 14px; background: #e9ecef; border-radius: 7px; overflow: hidden; }
 .pot-bar-fill { height: 100%; background: linear-gradient(90deg, var(--nba-orange), #ffb74d); }
-
-/* RESET I STRUKTURA GŁÓWNA */
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-}
 
 /* FLAGI I JĘZYKI */
 .flag-icon {
@@ -192,9 +219,11 @@ body {
     .nav-tabs-container {
         flex-wrap: wrap;
         padding: 15px;
+        gap: 10px;
     }
     .tab-btn {
-        padding: 8px 16px;
-        font-size: 12px;
+        padding: 10px 20px;
+        font-size: 11px;
+        border-radius: 12px;
     }
 }
