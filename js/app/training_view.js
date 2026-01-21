@@ -50,13 +50,15 @@ export async function renderTrainingView(team, players) {
     const staffEff = ((team.coach_general_lvl || 0) * 2.5).toFixed(1);
     const currentSeason = team.current_season || 1;
 
-    // Pobieranie ROZBUDOWANEJ historii treningów
-    const { data: teamHistory } = await supabaseClient
+    // Pobieranie historii dla sekcji LOGS i dla KALENDARZA (cały miesiąc)
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+    
+    const { data: monthHistory } = await supabaseClient
         .from('team_training_history')
         .select('*')
         .eq('team_id', team.id)
-        .order('created_at', { ascending: false })
-        .limit(6);
+        .gte('created_at', startOfMonth)
+        .order('created_at', { ascending: false });
 
     let html = `
         <div style="padding: 25px; display: flex; justify-content: space-between; align-items: flex-end;">
@@ -81,10 +83,10 @@ export async function renderTrainingView(team, players) {
             <div style="background: white; border-radius: 24px; padding: 25px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <h3 style="margin:0; font-size:0.9rem; color:#1e293b; font-weight:800;">TEAM LOGS</h3>
-                    <span style="font-size:0.65rem; color:#64748b; font-weight:600; background:#f1f5f9; padding:4px 8px; border-radius:6px;">LAST 6 SESSIONS</span>
+                    <span style="font-size:0.65rem; color:#64748b; font-weight:600; background:#f1f5f9; padding:4px 8px; border-radius:6px;">THIS MONTH</span>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
-                    ${teamHistory && teamHistory.length > 0 ? teamHistory.map(h => {
+                    ${monthHistory && monthHistory.length > 0 ? monthHistory.slice(0, 6).map(h => {
                         const drill = AVAILABLE_DRILLS.find(d => d.id === h.drill_id);
                         const dateObj = new Date(h.created_at);
                         const formattedDate = dateObj.toLocaleDateString('pl-PL', { day: '2-digit', month: 'short' });
@@ -95,7 +97,7 @@ export async function renderTrainingView(team, players) {
                             </div>
                             <div style="flex: 1;">
                                 <div style="font-size: 0.8rem; font-weight: 800; color: #1e293b;">${drill?.name || h.drill_id}</div>
-                                <div style="font-size: 0.65rem; color: #94a3b8; font-weight: 600;">Week ${h.week_number} • Season ${h.season_number || currentSeason}</div>
+                                <div style="font-size: 0.65rem; color: #94a3b8; font-weight: 600;">Week ${h.week_number} • S${h.season_number || currentSeason}</div>
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 0.7rem; font-weight: 800; color: #475569;">${formattedDate}</div>
@@ -109,7 +111,7 @@ export async function renderTrainingView(team, players) {
 
             <div style="background: white; border-radius: 24px; padding: 25px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h3 style="margin:0; font-size:0.9rem; color:#1e293b; font-weight:800;">${new Date().toLocaleString('default', { month: 'long' }).toUpperCase()}</h3>
+                    <h3 style="margin:0; font-size:0.9rem; color:#1e293b; font-weight:800;">${new Date().toLocaleString('pl-PL', { month: 'long' }).toUpperCase()}</h3>
                     <div style="display:flex; gap:10px;">
                         <span style="font-size:0.6rem; color:#64748b; display:flex; align-items:center; gap:4px;"><small style="color:#3b82f6;">●</small> MON</span>
                         <span style="font-size:0.6rem; color:#64748b; display:flex; align-items:center; gap:4px;"><small style="color:#1e293b;">●</small> FRI</span>
@@ -117,13 +119,13 @@ export async function renderTrainingView(team, players) {
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center;">
                     ${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<div style="font-size:0.6rem; font-weight:900; color:#cbd5e1; padding-bottom:5px;">${d}</div>`).join('')}
-                    ${renderRealCalendar(team)}
+                    ${renderRealCalendar(team, monthHistory)}
                 </div>
                 <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                   <span style="font-size: 0.65rem; color: #64748b; font-weight: 600;">Status Legend:</span>
+                   <span style="font-size: 0.65rem; color: #64748b; font-weight: 600;">System: History-Verified</span>
                    <div style="display: flex; gap: 15px;">
-                       <span style="font-size: 0.6rem; color: #059669; font-weight: 700;">✅ SET</span>
-                       <span style="font-size: 0.6rem; color: #ef4444; font-weight: 700;">❌ EMPTY</span>
+                       <span style="font-size: 0.6rem; color: #059669; font-weight: 700;">✅ DONE</span>
+                       <span style="font-size: 0.6rem; color: #3b82f6; font-weight: 700;">📅 PLANNED</span>
                    </div>
                 </div>
             </div>
@@ -155,7 +157,7 @@ function renderDayColumn(day, info, currentFocus, teamId) {
                         ${info.isLocked ? 'disabled' : ''}
                         style="padding: 10px; border-radius: 12px; border: 1px solid ${currentFocus === d.id ? accentColor : 'rgba(255,255,255,0.1)'}; 
                         background: ${currentFocus === d.id ? accentColor : 'rgba(255,255,255,0.05)'}; 
-                        color: white; font-size: 0.65rem; font-weight: 700; cursor: pointer; transition: 0.2s;">
+                        color: white; font-size: 0.65rem; font-weight: 700; cursor: pointer;">
                         ${d.icon} ${d.name}
                     </button>
                 `).join('')}
@@ -164,40 +166,46 @@ function renderDayColumn(day, info, currentFocus, teamId) {
     `;
 }
 
-function renderRealCalendar(team) {
+function renderRealCalendar(team, history) {
     const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getDay(); // 0 = Sun
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    
-    // Konwersja na format poniedziałek-pierwszy (1=Pon, 0=Nie -> 6)
     const startOffset = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
     
     let daysHtml = '';
-    
-    // Puste komórki przed pierwszym dniem
-    for (let x = 0; x < startOffset; x++) {
-        daysHtml += `<div></div>`;
-    }
+    for (let x = 0; x < startOffset; x++) daysHtml += `<div></div>`;
 
     for (let i = 1; i <= daysInMonth; i++) {
         const date = new Date(now.getFullYear(), now.getMonth(), i);
-        const dayOfWeek = date.getDay(); // 1 = Mon, 5 = Fri
-        const isToday = now.getDate() === i;
+        const dayOfWeek = date.getDay();
+        const isPast = date < new Date(now.setHours(0,0,0,0));
         
+        // Sprawdzamy czy w historii istnieje wpis dla tego konkretnego dnia
+        const hasHistory = history?.some(h => {
+            const hDate = new Date(h.created_at);
+            return hDate.getDate() === i && hDate.getMonth() === now.getMonth();
+        });
+
         let content = i;
         let bg = 'transparent';
         let color = '#94a3b8';
         let border = '1px solid transparent';
 
         if (dayOfWeek === 1 || dayOfWeek === 5) {
-            const isSet = (dayOfWeek === 1 && team.monday_training_focus) || (dayOfWeek === 5 && team.friday_training_focus);
-            content = isSet ? '✅' : '❌';
-            bg = isSet ? '#f0fdf4' : '#fef2f2';
-            color = '#1e293b';
-            border = isSet ? '1px solid #bbf7d0' : '1px solid #fecaca';
+            if (isPast) {
+                // Dla przeszłości: ✅ jeśli był w historii, ❌ jeśli nie było
+                content = hasHistory ? '✅' : '❌';
+                bg = hasHistory ? '#f0fdf4' : '#fef2f2';
+                border = hasHistory ? '1px solid #bbf7d0' : '1px solid #fecaca';
+            } else {
+                // Dla przyszłości: Ikona kalendarza jeśli zaplanowano
+                const isSet = (dayOfWeek === 1 && team.monday_training_focus) || (dayOfWeek === 5 && team.friday_training_focus);
+                content = isSet ? '📅' : '○';
+                bg = isSet ? '#eff6ff' : '#f8fafc';
+                border = isSet ? '1px solid #bfdbfe' : '1px solid #e2e8f0';
+                color = isSet ? '#3b82f6' : '#94a3b8';
+            }
         }
-
-        if (isToday) border = '1px solid #3b82f6';
 
         daysHtml += `
             <div style="font-size: 0.7rem; padding: 8px 0; border-radius: 8px; background: ${bg}; color: ${color}; border: ${border}; font-weight: 800; display:flex; flex-direction:column; align-items:center; gap:2px;">
@@ -211,9 +219,8 @@ function renderRealCalendar(team) {
 function renderSeasonalCard(p, currentSeason) {
     const isLocked = p.training_locked_season >= currentSeason;
     const currentFocus = p.individual_training_skill || '';
-    
     return `
-        <div style="background: white; padding: 20px; border-radius: 20px; border: 1px solid ${isLocked ? '#e2e8f0' : '#3b82f6'}; display: flex; align-items: center; justify-content: space-between; gap: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+        <div style="background: white; padding: 20px; border-radius: 20px; border: 1px solid ${isLocked ? '#e2e8f0' : '#3b82f6'}; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
             <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
                 <img src="https://api.dicebear.com/7.x/open-peeps/svg?seed=${p.last_name}" style="width: 40px; height: 40px; background: #f8fafc; border-radius: 10px;">
                 <div>
@@ -221,12 +228,9 @@ function renderSeasonalCard(p, currentSeason) {
                     <div style="font-size: 0.6rem; color: ${isLocked ? '#059669' : '#64748b'}; font-weight: 700;">${isLocked ? '● LOCKED' : '○ READY'}</div>
                 </div>
             </div>
-            
             <div style="display: flex; gap: 10px; align-items: center; flex: 2;">
                 <select id="seasonal-choice-${p.id}" ${isLocked ? 'disabled' : ''} style="flex: 1; padding: 8px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 0.7rem; font-weight: 700;">
-                    ${Object.keys(SKILL_LABELS).map(key => `
-                        <option value="skill_${key}" ${currentFocus === 'skill_'+key ? 'selected' : ''}>${SKILL_LABELS[key]}</option>
-                    `).join('')}
+                    ${Object.keys(SKILL_LABELS).map(key => `<option value="skill_${key}" ${currentFocus === 'skill_'+key ? 'selected' : ''}>${SKILL_LABELS[key]}</option>`).join('')}
                 </select>
                 <button onclick="window.saveSeasonalFocus('${p.id}', ${currentSeason})" ${isLocked ? 'disabled' : ''} 
                     style="background: ${isLocked ? '#f1f5f9' : '#1e293b'}; color: ${isLocked ? '#94a3b8' : 'white'}; padding: 8px 12px; border-radius: 10px; border: none; font-weight: 800; font-size: 0.65rem; cursor: pointer;">
@@ -237,28 +241,20 @@ function renderSeasonalCard(p, currentSeason) {
     `;
 }
 
-// --- AKCJE I WINDOW FUNCTIONS ---
-
 window.saveSeasonalFocus = async function(playerId, currentSeason) {
     const skill = document.getElementById(`seasonal-choice-${playerId}`).value;
-    const skillLabel = SKILL_LABELS[skill.replace('skill_', '')];
-
-    if(!confirm(`Assign ${skillLabel} for Season ${currentSeason}?`)) return;
-
+    if(!confirm(`Assign this focus for Season ${currentSeason}?`)) return;
     try {
         const { error } = await supabaseClient.from('players').update({
             individual_training_skill: skill,
             training_locked_season: currentSeason
         }).eq('id', playerId);
-
         if (error) throw error;
-
         await supabaseClient.from('player_training_history').insert({
             player_id: playerId,
             season_number: currentSeason,
             skill_focused: skill
         });
-
         location.reload(); 
     } catch (err) {
         alert("Error: " + err.message);
