@@ -7,7 +7,7 @@ function getFlagUrl(countryCode) {
     if (!countryCode) return '';
     const code = String(countryCode).toLowerCase().trim();
     const finalCode = (code === 'el') ? 'gr' : code;
-    return `assets/flags/${finalCode}.png`;
+    return `https://flagcdn.com/w40/${finalCode}.png`;
 }
 
 function getPositionStyle(pos) {
@@ -47,6 +47,7 @@ function calculateOVR(p) {
         p.skill_steal, p.skill_1on1_off, p.skill_1on1_def
     ];
     const sum = skills.reduce((a, b) => (a || 0) + (b || 0), 0);
+    // Skalowanie do 240 punktów jako 100% OVR
     return Math.round((sum / 240) * 100);
 }
 
@@ -54,7 +55,6 @@ export function renderRosterView(team, players) {
     const container = document.getElementById('roster-view-container');
     if (!container) return;
 
-    // Pobieranie dynamiczne z obiektu team (zgodnie z bazą)
     const teamName = team?.team_name || team?.name || 'Twoja Drużyna';
     const leagueName = team?.league_name || 'Super League';
 
@@ -65,7 +65,7 @@ export function renderRosterView(team, players) {
     let html = `
         <div class="roster-management-header" style="padding: 20px; display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h1 style="margin:0; font-weight:900; color:#1a237e; text-transform:uppercase; font-family: system-ui;">ROSTER <span style="color:#e65100">MANAGEMENT</span></h1>
+                <h1 style="margin:0; font-weight:900; color:#1a237e; text-transform:uppercase; font-family: 'Inter', sans-serif;">ROSTER <span style="color:#e65100">MANAGEMENT</span></h1>
                 <p style="margin:0; color:#64748b;">Current squad: <strong style="color:#1a237e">${teamName}</strong> | League: <strong style="color:#1a237e">${leagueName}</strong></p>
             </div>
             <div style="background:#1a237e; color:white; padding:10px 20px; border-radius:30px; font-weight:bold; font-size:0.85rem; display:flex; align-items:center; gap:8px; box-shadow: 0 4px 10px rgba(26,35,126,0.2);">
@@ -75,7 +75,7 @@ export function renderRosterView(team, players) {
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 0 20px 30px 20px;">
             ${topStars.map((star, idx) => {
-                const potData = star.potential_definitions || { label: 'Prospect', icon: '', color: '#3b82f6' };
+                const potData = star.potential_definitions || { label: 'Prospect', icon: '👤', color: '#94a3b8' };
                 const countryCode = star.country || star.nationality || "";
                 const flagUrl = getFlagUrl(countryCode);
                 
@@ -84,16 +84,17 @@ export function renderRosterView(team, players) {
                     <div style="display: flex; flex-direction: column; align-items: center;">
                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${star.last_name}" style="width: 75px; height: 75px; background: white; border-radius: 12px; border: 3px solid rgba(255,255,255,0.2); object-fit: cover;">
                     </div>
-                    <div>
+                    <div style="flex: 1;">
                         <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #ffab40; font-weight: 800;">
                             ${idx === 0 ? 'Franchise Star' : 'Future Pillar'}
                         </span>
                         <h2 style="margin: 5px 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px;">
                             ${star.first_name} ${star.last_name}
-                            ${flagUrl ? `<img src="${flagUrl}" style="width: 22px; height: auto; border-radius: 2px; border: 1px solid #e2e8f0;">` : ''}
+                            ${flagUrl ? `<img src="${flagUrl}" style="width: 22px; height: auto; border-radius: 2px;">` : ''}
                         </h2>
                         <span style="font-size: 0.9rem; opacity: 0.8; display: flex; align-items: center; gap: 8px;">
-                            <div style="${getPositionStyle(star.position)}; width: 24px; height: 24px; font-size: 0.55rem;">${star.position}</div> | <strong>${potData.label} ${potData.icon}</strong>
+                            <div style="${getPositionStyle(star.position)}; width: 24px; height: 24px; font-size: 0.55rem;">${star.position}</div> 
+                            | <strong>${potData.label} ${potData.icon}</strong>
                         </span>
                     </div>
                 </div>`;
@@ -123,11 +124,13 @@ export function renderRosterView(team, players) {
 
     container.innerHTML = html;
 
+    // Obsługa eventów (delegacja)
     container.onclick = (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
         const playerId = btn.getAttribute('data-id');
         const player = players.find(pl => String(pl.id) === String(playerId));
+        
         if (!player || !window.RosterActions) return;
 
         if (btn.classList.contains('btn-profile-trigger')) window.RosterActions.showProfile(player);
@@ -138,7 +141,7 @@ export function renderRosterView(team, players) {
 
 function renderPlayerRow(p) {
     const isRookie = p.is_rookie || p.age <= 19;
-    const potData = p.potential_definitions || { label: 'Prospect', icon: '', color: '#3b82f6' };
+    const potData = p.potential_definitions || { label: 'Prospect', icon: '👤', color: '#94a3b8' };
     const ovr = calculateOVR(p);
     const ovrStyle = getOvrStyle(ovr);
     
@@ -157,7 +160,7 @@ function renderPlayerRow(p) {
                 <div style="display: flex; align-items: flex-start; gap: 15px;">
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 60px;">
                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" style="width: 60px; height: 60px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-                        ${flagUrl ? `<img src="${flagUrl}" style="width: 22px; height: auto; border-radius: 2px; border: 1px solid #e2e8f0;">` : ''}
+                        ${flagUrl ? `<img src="${flagUrl}" style="width: 22px; height: auto; border-radius: 2px;">` : ''}
                     </div>
                     <div style="flex: 1;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
