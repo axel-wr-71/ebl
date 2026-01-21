@@ -4,7 +4,7 @@ import { renderRosterView } from './roster_view.js';
 import { renderTrainingDashboard } from './training_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
-import { renderMediaView } from './media_view.js'; // Dodano import dla komponentu media
+import { renderMediaView } from './media_view.js'; 
 
 // KRYTYCZNY IMPORT DLA PRZYCISKÓW
 import { RosterActions } from './roster_actions.js';
@@ -74,14 +74,17 @@ export async function initApp() {
             return { ...p, potential_definitions: potDef };
         });
 
+        // POPRAWKA: Pobieranie nazw bezpośrednio z bazy danych
         const teamName = team?.team_name || team?.name || "Twoja Drużyna";
         const leagueName = team?.league_name || "Super League";
 
+        // Aktualizacja UI w nagłówku głównym
         const tName = document.getElementById('display-team-name');
         const lName = document.getElementById('display-league-name');
         if (tName) tName.innerText = teamName;
         if (lName) lName.innerText = leagueName;
 
+        // Aktualizacja UI w dodatkowych informacjach o zespole
         const globalTeamDisplay = document.querySelector('.team-info b');
         const globalLeagueDisplay = document.querySelector('.team-info span[style*="color: #ff4500"], #global-league-name');
         
@@ -110,7 +113,7 @@ export async function switchTab(tabId) {
     const data = await initApp();
     if (!data) return;
 
-    // Renderowanie odpowiedniego widoku
+    // Renderowanie odpowiedniego widoku z przekazaniem danych
     if (tabId === 'm-roster') {
         renderRosterView(data.team, data.players);
     } else if (tabId === 'm-training') {
