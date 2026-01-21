@@ -13,22 +13,6 @@ window.RosterActions = RosterActions;
 window.potentialDefinitions = {}; // Globalny słownik definicji
 
 /**
- * Fizycznie układa sekcje w HTML zgodnie z kolejnością z bazy danych
- */
-function applyLayout(layoutArray) {
-    const container = document.getElementById('game-content-area');
-    if (!container || !layoutArray || !Array.isArray(layoutArray)) return;
-
-    layoutArray.forEach(sectionId => {
-        const section = document.getElementById(sectionId);
-        if (section) {
-            // W JavaScript appendChild na istniejącym elemencie przenosi go na koniec
-            container.appendChild(section);
-        }
-    });
-}
-
-/**
  * Pobiera definicje potencjału z bazy danych Supabase
  */
 async function fetchPotentialDefinitions() {
@@ -74,11 +58,6 @@ export async function initApp() {
             return null;
         }
 
-        // NOWOŚĆ: Zastosowanie zapisanego układu UI z bazy danych
-        if (profile.ui_layout) {
-            applyLayout(profile.ui_layout);
-        }
-
         const [teamRes, playersRes] = await Promise.all([
             supabaseClient.from('teams').select('*').eq('id', profile.team_id).single(),
             supabaseClient.from('players').select('*').eq('team_id', profile.team_id)
@@ -86,6 +65,7 @@ export async function initApp() {
 
         const team = teamRes.data;
         const players = (playersRes.data || []).map(p => {
+            // Używamy świeżo załadowanych danych z bazy
             const potDef = window.getPotentialData(p.potential);
             return { ...p, potential_definitions: potDef };
         });
@@ -114,28 +94,18 @@ export async function initApp() {
 export async function switchTab(tabId) {
     console.log("[NAV] Przełączam na:", tabId);
     
-    // 1. Zarządzanie widocznością kontenerów (Naprawa pod Safari)
-    document.querySelectorAll('.tab-content').forEach(t => {
-        t.classList.remove('active');
-        t.style.display = 'none'; // Musimy jawnie ukryć, by uniknąć glitchy
-    });
-
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
     
     const targetTab = document.getElementById(tabId);
-    if (targetTab) {
-        targetTab.classList.add('active');
-        targetTab.style.display = 'block'; // Pokazujemy przed renderowaniem
-    }
+    if (targetTab) targetTab.classList.add('active');
     
     const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
     if (activeBtn) activeBtn.classList.add('active');
 
-    // 2. Pobieranie świeżych danych
     const data = await initApp();
     if (!data) return;
 
-    // 3. Renderowanie do DEDYKOWANYCH kontenerów (zgodnie z nowym index.html)
     if (tabId === 'm-roster') renderRosterView(data.team, data.players);
     else if (tabId === 'm-training') renderTrainingDashboard(data.players);
     else if (tabId === 'm-market') renderMarketView(data.team, data.players);
