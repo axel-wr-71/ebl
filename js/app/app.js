@@ -1,51 +1,65 @@
 // js/app/app.js
 import { supabaseClient } from '../auth.js';
 import { renderRosterView } from './roster_view.js';
-import { renderTrainingView } from './training_view.js';
+import { renderTrainingDashboard } from './training_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 import { renderMediaView } from './media_view.js'; 
 
+// KRYTYCZNY IMPORT DLA PRZYCISKÓW
 import { RosterActions } from './roster_actions.js';
 
+// Rejestracja globalna natychmiast po załadowaniu
 window.RosterActions = RosterActions;
-window.potentialDefinitions = {};
+window.potentialDefinitions = {}; // Globalny słownik definicji
 
+/**
+ * Pobiera definicje potencjału z bazy danych Supabase
+ */
 async function fetchPotentialDefinitions() {
     try {
-        const { data, error } = await supabaseClient.from('potential_definitions').select('*');
+        const { data, error } = await supabaseClient
+            .from('potential_definitions')
+            .select('*');
+        
         if (error) throw error;
+
+        // Mapowanie na obiekt po ID dla szybkiego dostępu
         window.potentialDefinitions = data.reduce((acc, curr) => {
             acc[curr.id] = curr;
             return acc;
         }, {});
         
+        // Pomocnicza funkcja dostępna globalnie
         window.getPotentialData = (id) => {
             const d = window.potentialDefinitions[id];
-            return d ? { 
-                label: d.label, 
-                emoji: d.emoji || '', 
-                color_hex: d.color_hex || '#3b82f6',
-                min_value: d.min_value || 0
-            } : { label: 'Prospect', emoji: '👤', color_hex: '#94a3b8', min_value: 0 };
+            return d ? { label: d.label, icon: d.emoji || '', color: d.color || '#3b82f6' } : { label: 'Prospect', icon: '', color: '#94a3b8' };
         };
     } catch (err) {
-        console.error("[APP] Błąd słownika potencjału:", err);
+        console.error("[APP] Błąd pobierania definicji potencjału:", err);
     }
 }
 
 export async function initApp() {
+    console.log("[APP] Pobieranie danych drużyny...");
     try {
-        if (!window.potentialDefinitions || Object.keys(window.potentialDefinitions).length === 0) {
+        // Najpierw upewnij się, że mamy definicje słownikowe
+        if (Object.keys(window.potentialDefinitions).length === 0) {
             await fetchPotentialDefinitions();
         }
 
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) return null;
 
-        const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
-        if (!profile?.team_id) return null;
+        const { data: profile } = await supabaseClient
+            .from('profiles').select('*').eq('id', user.id).single();
 
+        if (!profile?.team_id) {
+            console.warn("[APP] Manager nie ma przypisanej drużyny!");
+            return null;
+        }
+
+        // Zapisujemy team_id globalnie dla akcji w innych plikach
         window.userTeamId = profile.team_id;
 
         const [teamRes, playersRes] = await Promise.all([
@@ -55,13 +69,31 @@ export async function initApp() {
 
         const team = teamRes.data;
         const players = (playersRes.data || []).map(p => {
+            // Używamy świeżo załadowanych danych z bazy
             const potDef = window.getPotentialData(p.potential);
             return { ...p, potential_definitions: potDef };
         });
 
+        // POPRAWKA: Pobieranie nazw bezpośrednio z bazy danych
+        const teamName = team?.team_name || team?.name || "Twoja Drużyna";
+        const leagueName = team?.league_name || "Super League";
+
+        // Aktualizacja UI w nagłówku głównym
+        const tName = document.getElementById('display-team-name');
+        const lName = document.getElementById('display-league-name');
+        if (tName) tName.innerText = teamName;
+        if (lName) lName.innerText = leagueName;
+
+        // Aktualizacja UI w dodatkowych informacjach o zespole
+        const globalTeamDisplay = document.querySelector('.team-info b');
+        const globalLeagueDisplay = document.querySelector('.team-info span[style*="color: #ff4500"], #global-league-name');
+        
+        if (globalTeamDisplay) globalTeamDisplay.innerText = teamName;
+        if (globalLeagueDisplay) globalLeagueDisplay.innerText = leagueName;
+
         return { team, players };
     } catch (err) {
-        console.error("[APP] initApp Error:", err);
+        console.error("[APP] Błąd krytyczny initApp:", err);
         return null;
     }
 }
@@ -69,49 +101,29 @@ export async function initApp() {
 export async function switchTab(tabId) {
     console.log("[NAV] Przełączam na:", tabId);
     
-    // 1. Natychmiastowa reakcja wizualna (przyciski)
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
+    
+    const targetTab = document.getElementById(tabId);
+    if (targetTab) targetTab.classList.add('active');
+    
     const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
     if (activeBtn) activeBtn.classList.add('active');
 
-    // 2. Pobierz dane
     const data = await initApp();
-    
-    // 3. Obsługa błędów danych
-    if (!data) {
-        console.error("[APP] Nie udało się załadować danych dla zakładki:", tabId);
-        return;
-    }
+    if (!data) return;
 
-    // 4. Przełącz widoczność kontenerów
-    document.querySelectorAll('.tab-content').forEach(t => {
-        t.classList.remove('active');
-        t.style.display = 'none';
-    });
-    
-    const targetTab = document.getElementById(tabId);
-    if (targetTab) {
-        targetTab.classList.add('active');
-        targetTab.style.display = 'block';
-    }
-
-    // 5. Renderowanie (z domyślnymi wartościami dla bezpieczeństwa)
-    try {
-        if (tabId === 'm-roster') {
-            renderRosterView(data.team, data.players);
-        } else if (tabId === 'm-training') {
-            // Dodajemy bezpieczne pobieranie tygodnia, jeśli nie istnieje w obiekcie team
-            const week = data.team?.current_week || 1; 
-            renderTrainingView(data.team, data.players, week);
-        } else if (tabId === 'm-market') {
-            renderMarketView(data.team, data.players);
-        } else if (tabId === 'm-media') {
-            renderMediaView(data.team, data.players);
-        } else if (tabId === 'm-finances') {
-            renderFinancesView(data.team, data.players);
-        }
-    } catch (renderError) {
-        console.error("[APP] Błąd podczas renderowania widoku:", renderError);
+    // Renderowanie odpowiedniego widoku z przekazaniem danych
+    if (tabId === 'm-roster') {
+        renderRosterView(data.team, data.players);
+    } else if (tabId === 'm-training') {
+        renderTrainingDashboard(data.team, data.players);
+    } else if (tabId === 'm-market') {
+        renderMarketView(data.team, data.players);
+    } else if (tabId === 'm-media') {
+        renderMediaView(data.team, data.players);
+    } else if (tabId === 'm-finances') {
+        renderFinancesView(data.team, data.players);
     }
 }
 
