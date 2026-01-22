@@ -321,14 +321,13 @@ function initAdminConsole() {
             }
         },
         
-        // Szybka aktualizacja pensji (bez GUI) - POPRAWIŁEM IMPORT
+        // Szybka aktualizacja pensji (bez GUI)
         updateSalaries: async () => {
             if (!confirm("Czy chcesz zaktualizować pensje wszystkich graczy?\nTa operacja może potrwać kilka minut.")) return;
             
             try {
                 console.log("[ADMIN] Rozpoczynam aktualizację pensji...");
                 
-                // POPRAWIENIE: Użyj adminUpdateSalaries zamiast updateAllPlayerSalaries
                 const { adminUpdateSalaries } = await import('../core/economy.js');
                 const result = await adminUpdateSalaries();
                 
@@ -349,31 +348,9 @@ function initAdminConsole() {
                 alert("❌ Błąd aktualizacji: " + error.message);
                 return { success: false, error: error.message };
             }
-        },
-        
-        // Aktualizuj wartości rynkowe
-        updateMarketValues: async () => {
-            if (!confirm("Czy chcesz zaktualizować wartości rynkowe wszystkich graczy?")) return;
-            
-            try {
-                const { updateAllPlayerMarketValues } = await import('../core/economy.js');
-                console.log("[ADMIN] Rozpoczynam aktualizację wartości rynkowych...");
-                
-                const result = await updateAllPlayerMarketValues();
-                
-                if (result.success) {
-                    alert(`✅ Zaktualizowano wartości rynkowe ${result.updatedCount} graczy`);
-                } else {
-                    alert(`❌ Błąd: ${result.error}`);
-                }
-                
-                return result;
-                
-            } catch (error) {
-                console.error("❌ Błąd:", error);
-                alert("❌ Błąd: " + error.message);
-            }
         }
+        // UWAGA: Usunąłem funkcję updateMarketValues, ponieważ powoduje błąd importu
+        // Jeśli potrzebujesz tę funkcję, sprawdź czy w pliku economy.js istnieje jako adminUpdateMarketValues
     };
 
     // Skrót klawiaturowy (opcjonalnie) - Ctrl+Shift+A
@@ -394,11 +371,11 @@ function initAdminConsole() {
         console.log("  __ADMIN.open()    - to samo");
         console.log("  __ADMIN.status()  - status aplikacji");
         console.log("  __ADMIN.updateSalaries() - aktualizuj pensje");
-        console.log("  __ADMIN.updateMarketValues() - aktualizuj wartości");
         console.log("  __ADMIN.testConnection() - test bazy");
         console.log("  __ADMIN.clearCache() - wyczyść cache");
         console.log("");
-        console.log("Skrót klawiaturowy: Ctrl+Shift+A");
+        console.log("UWAGA: Funkcja updateMarketValues została tymczasowo wyłączona");
+        console.log("Aby ją przywrócić, dodaj odpowiednią funkcję w economy.js");
         console.log("==========================================");
     }, 2000);
 }
