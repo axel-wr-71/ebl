@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Account - Elite Buzzer League</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #374151;
+            margin: 0;
+            padding: 0;
+            background-color: #f9fafb;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 1.75rem;
+            font-weight: 800;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        h2 {
+            color: #1a237e;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        p {
+            margin-bottom: 20px;
+        }
+        
+        .highlight-box {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .confirm-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #e65100, #ff6d00);
+            color: white;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(230, 81, 0, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .confirm-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 81, 0, 0.4);
+        }
+        
+        .details {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            font-size: 0.9rem;
+        }
+        
+        .detail-item {
+            margin-bottom: 8px;
+            display: flex;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #1a237e;
+            min-width: 120px;
+        }
+        
+        .manual-link {
+            word-break: break-all;
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        
+        .help-section {
+            background: #fef3c7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            border: 1px solid #fbbf24;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: #f1f5f9;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+        
+        .social-links {
+            margin: 20px 0;
+        }
+        
+        .social-icon {
+            display: inline-block;
+            margin: 0 10px;
+            color: #64748b;
+            text-decoration: none;
+        }
+        
+        .unsubscribe {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">🏀</div>
+            <h1>Welcome to Elite Buzzer League!</h1>
+        </div>
+        
+        <div class="content">
+            <h2>Confirm Your Email Address</h2>
+            
+            <p>Hello {{username}},</p>
+            
+            <p>Thank you for creating an account with Elite Buzzer League! We're excited to have you join our community of basketball managers.</p>
+            
+            <div class="highlight-box">
+                <strong>Before you can start managing your team, we need to confirm your email address.</strong><br>
+                This helps us ensure the security of your account and keep you updated on important game information.
+            </div>
+            
+            <div class="button-container">
+                <a href="{{confirmation_link}}" class="confirm-button">
+                    CONFIRM MY ACCOUNT
+                </a>
+            </div>
+            
+            <div class="details">
+                <p><strong>Account Details:</strong></p>
+                <div class="detail-item">
+                    <span class="detail-label">Username:</span>
+                    <span>{{username}}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Team Name:</span>
+                    <span>{{team_name}}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Email:</span>
+                    <span>{{email}}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Confirmation Link:</span>
+                    <a href="{{confirmation_link}}" class="manual-link">{{confirmation_link}}</a>
+                </div>
+            </div>
+            
+            <p>Once confirmed, you'll be able to:</p>
+            <ul>
+                <li>Access your team management dashboard</li>
+                <li>Start recruiting and training players</li>
+                <li>Participate in league competitions</li>
+                <li>Join the global basketball management community</li>
+            </ul>
+            
+            <div class="help-section">
+                <p><strong>Didn't create an account?</strong> If you received this email by mistake, please ignore it. The account will not be activated without confirmation.</p>
+                <p><strong>Link not working?</strong> Copy and paste the confirmation link above into your browser.</p>
+                <p><strong>Need help?</strong> Contact our support team at support@elitebuzzerleague.com</p>
+            </div>
+            
+            <p>This confirmation link will expire in 24 hours for security reasons.</p>
+            
+            <p>Welcome to the league,<br>
+            <strong>The Elite Buzzer League Team</strong></p>
+        </div>
+        
+        <div class="footer">
+            <div class="social-links">
+                <a href="https://twitter.com/elitebuzzer" class="social-icon">🐦 Twitter</a>
+                <a href="https://discord.gg/elitebuzzer" class="social-icon">💬 Discord</a>
+                <a href="https://facebook.com/elitebuzzer" class="social-icon">👍 Facebook</a>
+            </div>
+            
+            <p>Elite Buzzer League - The Ultimate Basketball Management Experience</p>
+            <p>123 Basketball Plaza, Wilmington, DE 19801</p>
+            
+            <p class="unsubscribe">
+                You received this email because you signed up for Elite Buzzer League.<br>
+                If you no longer wish to receive these emails, you can 
+                <a href="{{unsubscribe_link}}" style="color: #3b82f6;">unsubscribe here</a>.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
