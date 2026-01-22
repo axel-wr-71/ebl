@@ -20,6 +20,9 @@
         body {
             font-family: 'Inter', sans-serif;
             overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
         
         .auth-state-pending { 
@@ -39,6 +42,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            flex: 1;
         }
         
         /* Header - minimalistic */
@@ -362,6 +366,105 @@
             font-weight: 600;
         }
         
+        /* Footer styles */
+        .landing-footer {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 3rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: auto;
+        }
+        
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+        }
+        
+        .footer-section h3 {
+            color: white;
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+        
+        .footer-section h3::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 40px;
+            height: 2px;
+            background: linear-gradient(90deg, #ff6d00, #ffab40);
+        }
+        
+        .footer-links {
+            list-style: none;
+        }
+        
+        .footer-links li {
+            margin-bottom: 0.75rem;
+        }
+        
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .footer-links a:hover {
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .footer-link-icon {
+            font-size: 1rem;
+        }
+        
+        .footer-about {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        .footer-contact {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        .footer-contact strong {
+            color: white;
+        }
+        
+        .footer-bottom {
+            max-width: 1400px;
+            margin: 3rem auto 0;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+        }
+        
+        .footer-bottom a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        
+        .footer-bottom a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+        
         /* Game app section - unchanged */
         #game-app {
             display: none;
@@ -466,6 +569,10 @@
                 margin-left: auto;
                 margin-right: auto;
             }
+            
+            .footer-content {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
         
         @media (max-width: 768px) {
@@ -487,6 +594,15 @@
             
             .hero-subtitle {
                 font-size: 1.1rem;
+            }
+            
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .landing-footer {
+                padding: 2rem 1.5rem;
             }
         }
         
@@ -804,6 +920,81 @@
             </div>
         </div>
     </main>
+    
+    <!-- Footer -->
+    <footer class="landing-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>About EBL</h3>
+                <p class="footer-about">
+                    Elite Buzzer League is the ultimate basketball management simulation. 
+                    Build your team, develop players, and compete in global leagues. 
+                    Experience the thrill of being a professional basketball team manager.
+                </p>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+                    <li>
+                        <a href="#" onclick="event.preventDefault(); showTerms();">
+                            <span class="footer-link-icon">📄</span>
+                            Terms of Service
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="event.preventDefault(); showPrivacy();">
+                            <span class="footer-link-icon">🔒</span>
+                            Privacy Policy
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/content/help/faq.html" target="_blank">
+                            <span class="footer-link-icon">❓</span>
+                            FAQ & Help Center
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://discord.gg/elitebuzzer" target="_blank">
+                            <span class="footer-link-icon">💬</span>
+                            Discord Community
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://twitter.com/elitebuzzer" target="_blank">
+                            <span class="footer-link-icon">🐦</span>
+                            Twitter Updates
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Contact & Support</h3>
+                <div class="footer-contact">
+                    <p><strong>General Inquiries:</strong><br>
+                    <a href="mailto:info@elitebuzzerleague.com">info@elitebuzzerleague.com</a></p>
+                    
+                    <p><strong>Player Support:</strong><br>
+                    <a href="mailto:support@elitebuzzerleague.com">support@elitebuzzerleague.com</a></p>
+                    
+                    <p><strong>Security Issues:</strong><br>
+                    <a href="mailto:security@elitebuzzerleague.com">security@elitebuzzerleague.com</a></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>© 2024 Elite Buzzer League. All rights reserved. | 
+                <a href="#" onclick="event.preventDefault(); showTerms();">Terms of Service</a> | 
+                <a href="#" onclick="event.preventDefault(); showPrivacy();">Privacy Policy</a> | 
+                <a href="/content/help/faq.html" target="_blank">FAQ</a>
+            </p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; color: rgba(255, 255, 255, 0.4);">
+                This is a basketball management simulation game. All teams, players, and events are fictional.
+            </p>
+        </div>
+    </footer>
 </div>
 
 <!-- Main application (after login) -->
@@ -941,18 +1132,21 @@
                 </div>
             </div>
             
-            <!-- POPRAWIONE: Checkbox z regulaminem - bardziej widoczne -->
+            <!-- POPRAWIONE: Checkbox z regulaminem - lepsze linki do plików -->
             <div class="form-group" style="background: #f8fafc; padding: 16px; border-radius: 10px; border: 2px solid #e2e8f0; margin-top: 24px;">
                 <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-weight: 600;">
                     <input type="checkbox" id="register-terms" required 
                            style="width: 20px; height: 20px; accent-color: #e65100; flex-shrink: 0;">
                     <span style="font-size: 0.95rem; color: #1a237e; line-height: 1.5;">
                         <span style="font-weight: 700; color: #e65100;">* Required:</span> I accept the 
-                        <a href="#" class="link" onclick="showTerms()" style="color: #1a237e; font-weight: 700;">Terms of Service</a> 
+                        <a href="#" class="link" onclick="event.preventDefault(); showTerms();" style="color: #1a237e; font-weight: 700; text-decoration: underline;">Terms of Service</a> 
                         and 
-                        <a href="#" class="link" onclick="showPrivacy()" style="color: #1a237e; font-weight: 700;">Privacy Policy</a>
+                        <a href="#" class="link" onclick="event.preventDefault(); showPrivacy();" style="color: #1a237e; font-weight: 700; text-decoration: underline;">Privacy Policy</a>
                     </span>
                 </label>
+                <div style="font-size: 0.85rem; color: #64748b; margin-top: 8px;">
+                    Read our full <a href="/content/help/faq.html" target="_blank" style="color: #3b82f6;">FAQ</a> for more information about the game.
+                </div>
             </div>
             
             <!-- POPRAWIONE: Checkbox z newsletterem - bardziej wyróżniony -->
@@ -1006,6 +1200,9 @@
             <button type="submit" class="btn-submit">Login</button>
             <div class="form-footer">
                 <p>Don't have an account? <a href="#" class="link" id="switch-to-register">Register here</a></p>
+                <p style="margin-top: 10px; font-size: 0.85rem;">
+                    <a href="/content/help/faq.html" target="_blank" class="link">Need help?</a>
+                </p>
             </div>
         </form>
         <div id="login-message" class="form-message hidden"></div>
@@ -1015,6 +1212,35 @@
 <script type="module">
     import { signIn, signUp, logout } from './js/auth.js';
     import { switchTab, initApp } from './js/app/app.js';
+    import { initContentManager } from './js/content-manager.js';
+
+    // Inicjalizacja content managera
+    let contentManager = null;
+
+    async function initializeContentManager() {
+        try {
+            // Supabase jest dostępny globalnie przez window.supabase
+            contentManager = await initContentManager(window.supabase, {
+                preload: true,
+                preloadKeys: ['terms_of_service', 'privacy_policy']
+            });
+            
+            // Aktualizuj funkcje globalne
+            window.showTerms = () => contentManager.showTerms();
+            window.showPrivacy = () => contentManager.showPrivacy();
+            
+            console.log('[APP] Content manager initialized');
+        } catch (error) {
+            console.error('[APP] Failed to initialize content manager:', error);
+            // Fallback functions
+            window.showTerms = () => {
+                window.open('/content/terms_of_service.html', '_blank');
+            };
+            window.showPrivacy = () => {
+                window.open('/content/privacy_policy.html', '_blank');
+            };
+        }
+    }
 
     window.setupUI = async function(role) {
         const landing = document.getElementById('landing-page');
@@ -1027,20 +1253,35 @@
         await switchTab('m-roster');
     };
 
-    window.showTerms = function() {
-        alert('Terms of Service will be available soon.');
-        return false;
-    };
-    
-    window.showPrivacy = function() {
-        alert('Privacy Policy will be available soon.');
-        return false;
-    };
-
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Inicjalizuj content manager
+        await initializeContentManager();
+        
+        // Event listeners dla przycisków
         document.getElementById('btn-login-action')?.addEventListener('click', signIn);
         document.getElementById('btn-signup-action')?.addEventListener('click', signUp);
         document.getElementById('btn-logout-action')?.addEventListener('click', logout);
+        
+        // Linki w footerze (już mają onclick, ale dla pewności)
+        const termsLinks = document.querySelectorAll('a[onclick*="showTerms"]');
+        termsLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (typeof window.showTerms === 'function') {
+                    window.showTerms();
+                }
+            });
+        });
+        
+        const privacyLinks = document.querySelectorAll('a[onclick*="showPrivacy"]');
+        privacyLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (typeof window.showPrivacy === 'function') {
+                    window.showPrivacy();
+                }
+            });
+        });
     });
 </script>
 </body>
