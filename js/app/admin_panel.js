@@ -1,10 +1,9 @@
 // js/app/admin_panel.js
 import { supabaseClient } from '../auth.js';
 import { 
-    adminUpdateSalaries, 
+    adminUpdateSalaries,  // TYLKO TA FUNKCJA ISTNIEJE
     updateAllPlayerMarketValues,
-    updateAllPlayerSalaries,
-    updateAllPlayerMarketValues as updateMarketValues
+    calculatePlayerDynamicWage  // DODAJ TĘ FUNKCJĘ
 } from '../core/economy.js';
 
 // Zmienne globalne dla panelu
@@ -289,7 +288,7 @@ async function handleMarketValueUpdate() {
     addAdminLog('Rozpoczynam aktualizację wartości rynkowych...', 'warning');
     
     try {
-        const result = await updateMarketValues();
+        const result = await updateAllPlayerMarketValues();
         
         const resultDiv = document.getElementById('salary-update-result');
         resultDiv.style.display = 'block';
@@ -327,10 +326,10 @@ async function handleBothUpdates() {
     addAdminLog('Rozpoczynanie kompleksowej aktualizacji...', 'warning');
     
     // 1. Aktualizuj pensje
-    const salaryResult = await updateAllPlayerSalaries();
+    const salaryResult = await adminUpdateSalaries();
     
     // 2. Aktualizuj wartości rynkowe
-    const valueResult = await updateMarketValues();
+    const valueResult = await updateAllPlayerMarketValues();
     
     const resultDiv = document.getElementById('salary-update-result');
     resultDiv.style.display = 'block';
@@ -341,6 +340,9 @@ async function handleBothUpdates() {
     if (salaryResult.success) {
         html += `✅ <strong>Pensje:</strong> ${salaryResult.updatedPlayers} z ${salaryResult.totalPlayers} graczy<br>`;
         addAdminLog(`Pensje: ${salaryResult.updatedPlayers} z ${salaryResult.totalPlayers} graczy`, 'success');
+    } else if (salaryResult.cancelled) {
+        html += `⚠️ <strong>Pensje:</strong> Anulowano<br>`;
+        addAdminLog('Aktualizacja pensji anulowana', 'warning');
     } else {
         html += `❌ <strong>Pensje:</strong> Błąd<br>`;
         addAdminLog(`Błąd aktualizacji pensji: ${salaryResult.error}`, 'error');
@@ -384,10 +386,7 @@ async function handleSingleTeamUpdate() {
         
         if (error) throw error;
         
-        // Import funkcji
-        const { calculatePlayerDynamicWage } = await import('../core/economy.js');
-        
-        // Przygotuj aktualizacje
+        // Użyj zaimportowanej funkcji calculatePlayerDynamicWage
         const updates = players.map(player => ({
             id: player.id,
             salary: calculatePlayerDynamicWage(player),
