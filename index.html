@@ -43,6 +43,196 @@
         .sortable-ghost { opacity: 0.3; background: #ffab40 !important; }
         .btn-tab { cursor: grab; }
         .btn-tab:active { cursor: grabbing; }
+
+        /* Style modalów - dodajemy na końcu */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .modal-container {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 32px;
+            border-bottom: 1px solid #e5e7eb;
+            background: linear-gradient(135deg, #1a237e, #3949ab);
+            color: white;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-form {
+            padding: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #e65100, #ff6d00);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+            position: relative;
+            min-height: 50px;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(230, 81, 0, 0.3);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .form-footer {
+            margin-top: 24px;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .link:hover {
+            text-decoration: underline;
+        }
+
+        .form-message {
+            margin: 20px 32px 32px;
+            padding: 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .form-message.hidden {
+            display: none;
+        }
+
+        .form-message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #a7f3d0;
+        }
+
+        .form-message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #fecaca;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -122,7 +312,122 @@
     </div>
 </div>
 
+<!-- Modal rejestracji -->
+<div id="registerModal" class="modal-overlay hidden">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2>🏀 Rejestracja w EBL</h2>
+            <button class="modal-close">&times;</button>
+        </div>
+        
+        <form id="registerForm" class="modal-form">
+            <div class="form-group">
+                <label for="register-email">Adres Email</label>
+                <input type="email" id="register-email" required placeholder="twoj.email@example.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="register-password">Hasło (min. 8 znaków)</label>
+                <input type="password" id="register-password" minlength="8" required placeholder="********">
+                <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">
+                    Hasło musi zawierać min. 8 znaków
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="register-username">Nazwa użytkownika</label>
+                <input type="text" id="register-username" required placeholder="np. coach_master">
+                <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">
+                    Będzie widoczna dla innych graczy
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="register-teamname">Nazwa Twojej drużyny</label>
+                <input type="text" id="register-teamname" required placeholder="np. Warsaw Eagles">
+            </div>
+            
+            <div class="form-group">
+                <label for="register-country">Kraj pochodzenia</label>
+                <select id="register-country" required>
+                    <option value="">Wybierz kraj...</option>
+                    <option value="PL">🇵🇱 Polska</option>
+                    <option value="US">🇺🇸 Stany Zjednoczone</option>
+                    <option value="ES">🇪🇸 Hiszpania</option>
+                    <option value="FR">🇫🇷 Francja</option>
+                    <option value="DE">🇩🇪 Niemcy</option>
+                    <option value="GR">🇬🇷 Grecja</option>
+                    <option value="IT">🇮🇹 Włochy</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="register-terms" required style="margin-top: 3px;">
+                    <span style="font-size: 0.9rem;">
+                        Akceptuję 
+                        <a href="#" class="link" onclick="showTerms()">regulamin</a> 
+                        oraz 
+                        <a href="#" class="link" onclick="showPrivacy()">politykę prywatności</a>
+                        *<br>
+                        <small style="color: #64748b;">(wymagane do założenia konta)</small>
+                    </span>
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="register-newsletter">
+                    <span style="font-size: 0.9rem;">
+                        Chcę otrzymywać newsletter z informacjami o nowościach i promocjach
+                    </span>
+                </label>
+            </div>
+            
+            <button type="submit" class="btn-submit">
+                <span id="register-btn-text">Utwórz konto</span>
+                <span id="register-loading" class="hidden" style="display: none; align-items: center; gap: 5px;">
+                    <span class="loading-spinner" style="width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></span>
+                    Rejestracja...
+                </span>
+            </button>
+            
+            <div class="form-footer">
+                <p>Masz już konto? <a href="#" class="link" id="switch-to-login">Zaloguj się</a></p>
+            </div>
+        </form>
+        
+        <div id="register-message" class="form-message hidden"></div>
+    </div>
+</div>
+
+<!-- Modal logowania -->
+<div id="loginModal" class="modal-overlay hidden">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2>🔐 Logowanie do EBL</h2>
+            <button class="modal-close">&times;</button>
+        </div>
+        <form id="loginForm" class="modal-form">
+            <div class="form-group">
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" required placeholder="twoj.email@example.com">
+            </div>
+            <div class="form-group">
+                <label for="login-password">Hasło</label>
+                <input type="password" id="login-password" required placeholder="********">
+            </div>
+            <button type="submit" class="btn-submit">Zaloguj się</button>
+            <div class="form-footer">
+                <p>Nie masz konta? <a href="#" class="link" id="switch-to-register">Zarejestruj się</a></p>
+            </div>
+        </form>
+        <div id="login-message" class="form-message hidden"></div>
+    </div>
+</div>
+
 <script type="module">
+    // Importujemy funkcje z auth.js - teraz signIn i signUp otwierają modale
     import { signIn, signUp, logout } from './js/auth.js';
     import { switchTab, initApp } from './js/app/app.js';
 
@@ -140,7 +445,19 @@
         await switchTab('m-roster');
     };
 
+    // Globalne funkcje do pokazywania warunków
+    window.showTerms = function() {
+        alert('Warunki korzystania z serwisu będą dostępne wkrótce.');
+        return false;
+    };
+    
+    window.showPrivacy = function() {
+        alert('Polityka prywatności będzie dostępna wkrótce.');
+        return false;
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
+        // Te przyciski używają teraz nowych funkcji z auth.js
         document.getElementById('btn-login-action')?.addEventListener('click', signIn);
         document.getElementById('btn-signup-action')?.addEventListener('click', signUp);
         document.getElementById('btn-logout-action')?.addEventListener('click', logout);
