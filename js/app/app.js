@@ -5,17 +5,22 @@ import { renderTrainingView } from './training_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 import { renderMediaView } from './media_view.js'; 
-import { ScheduleView } from './schedule_view.js'; // IMPORT TERMINARZA
+import { ScheduleView } from './schedule_view.js';
 
 // KRYTYCZNY IMPORT DLA PRZYCISKÓW
 import { RosterActions } from './roster_actions.js';
 
-// Rejestracja globalna natychmiast po załadowaniu
+// Rejestracja globalna
 window.RosterActions = RosterActions;
-window.potentialDefinitions = {}; // Globalny słownik definicji
+window.potentialDefinitions = {}; 
+window.gameState = {
+    team: null,
+    players: [],
+    currentWeek: 0
+};
 
 /**
- * Pobiera definicje potencjału z bazy danych Supabase
+ * Pobiera definicje potencjału
  */
 async function fetchPotentialDefinitions() {
     try {
@@ -25,38 +30,34 @@ async function fetchPotentialDefinitions() {
         
         if (error) throw error;
 
-        // Mapowanie na obiekt po ID dla szybkiego dostępu
         window.potentialDefinitions = data.reduce((acc, curr) => {
             acc[curr.id] = curr;
             return acc;
         }, {});
         
-        // Pomocnicza funkcja dostępna globalnie
         window.getPotentialData = (id) => {
             const d = window.potentialDefinitions[id];
             return d ? { label: d.label, icon: d.emoji || '', color: d.color || '#3b82f6' } : { label: 'Prospect', icon: '', color: '#94a3b8' };
         };
     } catch (err) {
-        console.error("[APP] Błąd pobierania definicji potencjału:", err);
+        console.error("[APP] Błąd potencjałów:", err);
     }
 }
 
 /**
- * DYNAMICZNE MENU: Pobiera i renderuje moduły użytkownika
+ * DYNAMICZNE MENU
  */
 async function loadDynamicNavigation() {
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) return;
 
-        // Pobieramy ustawienia modułów dla użytkownika
-        let { data: settings, error } = await supabaseClient
+        let { data: settings } = await supabaseClient
             .from('user_dashboard_settings')
             .select('*, app_modules(*)')
             .eq('user_id', user.id)
             .order('order_index', { ascending: true });
 
-        // FAIL-SAFE: Jeśli brak ustawień, pobierz domyślne moduły aktywne
         if (!settings || settings.length === 0) {
             const { data: defaults } = await supabaseClient
                 .from('app_modules')
@@ -78,108 +79,94 @@ async function loadDynamicNavigation() {
             </button>
         `).join('');
 
-        // Inicjalizacja Drag & Drop po wyrenderowaniu
         initSidebarSortable(navContainer, user.id);
 
+        // Ustawienie domyślnej zakładki po załadowaniu menu
+        if (settings.length > 0) {
+            const firstTab = settings[0].app_modules.module_key;
+            switchTab(firstTab);
+        }
+
     } catch (err) {
-        console.error("[APP] Błąd ładowania dynamicznego menu:", err);
+        console.error("[APP] Błąd menu:", err);
     }
 }
 
-/**
- * SORTABLE: Obsługa przeciągania modułów
- */
 function initSidebarSortable(container, userId) {
     if (typeof Sortable === 'undefined') return;
-
     Sortable.create(container, {
         animation: 150,
         ghostClass: 'sortable-ghost',
         onEnd: async () => {
             const buttons = Array.from(container.querySelectorAll('.btn-tab'));
-            const updates = buttons.map((btn, index) => ({
-                user_id: userId,
-                module_key: btn.getAttribute('data-tab'),
-                order_index: index
-            }));
-
-            console.log("[DASHBOARD] Zapisywanie nowej kolejności...");
-            
-            for (const item of updates) {
-                const { data: mod } = await supabaseClient
-                    .from('app_modules')
-                    .select('id')
-                    .eq('module_key', item.module_key)
-                    .single();
-
-                await supabaseClient
-                    .from('user_dashboard_settings')
-                    .upsert({ 
-                        user_id: userId, 
-                        module_id: mod.id, 
-                        order_index: item.order_index 
-                    }, { onConflict: 'user_id, module_id' });
+            for (const [index, btn] of buttons.entries()) {
+                const moduleKey = btn.getAttribute('data-tab');
+                const { data: mod } = await supabaseClient.from('app_modules').select('id').eq('module_key', moduleKey).single();
+                await supabaseClient.from('user_dashboard_settings').upsert({ 
+                    user_id: userId, 
+                    module_id: mod.id, 
+                    order_index: index 
+                }, { onConflict: 'user_id, module_id' });
             }
         }
     });
 }
 
+/**
+ * Inicjalizacja danych gry - Wywoływana raz przy starcie
+ */
 export async function initApp() {
-    console.log("[APP] Pobieranie danych drużyny...");
+    console.log("[APP] Inicjalizacja danych globalnych...");
     try {
-        await Promise.all([
-            fetchPotentialDefinitions(),
-            loadDynamicNavigation()
-        ]);
-
         const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) return null;
+        if (!user) return;
 
-        const { data: profile } = await supabaseClient
-            .from('profiles').select('*').eq('id', user.id).single();
-
-        if (!profile?.team_id) {
-            console.warn("[APP] Manager nie ma przypisanej drużyny!");
-            return null;
-        }
-
-        window.userTeamId = profile.team_id;
-
-        const [teamRes, playersRes] = await Promise.all([
-            supabaseClient.from('teams').select('*').eq('id', profile.team_id).single(),
-            supabaseClient.from('players').select('*').eq('team_id', profile.team_id)
+        // 1. Pobierz profil i tydzień gry
+        const [profileRes, configRes] = await Promise.all([
+            supabaseClient.from('profiles').select('team_id').eq('id', user.id).single(),
+            supabaseClient.from('game_config').select('value').eq('key', 'current_week').single()
         ]);
 
-        const team = teamRes.data;
-        const players = (playersRes.data || []).map(p => {
-            const potDef = window.getPotentialData(p.potential);
-            return { ...p, potential_definitions: potDef };
-        });
+        const teamId = profileRes.data?.team_id;
+        if (!teamId) return;
 
-        const teamName = team?.team_name || team?.name || "Twoja Drużyna";
-        const leagueName = team?.league_name || "Super League";
+        window.userTeamId = teamId;
+        window.gameState.currentWeek = configRes.data ? parseInt(configRes.data.value) : 1;
 
-        const tName = document.getElementById('display-team-name');
-        const lName = document.getElementById('display-league-name');
-        if (tName) tName.innerText = teamName;
-        if (lName) lName.innerText = leagueName;
+        // 2. Pobierz definicje potencjałów
+        await fetchPotentialDefinitions();
 
-        const globalTeamDisplay = document.querySelector('.team-info b');
-        const globalLeagueDisplay = document.querySelector('.team-info span[style*="color: #ff4500"], #global-league-name');
-        
-        if (globalTeamDisplay) globalTeamDisplay.innerText = teamName;
-        if (globalLeagueDisplay) globalLeagueDisplay.innerText = leagueName;
+        // 3. Pobierz dane drużyny i zawodników
+        const [teamRes, playersRes] = await Promise.all([
+            supabaseClient.from('teams').select('*').eq('id', teamId).single(),
+            supabaseClient.from('players').select('*').eq('team_id', teamId)
+        ]);
 
-        return { team, players };
+        window.gameState.team = teamRes.data;
+        window.gameState.players = (playersRes.data || []).map(p => ({
+            ...p,
+            potential_definitions: window.getPotentialData(p.potential)
+        }));
+
+        // UI Updates
+        const teamName = window.gameState.team?.team_name || "Twoja Drużyna";
+        document.querySelectorAll('.team-info b, #display-team-name').forEach(el => el.innerText = teamName);
+
+        // 4. Załaduj nawigację
+        await loadDynamicNavigation();
+
     } catch (err) {
-        console.error("[APP] Błąd krytyczny initApp:", err);
-        return null;
+        console.error("[APP] Błąd initApp:", err);
     }
 }
 
+/**
+ * Przełączanie zakładek
+ */
 export async function switchTab(tabId) {
     console.log("[NAV] Przełączam na:", tabId);
     
+    // UI: Aktywacja przycisku i sekcji
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
     
@@ -189,24 +176,23 @@ export async function switchTab(tabId) {
     const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
     if (activeBtn) activeBtn.classList.add('active');
 
-    const data = await initApp();
-    if (!data) return;
+    // Renderowanie widoków z użyciem danych z window.gameState
+    const { team, players } = window.gameState;
+    if (!team) return;
 
-    // Renderowanie odpowiedniego widoku
-    if (tabId === 'm-roster') {
-        renderRosterView(data.team, data.players);
-    } else if (tabId === 'm-training') {
-        renderTrainingView(data.team, data.players);
-    } else if (tabId === 'm-market') {
-        renderMarketView(data.team, data.players);
-    } else if (tabId === 'm-media') {
-        renderMediaView(data.team, data.players);
-    } else if (tabId === 'm-schedule') {
-        // Renderowanie terminarza bezpośrednio w kontenerze zakładki
-        ScheduleView.render(tabId, window.userTeamId);
-    } else if (tabId === 'm-finances') {
-        renderFinancesView(data.team, data.players);
+    switch (tabId) {
+        case 'm-roster': renderRosterView(team, players); break;
+        case 'm-training': renderTrainingView(team, players); break;
+        case 'm-market': renderMarketView(team, players); break;
+        case 'm-media': renderMediaView(team, players); break;
+        case 'm-finances': renderFinancesView(team, players); break;
+        case 'm-schedule': 
+            // Przekazujemy ID kontenera zakładki i ID zespołu
+            ScheduleView.render(tabId, window.userTeamId); 
+            break;
     }
 }
 
 window.switchTab = switchTab;
+// Autostart
+initApp();
