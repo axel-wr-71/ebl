@@ -71,7 +71,7 @@ export const ScheduleView = {
 
             this.renderWeekStrip(currentWeek);
             this.renderNextMatch(schedule, currentWeek);
-            this.renderFullList(schedule);
+            this.renderFullList(schedule, teamId);
 
         } catch (err) {
             console.error("[ScheduleView] Błąd renderowania:", err);
@@ -140,7 +140,7 @@ export const ScheduleView = {
         `;
     },
 
-    renderFullList(schedule) {
+    renderFullList(schedule, currentTeamId) {
         const container = document.getElementById('full-season-list');
         if (!container) return;
         
@@ -164,9 +164,9 @@ export const ScheduleView = {
                                 <td style="padding: 12px 10px; color: #666;">${m.week}</td>
                                 <td style="padding: 12px 10px; color: #888; font-size: 0.75rem;">${this.translateDay(m.day_of_week).substring(0,3).toUpperCase()}</td>
                                 <td style="padding: 12px 10px; font-weight: 500;">
-                                    <span style="${m.home_team_id === window.gameState?.teamId ? 'color: #ff4500;' : ''}">${m.home_team?.team_name || 'Błąd danych'}</span> 
+                                    <span style="${m.home_team_id === currentTeamId ? 'color: #ff4500;' : ''}">${m.home_team?.team_name || 'Błąd danych'}</span> 
                                     <span style="color: #444; margin: 0 5px;">vs</span> 
-                                    <span style="${m.away_team_id === window.gameState?.teamId ? 'color: #ff4500;' : ''}">${m.away_team?.team_name || 'Błąd danych'}</span>
+                                    <span style="${m.away_team_id === currentTeamId ? 'color: #ff4500;' : ''}">${m.away_team?.team_name || 'Błąd danych'}</span>
                                 </td>
                                 <td style="padding: 12px 10px; font-weight: bold; color: ${m.score_home !== null ? '#fff' : '#444'}; text-align: center; font-family: 'Courier New', monospace;">
                                     ${m.score_home !== null ? `${m.score_home}:${m.score_away}` : '— : —'}
@@ -182,7 +182,7 @@ export const ScheduleView = {
     async fetchTeamSchedule(teamId) {
         console.log("[ScheduleView] Pobieram mecze dla teamId:", teamId);
         
-        // Zoptymalizowane zapytanie z użyciem poprawnej kolumny team_name
+        // Zoptymalizowane zapytanie z użyciem poprawnej kolumny team_name i operatora OR
         const { data, error } = await supabaseClient
             .from('matches')
             .select(`
@@ -199,13 +199,19 @@ export const ScheduleView = {
                 away_team:teams!away_team_id ( team_name )
             `)
             .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-            .order('week', { ascending: true })
-            .order('day_of_week', { ascending: true }); // Uwaga: Sortowanie po stringu (TUESDAY) może wymagać logiki w JS, ale week załatwia większość sprawy.
+            .order('week', { ascending: true });
         
         if (error) {
             console.error("[ScheduleView] Błąd Supabase:", error);
             throw error;
         }
-        return data || [];
+
+        // Dodatkowe sortowanie po dniach tygodnia wewnątrz JS, 
+        // ponieważ TUESDAY/THURSDAY nie sortują się alfabetycznie zgodnie z logiką sportową
+        return data.sort((a, b) => {
+            if (a.week !== b.week) return a.week - b.week;
+            const dayOrder = { 'TUESDAY': 1, 'WEDNESDAY': 2, 'THURSDAY': 3, 'SATURDAY': 4 };
+            return (dayOrder[a.day_of_week] || 99) - (dayOrder[b.day_of_week] || 99);
+        });
     }
 };
