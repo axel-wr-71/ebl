@@ -7,11 +7,27 @@ export const supabaseClient = _supabase;
 window.supabase = _supabase;
 
 import { initApp, switchTab } from './app/app.js';
+import { initContentManager, showTerms, showPrivacy } from './content-manager.js';
 
 window.POTENTIAL_MAP = [];
 
 // Globalne zmienne dla modalów
 let registerModal, loginModal;
+let contentManager = null; // Dodano zmienną contentManager
+
+/**
+ * Inicjalizacja Content Managera
+ */
+async function initContent() {
+    contentManager = await initContentManager(_supabase, {
+        preload: true,
+        preloadKeys: ['terms_of_service', 'privacy_policy']
+    });
+    
+    // Aktualizuj funkcje globalne
+    window.showTerms = () => contentManager.showTerms();
+    window.showPrivacy = () => contentManager.showPrivacy();
+}
 
 /**
  * FUNKCJA NAPRAWIAJĄCA NAZWĘ DRUŻYNY W PRAWYM GÓRNYM ROGU
@@ -638,7 +654,8 @@ _supabase.auth.onAuthStateChange((event, session) => {
 });
 
 // Inicjalizacja przy załadowaniu strony
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await initContent(); // Dodano inicjalizację content managera
     checkUser();
     // Inicjalizuj modale z opóźnieniem, aby DOM miał czas na załadowanie
     setTimeout(initAuthModals, 500);
