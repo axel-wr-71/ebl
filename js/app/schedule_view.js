@@ -105,12 +105,12 @@ export const ScheduleView = {
                 <div class="focus-vs" style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 25px;">
                     <div class="team">
                         <div style="width: 60px; height: 60px; background: #222; border: 1px solid #333; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #444;">LOGO</div>
-                        <span style="font-size: 1rem; font-weight: bold; display: block;">${next.home_team?.name || 'DOM'}</span>
+                        <span style="font-size: 1rem; font-weight: bold; display: block;">${next.home_team?.team_name || 'DOM'}</span>
                     </div>
                     <div class="vs-badge" style="font-style: italic; font-weight: 900; color: #ff4500; font-size: 1.2rem;">VS</div>
                     <div class="team">
                         <div style="width: 60px; height: 60px; background: #222; border: 1px solid #333; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #444;">LOGO</div>
-                        <span style="font-size: 1rem; font-weight: bold; display: block;">${next.away_team?.name || 'WYJAZD'}</span>
+                        <span style="font-size: 1rem; font-weight: bold; display: block;">${next.away_team?.team_name || 'WYJAZD'}</span>
                     </div>
                 </div>
                 <div class="focus-details" style="background: #000; padding: 15px; border-radius: 8px; border: 1px solid #1a1a1a;">
@@ -143,7 +143,7 @@ export const ScheduleView = {
                                 <td style="padding: 12px 10px; color: #666;">${m.week}</td>
                                 <td style="padding: 12px 10px; color: #888;">${m.day_of_week.substring(0,3)}</td>
                                 <td style="padding: 12px 10px; font-weight: 500;">
-                                    ${m.home_team?.name} <span style="color: #444; margin: 0 5px;">vs</span> ${m.away_team?.name}
+                                    ${m.home_team?.team_name} <span style="color: #444; margin: 0 5px;">vs</span> ${m.away_team?.team_name}
                                 </td>
                                 <td style="padding: 12px 10px; font-weight: bold; color: #ff4500; text-align: center; font-family: 'Courier New', monospace;">
                                     ${m.score_home !== null ? `${m.score_home}:${m.score_away}` : '—'}
@@ -159,14 +159,13 @@ export const ScheduleView = {
     async fetchTeamSchedule(teamId) {
         console.log("[ScheduleView] Pobieram mecze dla teamId:", teamId);
         
-        // Zoptymalizowane zapytanie wykorzystujące relacje Foreign Key (Krok 1 SQL)
-        // Używamy jawnej nazwy tabeli w select, aby uniknąć błędów aliasowania teams_1
+        // Zoptymalizowane zapytanie wykorzystujące relację 'team_name' z Twojej tabeli teams
         const { data, error } = await supabaseClient
             .from('matches')
             .select(`
                 *,
-                home_team:home_team_id ( name ),
-                away_team:away_team_id ( name )
+                home_team:teams!home_team_id ( team_name ),
+                away_team:teams!away_team_id ( team_name )
             `)
             .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
             .order('week', { ascending: true });
