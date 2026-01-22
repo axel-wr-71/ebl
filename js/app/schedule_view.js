@@ -28,10 +28,8 @@ export const ScheduleView = {
             return;
         }
 
-        // Czyścimy kontener i pokazujemy loader
-        container.innerHTML = `<div class="loading-state" style="padding: 20px; color: #888; text-align: center;">Inicjalizacja kalendarza ligowego...</div>`;
+        container.innerHTML = `<div class="loading-state" style="padding: 20px; color: #666; text-align: center; font-family: 'Inter', sans-serif;">Ładowanie terminarza...</div>`;
 
-        // Pobieramy aktualny tydzień z globalnego stanu gry lub bazy
         let currentWeek = window.gameState?.currentWeek;
         
         if (currentWeek === undefined) {
@@ -52,23 +50,21 @@ export const ScheduleView = {
             
             if (!schedule || schedule.length === 0) {
                 container.innerHTML = `
-                    <div class="schedule-wrapper" style="padding: 20px;">
-                        <div class="schedule-card" style="background: #111; border: 1px solid #222; padding: 40px; border-radius: 12px; text-align: center;">
-                            <div style="font-size: 2rem; margin-bottom: 10px;">📅</div>
-                            <div style="color: #fff; font-weight: bold; margin-bottom: 5px;">Brak meczów w bazie danych.</div>
-                            <div style="color: #666; font-size: 0.85rem;">Upewnij się, że ID zespołu (${teamId}) jest poprawne i terminarz został wygenerowany.</div>
-                        </div>
+                    <div style="padding: 40px; text-align: center; background: #fff; border-radius: 12px; border: 1px solid #dee2e6; margin: 20px;">
+                        <div style="font-size: 2rem; margin-bottom: 10px;">📅</div>
+                        <div style="color: #212529; font-weight: bold;">Brak zaplanowanych meczów.</div>
                     </div>`;
                 return;
             }
 
-            // Główna struktura po pobraniu danych
+            // Layout jasny (Light Theme)
             container.innerHTML = `
-                <div class="schedule-wrapper" style="padding: 20px; color: #fff; font-family: 'Inter', sans-serif; max-width: 1200px; margin: 0 auto;">
-                    <header id="week-strip" class="schedule-card" style="background: #111; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #222;"></header>
-                    <div class="schedule-grid" style="display: grid; grid-template-columns: 350px 1fr; gap: 20px;">
-                        <aside id="next-match-focus" class="schedule-card" style="background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222;"></aside>
-                        <main id="full-season-list" class="schedule-card" style="background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222;"></main>
+                <div class="schedule-container" style="padding: 15px; background: #f8f9fa; min-height: calc(100vh - 80px); font-family: 'Inter', sans-serif;">
+                    <header id="week-strip" style="background: #fff; padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #e9ecef; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"></header>
+                    
+                    <div style="display: grid; grid-template-columns: 320px 1fr; gap: 15px; align-items: start;">
+                        <aside id="next-match-focus" style="background: #fff; padding: 20px; border-radius: 10px; border: 1px solid #e9ecef; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"></aside>
+                        <main id="full-season-list" style="background: #fff; padding: 0; border-radius: 10px; border: 1px solid #e9ecef; box-shadow: 0 2px 4px rgba(0,0,0,0.02); overflow: hidden;"></main>
                     </div>
                 </div>
             `;
@@ -79,7 +75,7 @@ export const ScheduleView = {
 
         } catch (err) {
             console.error("[ScheduleView] Błąd renderowania:", err);
-            container.innerHTML = `<div class="error-state" style="padding: 20px; color: #ff4500; text-align: center;">Błąd krytyczny: ${err.message}</div>`;
+            container.innerHTML = `<div style="color: #dc3545; padding: 20px; text-align: center;">Błąd: ${err.message}</div>`;
         }
     },
 
@@ -88,22 +84,21 @@ export const ScheduleView = {
         if (!container) return;
 
         const days = [
-            { name: 'PON', activity: 'Trening', type: 'training' },
-            { name: 'WT', activity: 'Liga', type: 'match' },
-            { name: 'ŚR', activity: 'Puchar', type: 'cup' },
-            { name: 'CZW', activity: 'Liga', type: 'match' },
-            { name: 'PT', activity: 'Trening', type: 'training' },
-            { name: 'SOB', activity: 'Liga', type: 'match' },
-            { name: 'ND', activity: 'Finanse', type: 'admin' }
+            { name: 'PON', act: 'Trening' }, { name: 'WT', act: 'Liga' },
+            { name: 'ŚR', act: 'Puchar' }, { name: 'CZW', act: 'Liga' },
+            { name: 'PT', act: 'Trening' }, { name: 'SOB', act: 'Liga' },
+            { name: 'ND', act: 'Finanse' }
         ];
 
         container.innerHTML = `
-            <div class="strip-header" style="font-size: 0.7rem; color: #666; letter-spacing: 1px; margin-bottom: 12px; font-weight: bold; text-transform: uppercase;">System Rozgrywek • Tydzień ${week} / 15</div>
-            <div class="strip-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: #495057; text-transform: uppercase;">Tydzień ${week} / 15</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;">
                 ${days.map(d => `
-                    <div class="strip-slot" style="background: #1a1a1a; padding: 10px; border-radius: 8px; text-align: center; border-bottom: 3px solid ${d.type === 'match' ? '#ff4500' : '#333'}">
-                        <span class="day" style="display: block; font-weight: bold; font-size: 0.8rem; color: #fff;">${d.name}</span>
-                        <span class="act" style="font-size: 0.6rem; color: #888; text-transform: uppercase;">${d.activity}</span>
+                    <div style="text-align: center; padding: 8px; background: ${d.act === 'Liga' ? '#fff4eb' : '#f8f9fa'}; border-radius: 6px; border-bottom: 3px solid ${d.act === 'Liga' ? '#fd7e14' : '#dee2e6'}">
+                        <div style="font-size: 0.75rem; font-weight: 800; color: #212529;">${d.name}</div>
+                        <div style="font-size: 0.65rem; color: #6c757d; text-transform: uppercase;">${d.act}</div>
                     </div>
                 `).join('')}
             </div>
@@ -114,31 +109,25 @@ export const ScheduleView = {
         const container = document.getElementById('next-match-focus');
         if (!container) return;
 
-        // Szukamy najbliższego meczu (week >= currentWeek i status SCHEDULED)
-        const next = schedule.find(m => m.week >= week && m.status === 'SCHEDULED');
-
-        if (!next) {
-            container.innerHTML = `<div class="no-games" style="color: #666; text-align: center; padding: 20px;">Sezon zakończony lub brak zaplanowanych meczów.</div>`;
-            return;
-        }
+        const next = schedule.find(m => m.week >= week && m.status === 'SCHEDULED') || schedule[0];
 
         container.innerHTML = `
-            <div class="card-label" style="color: #ff4500; font-weight: bold; font-size: 0.7rem; margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase;">Następne Spotkanie</div>
-            <div class="focus-card" style="text-align: center;">
-                <div class="focus-vs" style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 25px;">
-                    <div class="team">
-                        <div style="width: 60px; height: 60px; background: #222; border: 1px solid #333; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #555; font-weight: bold; text-transform: uppercase;">${(next.home_team?.team_name || 'DOM').substring(0,3)}</div>
-                        <span style="font-size: 0.9rem; font-weight: bold; display: block; height: 2.4em; overflow: hidden;">${next.home_team?.team_name || 'Gospodarz'}</span>
+            <h3 style="margin: 0 0 20px 0; font-size: 0.85rem; color: #adb5bd; text-transform: uppercase; letter-spacing: 0.5px;">Najbliższy mecz</h3>
+            <div style="text-align: center;">
+                <div style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 20px;">
+                    <div style="flex: 1;">
+                        <div style="width: 50px; height: 50px; background: #f1f3f5; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #adb5bd;">${(next.home_team?.team_name || 'H').substring(0,1)}</div>
+                        <div style="font-size: 0.8rem; font-weight: 700; color: #212529;">${next.home_team?.team_name}</div>
                     </div>
-                    <div class="vs-badge" style="font-style: italic; font-weight: 900; color: #ff4500; font-size: 1.2rem;">VS</div>
-                    <div class="team">
-                        <div style="width: 60px; height: 60px; background: #222; border: 1px solid #333; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #555; font-weight: bold; text-transform: uppercase;">${(next.away_team?.team_name || 'AWY').substring(0,3)}</div>
-                        <span style="font-size: 0.9rem; font-weight: bold; display: block; height: 2.4em; overflow: hidden;">${next.away_team?.team_name || 'Gość'}</span>
+                    <div style="font-weight: 900; color: #fd7e14; font-size: 1.2rem; padding: 0 10px;">VS</div>
+                    <div style="flex: 1;">
+                        <div style="width: 50px; height: 50px; background: #f1f3f5; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #adb5bd;">${(next.away_team?.team_name || 'A').substring(0,1)}</div>
+                        <div style="font-size: 0.8rem; font-weight: 700; color: #212529;">${next.away_team?.team_name}</div>
                     </div>
                 </div>
-                <div class="focus-details" style="background: #000; padding: 15px; border-radius: 8px; border: 1px solid #1a1a1a;">
-                    <p style="margin: 0; font-size: 0.85rem; color: #ccc;">Tydzień ${next.week} • ${this.translateDay(next.day_of_week)}</p>
-                    <span style="display: inline-block; background: #ff4500; color: #fff; padding: 3px 10px; border-radius: 4px; font-size: 0.65rem; margin-top: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">${next.match_type}</span>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #495057;">Tydzień ${next.week} • ${this.translateDay(next.day_of_week)}</div>
+                    <div style="margin-top: 5px; display: inline-block; padding: 4px 12px; background: #fd7e14; color: #fff; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">${next.match_type}</div>
                 </div>
             </div>
         `;
@@ -149,34 +138,34 @@ export const ScheduleView = {
         if (!container) return;
         
         container.innerHTML = `
-            <div class="card-label" style="color: #666; font-weight: bold; font-size: 0.7rem; margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase;">Pełny Terminarz Sezonu</div>
-            <div class="schedule-table-wrapper" style="max-height: 550px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #333 #111; padding-right: 5px;">
-                <table class="schedule-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+            <div style="max-height: calc(100vh - 250px); overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
                     <thead>
-                        <tr style="border-bottom: 1px solid #222; text-align: left; color: #444; font-size: 0.7rem; text-transform: uppercase; position: sticky; top: 0; background: #111; z-index: 10;">
-                            <th style="padding: 12px 10px;">WK</th>
-                            <th style="padding: 12px 10px;">DZIEŃ</th>
-                            <th style="padding: 12px 10px;">MECZ</th>
-                            <th style="padding: 12px 10px; text-align: center;">WYNIK</th>
+                        <tr style="position: sticky; top: 0; background: #fff; border-bottom: 2px solid #f1f3f5; z-index: 1;">
+                            <th style="padding: 12px 15px; color: #adb5bd; font-weight: 700; text-transform: uppercase; font-size: 0.7rem;">Tydz</th>
+                            <th style="padding: 12px 15px; color: #adb5bd; font-weight: 700; text-transform: uppercase; font-size: 0.7rem;">Dzień</th>
+                            <th style="padding: 12px 15px; color: #adb5bd; font-weight: 700; text-transform: uppercase; font-size: 0.7rem;">Mecz</th>
+                            <th style="padding: 12px 15px; color: #adb5bd; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; text-align: center;">Wynik</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${schedule.map(m => `
-                            <tr style="border-bottom: 1px solid #1a1a1a; transition: background 0.2s; ${m.status === 'PLAYED' ? 'opacity: 0.5;' : ''}" 
-                                onmouseover="this.style.background='#161616'" 
-                                onmouseout="this.style.background='transparent'">
-                                <td style="padding: 12px 10px; color: #666;">${m.week}</td>
-                                <td style="padding: 12px 10px; color: #888; font-size: 0.75rem;">${this.translateDay(m.day_of_week).substring(0,3).toUpperCase()}</td>
-                                <td style="padding: 12px 10px; font-weight: 500;">
-                                    <span style="${m.home_team_id === currentTeamId ? 'color: #ff4500; font-weight:bold;' : ''}">${m.home_team?.team_name || 'Ładowanie...'}</span> 
-                                    <span style="color: #444; margin: 0 5px;">vs</span> 
-                                    <span style="${m.away_team_id === currentTeamId ? 'color: #ff4500; font-weight:bold;' : ''}">${m.away_team?.team_name || 'Ładowanie...'}</span>
+                        ${schedule.map(m => {
+                            const isHome = m.home_team_id === currentTeamId;
+                            return `
+                            <tr style="border-bottom: 1px solid #f1f3f5; transition: background 0.2s;" onmouseover="this.style.background='#fcfcfc'" onmouseout="this.style.background='transparent'">
+                                <td style="padding: 10px 15px; font-weight: 600; color: #6c757d;">${m.week}</td>
+                                <td style="padding: 10px 15px; color: #495057;">${this.translateDay(m.day_of_week).substring(0,3)}</td>
+                                <td style="padding: 10px 15px;">
+                                    <span style="${isHome ? 'color: #fd7e14; font-weight: 700;' : 'color: #212529;'}">${m.home_team?.team_name}</span>
+                                    <span style="color: #dee2e6; margin: 0 5px;">-</span>
+                                    <span style="${!isHome ? 'color: #fd7e14; font-weight: 700;' : 'color: #212529;'}">${m.away_team?.team_name}</span>
+                                    <span style="margin-left: 8px; font-size: 0.65rem; padding: 2px 6px; background: #f1f3f5; color: #adb5bd; border-radius: 4px; text-transform: uppercase;">${m.match_type === 'Sparing' ? 'Spr' : 'Lig'}</span>
                                 </td>
-                                <td style="padding: 12px 10px; font-weight: bold; color: ${m.score_home !== null ? '#fff' : '#444'}; text-align: center; font-family: 'Courier New', monospace;">
-                                    ${m.score_home !== null ? `${m.score_home}:${m.score_away}` : '— : —'}
+                                <td style="padding: 10px 15px; text-align: center; font-family: 'Monaco', monospace; font-weight: 700;">
+                                    ${m.score_home !== null ? `${m.score_home}:${m.score_away}` : '<span style="color: #dee2e6;">-- : --</span>'}
                                 </td>
-                            </tr>
-                        `).join('')}
+                            </tr>`;
+                        }).join('')}
                     </tbody>
                 </table>
             </div>
@@ -185,32 +174,18 @@ export const ScheduleView = {
 
     async fetchTeamSchedule(teamId) {
         if (!teamId) return [];
-        console.log("[ScheduleView] Pobieram mecze dla teamId:", teamId);
-        
         const { data, error } = await supabaseClient
             .from('matches')
             .select(`
-                id,
-                week,
-                day_of_week,
-                match_type,
-                status,
-                score_home,
-                score_away,
-                home_team_id,
-                away_team_id,
-                match_date,
+                id, week, day_of_week, match_type, status, score_home, score_away,
+                home_team_id, away_team_id, match_date,
                 home_team:home_team_id ( team_name ),
                 away_team:away_team_id ( team_name )
             `)
             .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
             .order('match_date', { ascending: true });
         
-        if (error) {
-            console.error("[ScheduleView] Błąd Supabase:", error);
-            throw error;
-        }
-
+        if (error) throw error;
         return data;
     }
 };
