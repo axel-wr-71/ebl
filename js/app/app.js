@@ -6,8 +6,6 @@ import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 import { renderMediaView } from './media_view.js'; 
 import { ScheduleView } from './schedule_view.js';
-
-// KRYTYCZNY IMPORT DLA PRZYCISKÓW
 import { RosterActions } from './roster_actions.js';
 
 // Rejestracja globalna
@@ -79,9 +77,7 @@ async function loadDynamicNavigation() {
             </button>
         `).join('');
 
-        initSidebarSortable(navContainer, user.id);
-
-        // Ustawienie domyślnej zakładki po załadowaniu menu
+        // Ustawienie domyślnej zakładki (np. Media) po załadowaniu menu
         if (settings.length > 0) {
             const firstTab = settings[0].app_modules.module_key;
             switchTab(firstTab);
@@ -92,43 +88,34 @@ async function loadDynamicNavigation() {
     }
 }
 
-function initSidebarSortable(container, userId) {
-    if (typeof Sortable === 'undefined') return;
-    Sortable.create(container, {
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        onEnd: async () => {
-            const buttons = Array.from(container.querySelectorAll('.btn-tab'));
-            for (const [index, btn] of buttons.entries()) {
-                const moduleKey = btn.getAttribute('data-tab');
-                const { data: mod } = await supabaseClient.from('app_modules').select('id').eq('module_key', moduleKey).single();
-                await supabaseClient.from('user_dashboard_settings').upsert({ 
-                    user_id: userId, 
-                    module_id: mod.id, 
-                    order_index: index 
-                }, { onConflict: 'user_id, module_id' });
-            }
-        }
-    });
-}
-
 /**
- * Inicjalizacja danych gry - Wywoływana raz przy starcie
+ * Inicjalizacja danych gry
  */
 export async function initApp() {
-    console.log("[APP] Inicjalizacja danych globalnych...");
+    console.log("[APP] Start inicjalizacji...");
     try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) return;
+        // Sprawdzenie czy supabaseClient jest dostępny
+        if (!supabaseClient) {
+            throw new Error("supabaseClient nie został zainicjalizowany!");
+        }
 
-        // 1. Pobierz profil i tydzień gry
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) {
+            console.warn("[APP] Brak zalogowanego użytkownika.");
+            return;
+        }
+
+        // 1. Pobierz dane podstawowe
         const [profileRes, configRes] = await Promise.all([
             supabaseClient.from('profiles').select('team_id').eq('id', user.id).single(),
             supabaseClient.from('game_config').select('value').eq('key', 'current_week').single()
         ]);
 
         const teamId = profileRes.data?.team_id;
-        if (!teamId) return;
+        if (!teamId) {
+            console.error("[APP] Brak przypisanej drużyny!");
+            return;
+        }
 
         window.userTeamId = teamId;
         window.gameState.currentWeek = configRes.data ? parseInt(configRes.data.value) : 1;
@@ -148,15 +135,15 @@ export async function initApp() {
             potential_definitions: window.getPotentialData(p.potential)
         }));
 
-        // UI Updates
+        // UI Updates dla nagłówka
         const teamName = window.gameState.team?.team_name || "Twoja Drużyna";
         document.querySelectorAll('.team-info b, #display-team-name').forEach(el => el.innerText = teamName);
 
-        // 4. Załaduj nawigację
+        // 4. Załaduj nawigację (to wywoła switchTab dla pierwszej zakładki)
         await loadDynamicNavigation();
 
     } catch (err) {
-        console.error("[APP] Błąd initApp:", err);
+        console.error("[APP] Błąd krytyczny initApp:", err);
     }
 }
 
@@ -166,7 +153,6 @@ export async function initApp() {
 export async function switchTab(tabId) {
     console.log("[NAV] Przełączam na:", tabId);
     
-    // UI: Aktywacja przycisku i sekcji
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
     
@@ -176,7 +162,6 @@ export async function switchTab(tabId) {
     const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
     if (activeBtn) activeBtn.classList.add('active');
 
-    // Renderowanie widoków z użyciem danych z window.gameState
     const { team, players } = window.gameState;
     if (!team) return;
 
@@ -187,12 +172,15 @@ export async function switchTab(tabId) {
         case 'm-media': renderMediaView(team, players); break;
         case 'm-finances': renderFinancesView(team, players); break;
         case 'm-schedule': 
-            // Przekazujemy ID kontenera zakładki i ID zespołu
             ScheduleView.render(tabId, window.userTeamId); 
             break;
     }
 }
 
+// Rejestracja globalna dla onclick w HTML
 window.switchTab = switchTab;
-// Autostart
-initApp();
+
+// BEZPIECZNY START: Czekamy na załadowanie DOM i modułów
+document.addEventListener('DOMContentLoaded', () => {
+    initApp();
+});
