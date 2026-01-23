@@ -14,7 +14,7 @@ let currentFilters = {
     offerType: 'all'
 };
 
-// Funkcje pomocnicze z roster_view.js
+// Funkcje pomocnicze
 function getFlagUrl(countryCode) {
     if (!countryCode) return '';
     const code = String(countryCode).toLowerCase().trim();
@@ -24,13 +24,13 @@ function getFlagUrl(countryCode) {
 
 function getPositionStyle(pos) {
     const styles = {
-        'PG': '#1e40af', 
-        'SG': '#5b21b6', 
-        'SF': '#065f46', 
-        'PF': '#9a3412', 
-        'C': '#F5AD27' 
+        'PG': { bg: '#1e40af', text: '#dbeafe', label: 'Point Guard' },
+        'SG': { bg: '#5b21b6', text: '#f3e8ff', label: 'Shooting Guard' },
+        'SF': { bg: '#065f46', text: '#d1fae5', label: 'Small Forward' },
+        'PF': { bg: '#9a3412', text: '#ffedd5', label: 'Power Forward' },
+        'C': { bg: '#F5AD27', text: '#92400e', label: 'Center' }
     };
-    return styles[pos] || '#334155';
+    return styles[pos] || { bg: '#334155', text: '#f1f5f9', label: 'Unknown' };
 }
 
 function getOvrStyle(ovr) {
@@ -38,9 +38,6 @@ function getOvrStyle(ovr) {
     if (ovr >= 80) return { bg: '#f0fdf4', border: '#22c55e', color: '#166534' };
     if (ovr >= 70) return { bg: '#f0f9ff', border: '#3b82f6', color: '#1e3a8a' };
     if (ovr >= 60) return { bg: '#fff7ed', border: '#fdba74', color: '#9a3412' };
-    if (ovr >= 50) return { bg: '#f0fdf4', border: '#22c55e', color: '#5b21b6' };
-    if (ovr >= 40) return { bg: '#f0f9ff', border: '#3b82f6', color: '#065f46' };
-    if (ovr >= 30) return { bg: '#fff7ed', border: '#fdba74', color: '#1e40af' };
     return { bg: '#f8fafc', border: '#e2e8f0', color: '#64748b' };
 }
 
@@ -61,10 +58,19 @@ function calculateMarketValue(player) {
     return Math.round((ovr * 10000 + (player.salary || 0) * 2) * ageFactor);
 }
 
-// Funkcja generująca opcje potencjału na podstawie globalnych definicji
+// Generowanie opcji potencjału
 function generatePotentialOptions() {
-    const defaultOptions = `
-        <option value="">All Levels</option>
+    if (window.potentialDefinitions && Object.keys(window.potentialDefinitions).length > 0) {
+        const options = Object.values(window.potentialDefinitions)
+            .sort((a, b) => b.order_index - a.order_index)
+            .map(def => `<option value="${def.id}">${def.label} ${def.emoji || ''}</option>`)
+            .join('');
+        return `<option value="">All Potential Levels</option>${options}`;
+    }
+    
+    // Fallback options
+    return `
+        <option value="">All Potential Levels</option>
         <option value="GOAT">G.O.A.T. 🐐</option>
         <option value="Elite Franchise">Elite Franchise ★</option>
         <option value="Franchise Player">Franchise Player ★</option>
@@ -76,34 +82,32 @@ function generatePotentialOptions() {
         <option value="Project Player">Project Player</option>
         <option value="High Prospect">High Prospect</option>
     `;
-    
-    if (window.potentialDefinitions && Object.keys(window.potentialDefinitions).length > 0) {
-        const options = Object.values(window.potentialDefinitions)
-            .sort((a, b) => b.order_index - a.order_index)
-            .map(def => `<option value="${def.id}">${def.label} ${def.emoji || ''}</option>`)
-            .join('');
-        return `<option value="">All Levels</option>${options}`;
-    }
-    
-    return defaultOptions;
 }
 
-// Funkcja pobierająca dane potencjału zgodnie z roster_view.js
+// Pobieranie danych potencjału
 function getPotentialData(potentialId) {
-    if (window.getPotentialData) {
-        return window.getPotentialData(potentialId);
+    if (window.potentialDefinitions && window.potentialDefinitions[potentialId]) {
+        return window.potentialDefinitions[potentialId];
     }
     
-    // Fallback data jeśli funkcja nie jest dostępna
-    const fallbackData = {
-        label: potentialId || 'Unknown',
-        color: '#94a3b8',
-        icon: '👤'
+    // Fallback dla brakujących definicji
+    const fallbackMap = {
+        'GOAT': { label: 'G.O.A.T.', color: '#f59e0b', icon: '🐐' },
+        'Elite Franchise': { label: 'Elite Franchise', color: '#8b5cf6', icon: '★' },
+        'Franchise Player': { label: 'Franchise Player', color: '#3b82f6', icon: '★' },
+        'All-Star Caliber': { label: 'All-Star', color: '#10b981', icon: '⭐' },
+        'Starter': { label: 'Starter', color: '#059669', icon: '🏀' },
+        'Sixth Man': { label: 'Sixth Man', color: '#d97706', icon: '🔥' },
+        'Rotation Player': { label: 'Rotation', color: '#f59e0b', icon: '🔄' },
+        'Deep Bench': { label: 'Deep Bench', color: '#6b7280', icon: '⏱️' },
+        'Project Player': { label: 'Project', color: '#ef4444', icon: '🌱' },
+        'High Prospect': { label: 'Prospect', color: '#ec4899', icon: '🎯' }
     };
     
-    return fallbackData;
+    return fallbackMap[potentialId] || { label: 'Unknown', color: '#94a3b8', icon: '👤' };
 }
 
+// Renderowanie głównego widoku
 export async function renderMarketView(teamData, players = []) {
     const container = document.getElementById('market-view-container');
     
@@ -123,136 +127,394 @@ export async function renderMarketView(teamData, players = []) {
 
     container.innerHTML = `
         <div class="market-modern-wrapper">
-            <div class="market-management-header" style="padding: 20px 0 30px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0;">
+            <!-- Header z finansami -->
+            <div class="market-management-header" style="
+                background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
+                color: white;
+                padding: 24px 32px;
+                border-radius: 16px;
+                margin-bottom: 30px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                box-shadow: 0 8px 24px rgba(26, 35, 126, 0.2);
+            ">
                 <div>
-                    <h1 style="margin:0; font-weight:900; color:#1a237e; text-transform:uppercase; font-family: 'Inter', sans-serif; font-size: 1.8rem;">
-                        TRANSFER <span style="color:#e65100">MARKET</span>
+                    <h1 style="margin:0; font-weight:900; font-size: 2rem; letter-spacing: -0.5px;">
+                        🏀 TRANSFER MARKET
                     </h1>
-                    <p style="margin:10px 0 0 0; color:#64748b; font-size: 0.95rem;">
-                        Manage your team's finances and sign new talent | 
-                        <span style="color:#1a237e; font-weight:600;">Available funds: $${(teamData.balance || 0).toLocaleString()}</span>
+                    <p style="margin:8px 0 0 0; opacity: 0.9; font-size: 0.95rem;">
+                        Scout and sign new talent for your franchise
                     </p>
                 </div>
-                <div style="background:#1a237e; color:white; padding:12px 24px; border-radius:12px; font-weight:700; font-size:0.9rem; display:flex; align-items:center; gap:8px; box-shadow: 0 4px 12px rgba(26,35,126,0.2);">
-                    <span style="font-size: 1.2rem;">💰</span>
-                    $${(teamData.balance || 0).toLocaleString()}
+                <div style="
+                    background: rgba(255, 255, 255, 0.15);
+                    backdrop-filter: blur(10px);
+                    padding: 16px 28px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    text-align: center;
+                ">
+                    <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 4px;">AVAILABLE FUNDS</div>
+                    <div style="font-size: 1.8rem; font-weight: 900;">$${(teamData.balance || 0).toLocaleString()}</div>
                 </div>
             </div>
 
-            <div class="filters-panel" style="background: #fff; border-radius: 12px; padding: 24px; margin: 25px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3 style="margin:0; font-size: 1rem; color:#1a237e; font-weight:800; text-transform:uppercase; letter-spacing: 0.5px;">
-                        Player Search Filters
+            <!-- Panel filtrów z nowym UX -->
+            <div class="filters-panel" style="
+                background: white;
+                border-radius: 16px;
+                padding: 28px;
+                margin-bottom: 30px;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e2e8f0;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h3 style="margin:0; font-size: 1.1rem; color:#1a237e; font-weight:800;">
+                        🔍 PLAYER SEARCH FILTERS
                     </h3>
-                    <button id="btn-reset-filters" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
-                        Reset All Filters
+                    <button id="btn-reset-filters" style="
+                        background: #f8fafc;
+                        color: #64748b;
+                        border: 1px solid #e2e8f0;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        font-size: 0.85rem;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        transition: all 0.2s;
+                    ">
+                        <span>🔄</span> Reset All
                     </button>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr) 2fr; gap: 15px; align-items: end;">
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Position</label>
-                        <select id="filter-position" class="filter-select" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; background: white;">
+                <!-- Grid filtrów -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                    <!-- Pozycja -->
+                    <div class="filter-group">
+                        <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
+                            Position
+                        </label>
+                        <select id="filter-position" class="filter-select" style="
+                            width: 100%;
+                            padding: 12px 16px;
+                            border: 2px solid #e2e8f0;
+                            border-radius: 10px;
+                            font-size: 0.9rem;
+                            background: white;
+                            color: #334155;
+                            transition: all 0.2s;
+                            cursor: pointer;
+                        ">
                             <option value="">All Positions</option>
-                            <option value="PG">Point Guard (PG)</option>
-                            <option value="SG">Shooting Guard (SG)</option>
-                            <option value="SF">Small Forward (SF)</option>
-                            <option value="PF">Power Forward (PF)</option>
-                            <option value="C">Center (C)</option>
+                            <option value="PG">PG - Point Guard</option>
+                            <option value="SG">SG - Shooting Guard</option>
+                            <option value="SF">SF - Small Forward</option>
+                            <option value="PF">PF - Power Forward</option>
+                            <option value="C">C - Center</option>
                         </select>
                     </div>
 
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Age Range</label>
-                        <div style="display: flex; gap: 8px;">
-                            <input id="filter-min-age" type="number" min="18" max="35" placeholder="Min" 
-                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem;">
-                            <span style="color: #94a3b8; align-self: center;">-</span>
-                            <input id="filter-max-age" type="number" min="18" max="35" placeholder="Max" 
-                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem;">
+                    <!-- Wiek -->
+                    <div class="filter-group">
+                        <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
+                            Age Range
+                        </label>
+                        <div style="display: flex; gap: 10px;">
+                            <input id="filter-min-age" type="number" min="18" max="40" placeholder="Min" style="
+                                flex: 1;
+                                padding: 12px;
+                                border: 2px solid #e2e8f0;
+                                border-radius: 10px;
+                                font-size: 0.9rem;
+                                text-align: center;
+                            ">
+                            <div style="color: #94a3b8; align-self: center; font-weight: 600;">→</div>
+                            <input id="filter-max-age" type="number" min="18" max="40" placeholder="Max" style="
+                                flex: 1;
+                                padding: 12px;
+                                border: 2px solid #e2e8f0;
+                                border-radius: 10px;
+                                font-size: 0.9rem;
+                                text-align: center;
+                            ">
                         </div>
                     </div>
 
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Price Range ($)</label>
-                        <div style="display: flex; gap: 8px;">
-                            <input id="filter-min-price" type="number" min="0" placeholder="Min" 
-                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem;">
-                            <span style="color: #94a3b8; align-self: center;">-</span>
-                            <input id="filter-max-price" type="number" min="0" placeholder="Max" 
-                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem;">
+                    <!-- Cena -->
+                    <div class="filter-group">
+                        <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
+                            Price Range ($)
+                        </label>
+                        <div style="display: flex; gap: 10px;">
+                            <input id="filter-min-price" type="number" min="0" placeholder="Min" style="
+                                flex: 1;
+                                padding: 12px;
+                                border: 2px solid #e2e8f0;
+                                border-radius: 10px;
+                                font-size: 0.9rem;
+                                text-align: center;
+                            ">
+                            <div style="color: #94a3b8; align-self: center; font-weight: 600;">→</div>
+                            <input id="filter-max-price" type="number" min="0" placeholder="Max" style="
+                                flex: 1;
+                                padding: 12px;
+                                border: 2px solid #e2e8f0;
+                                border-radius: 10px;
+                                font-size: 0.9rem;
+                                text-align: center;
+                            ">
                         </div>
                     </div>
 
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Potential</label>
-                        <select id="filter-potential" class="filter-select" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; background: white;">
+                    <!-- Potencjał -->
+                    <div class="filter-group">
+                        <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
+                            Potential
+                        </label>
+                        <select id="filter-potential" class="filter-select" style="
+                            width: 100%;
+                            padding: 12px 16px;
+                            border: 2px solid #e2e8f0;
+                            border-radius: 10px;
+                            font-size: 0.9rem;
+                            background: white;
+                            color: #334155;
+                            transition: all 0.2s;
+                            cursor: pointer;
+                        ">
                             ${generatePotentialOptions()}
                         </select>
                     </div>
+                </div>
 
-                    <div style="display: flex; gap: 10px; align-items: end;">
-                        <button id="btn-search-market" 
-                                style="background: #1a237e; color: white; border: none; padding: 12px 24px; border-radius: 8px; 
-                                       font-weight: 700; cursor: pointer; font-size: 0.9rem; flex: 1; transition: all 0.2s;">
-                            🔍 Search Players
-                        </button>
-                        <button id="btn-advanced-search" 
-                                style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 12px 15px; border-radius: 8px; 
-                                       font-weight: 600; cursor: pointer; font-size: 0.85rem;">
-                            ⚙️
-                        </button>
+                <!-- Filtry checkbox z lepszym UX -->
+                <div style="border-top: 2px solid #f1f5f9; padding-top: 25px;">
+                    <div style="font-size: 0.85rem; color: #475569; margin-bottom: 15px; font-weight: 600;">
+                        Offer Type
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                        <label class="checkbox-modern" style="
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                            cursor: pointer;
+                            padding: 12px 20px;
+                            background: #f8fafc;
+                            border-radius: 10px;
+                            border: 2px solid #e2e8f0;
+                            transition: all 0.2s;
+                            user-select: none;
+                            flex: 1;
+                            min-width: 180px;
+                        ">
+                            <input type="radio" name="offerType" value="all" checked 
+                                   style="transform: scale(1.2); accent-color: #1a237e;">
+                            <div style="font-weight: 600; color: #475569;">All Offers</div>
+                            <div style="
+                                margin-left: auto;
+                                background: #e2e8f0;
+                                color: #64748b;
+                                font-size: 0.75rem;
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                font-weight: 700;
+                            ">Default</div>
+                        </label>
+                        
+                        <label class="checkbox-modern" style="
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                            cursor: pointer;
+                            padding: 12px 20px;
+                            background: #f8fafc;
+                            border-radius: 10px;
+                            border: 2px solid #e2e8f0;
+                            transition: all 0.2s;
+                            user-select: none;
+                            flex: 1;
+                            min-width: 180px;
+                        ">
+                            <input type="radio" name="offerType" value="auction"
+                                   style="transform: scale(1.2); accent-color: #1a237e;">
+                            <div style="font-weight: 600; color: #475569;">Auction Only</div>
+                            <div style="
+                                margin-left: auto;
+                                background: #fef3c7;
+                                color: #92400e;
+                                font-size: 0.75rem;
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                font-weight: 700;
+                            ">🏷️ Bid</div>
+                        </label>
+                        
+                        <label class="checkbox-modern" style="
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                            cursor: pointer;
+                            padding: 12px 20px;
+                            background: #f8fafc;
+                            border-radius: 10px;
+                            border: 2px solid #e2e8f0;
+                            transition: all 0.2s;
+                            user-select: none;
+                            flex: 1;
+                            min-width: 180px;
+                        ">
+                            <input type="radio" name="offerType" value="buy_now"
+                                   style="transform: scale(1.2); accent-color: #1a237e;">
+                            <div style="font-weight: 600; color: #475569;">Buy Now Only</div>
+                            <div style="
+                                margin-left: auto;
+                                background: #d1fae5;
+                                color: #065f46;
+                                font-size: 0.75rem;
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                font-weight: 700;
+                            ">⚡ Instant</div>
+                        </label>
                     </div>
                 </div>
 
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
-                    <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 8px; font-weight: 600;">Offer Type</div>
-                    <div style="display: flex; gap: 15px;">
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                            <input type="radio" name="offerType" value="all" checked style="accent-color: #1a237e;">
-                            <span style="font-size: 0.85rem;">All Offers</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                            <input type="radio" name="offerType" value="auction" style="accent-color: #1a237e;">
-                            <span style="font-size: 0.85rem;">Auction Only 🏷️</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                            <input type="radio" name="offerType" value="buy_now" style="accent-color: #1a237e;">
-                            <span style="font-size: 0.85rem;">Buy Now Only ⚡</span>
-                        </label>
-                    </div>
+                <!-- Przycisk wyszukiwania -->
+                <div style="margin-top: 30px; text-align: center;">
+                    <button id="btn-search-market" style="
+                        background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
+                        color: white;
+                        border: none;
+                        padding: 16px 40px;
+                        border-radius: 12px;
+                        font-weight: 800;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 12px;
+                        box-shadow: 0 6px 20px rgba(26, 35, 126, 0.25);
+                        transition: all 0.3s;
+                    ">
+                        <span style="font-size: 1.2rem;">🔍</span>
+                        SEARCH PLAYERS
+                    </button>
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
-                <div style="background: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 10px; padding: 15px; text-align: center;">
-                    <div style="font-size: 0.75rem; color: #0369a1; font-weight: 600; margin-bottom: 5px;">Total Players</div>
-                    <div id="stat-total" style="font-size: 1.5rem; font-weight: 800; color: #0c4a6e;">0</div>
+            <!-- Statystyki -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <div style="
+                    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                    border: 2px solid #bae6fd;
+                    border-radius: 12px;
+                    padding: 20px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 0.8rem; color: #0369a1; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">Total Players</div>
+                    <div id="stat-total" style="font-size: 2rem; font-weight: 900; color: #0c4a6e;">0</div>
                 </div>
-                <div style="background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 10px; padding: 15px; text-align: center;">
-                    <div style="font-size: 0.75rem; color: #15803d; font-weight: 600; margin-bottom: 5px;">Average Price</div>
-                    <div id="stat-avg-price" style="font-size: 1.5rem; font-weight: 800; color: #166534;">$0</div>
+                <div style="
+                    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                    border: 2px solid #a7f3d0;
+                    border-radius: 12px;
+                    padding: 20px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 0.8rem; color: #15803d; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">Avg Price</div>
+                    <div id="stat-avg-price" style="font-size: 2rem; font-weight: 900; color: #166534;">$0</div>
                 </div>
-                <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 10px; padding: 15px; text-align: center;">
-                    <div style="font-size: 0.75rem; color: #d97706; font-weight: 600; margin-bottom: 5px;">Youngest</div>
-                    <div id="stat-youngest" style="font-size: 1.5rem; font-weight: 800; color: #92400e;">18</div>
+                <div style="
+                    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                    border: 2px solid #fcd34d;
+                    border-radius: 12px;
+                    padding: 20px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 0.8rem; color: #d97706; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">Youngest</div>
+                    <div id="stat-youngest" style="font-size: 2rem; font-weight: 900; color: #92400e;">18</div>
                 </div>
-                <div style="background: #fae8ff; border: 1px solid #f5d0fe; border-radius: 10px; padding: 15px; text-align: center;">
-                    <div style="font-size: 0.75rem; color: #a21caf; font-weight: 600; margin-bottom: 5px;">Highest OVR</div>
-                    <div id="stat-highest-ovr" style="font-size: 1.5rem; font-weight: 800; color: #86198f;">0</div>
+                <div style="
+                    background: linear-gradient(135deg, #fae8ff 0%, #f5d0fe 100%);
+                    border: 2px solid #f0abfc;
+                    border-radius: 12px;
+                    padding: 20px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 0.8rem; color: #a21caf; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">Highest OVR</div>
+                    <div id="stat-highest-ovr" style="font-size: 2rem; font-weight: 900; color: #86198f;">0</div>
                 </div>
             </div>
 
-            <div id="market-listings" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px;"></div>
+            <!-- Lista ofert w grid 4 kolumny -->
+            <div id="market-listings" style="
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 25px;
+                margin-bottom: 40px;
+            "></div>
 
-            <div class="market-pagination" style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; align-items: center; gap: 20px;">
-                <button id="prev-page" class="pag-btn" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">← Previous Page</button>
-                <div id="page-info" style="font-weight: 600; color: #64748b; font-size: 0.9rem;"></div>
-                <button id="next-page" class="pag-btn" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Next Page →</button>
+            <!-- Paginacja -->
+            <div class="market-pagination" style="
+                margin-top: 40px;
+                padding: 25px;
+                background: #f8fafc;
+                border-radius: 16px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 20px;
+            ">
+                <button id="prev-page" class="pag-btn" style="
+                    background: white;
+                    color: #475569;
+                    border: 2px solid #e2e8f0;
+                    padding: 12px 24px;
+                    border-radius: 10px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    font-size: 0.9rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    transition: all 0.2s;
+                ">
+                    <span>←</span> Previous
+                </button>
+                <div id="page-info" style="
+                    font-weight: 800;
+                    color: #1a237e;
+                    font-size: 0.95rem;
+                    background: white;
+                    padding: 10px 20px;
+                    border-radius: 10px;
+                    border: 2px solid #e2e8f0;
+                "></div>
+                <button id="next-page" class="pag-btn" style="
+                    background: #1a237e;
+                    color: white;
+                    border: 2px solid #1a237e;
+                    padding: 12px 24px;
+                    border-radius: 10px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    font-size: 0.9rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    transition: all 0.2s;
+                ">
+                    Next <span>→</span>
+                </button>
             </div>
         </div>
     `;
 
+    // Event Listeners
     document.getElementById('btn-search-market').onclick = () => {
         updateFilters();
         currentPage = 1;
@@ -263,10 +525,6 @@ export async function renderMarketView(teamData, players = []) {
         resetFilters();
         currentPage = 1;
         loadMarketData();
-    };
-
-    document.getElementById('btn-advanced-search').onclick = () => {
-        alert('Advanced search options coming soon!');
     };
 
     document.getElementById('prev-page').onclick = () => {
@@ -283,12 +541,49 @@ export async function renderMarketView(teamData, players = []) {
         }
     };
 
-    document.querySelectorAll('input[name="offerType"]').forEach(radio => {
-        radio.onchange = () => {
-            currentFilters.offerType = document.querySelector('input[name="offerType"]:checked').value;
+    // Hover effects dla checkboxów
+    document.querySelectorAll('.checkbox-modern').forEach(label => {
+        const input = label.querySelector('input[type="radio"]');
+        
+        // Efekt hover
+        label.addEventListener('mouseenter', () => {
+            if (!input.checked) {
+                label.style.borderColor = '#c7d2fe';
+                label.style.background = '#f1f5f9';
+            }
+        });
+        
+        label.addEventListener('mouseleave', () => {
+            if (!input.checked) {
+                label.style.borderColor = '#e2e8f0';
+                label.style.background = '#f8fafc';
+            }
+        });
+        
+        // Efekt przy kliknięciu
+        input.addEventListener('change', () => {
+            // Zresetuj wszystkie labelki
+            document.querySelectorAll('.checkbox-modern').forEach(l => {
+                l.style.borderColor = '#e2e8f0';
+                l.style.background = '#f8fafc';
+            });
+            
+            // Wyróżnij zaznaczony
+            if (input.checked) {
+                label.style.borderColor = '#1a237e';
+                label.style.background = '#e0e7ff';
+            }
+            
+            currentFilters.offerType = input.value;
             currentPage = 1;
             loadMarketData();
-        };
+        });
+        
+        // Zaznacz domyślny
+        if (input.checked) {
+            label.style.borderColor = '#1a237e';
+            label.style.background = '#e0e7ff';
+        }
     });
 
     await loadMarketData();
@@ -309,13 +604,30 @@ function updateFilters() {
 }
 
 function resetFilters() {
+    // Resetuj selecty
     document.getElementById('filter-position').value = '';
-    document.getElementById('filter-min-age').value = '';
-    document.getElementById('filter-max-age').value = '';
-    document.getElementById('filter-min-price').value = '';
-    document.getElementById('filter-max-price').value = '';
     document.getElementById('filter-potential').value = '';
+    
+    // Resetuj inputy numeryczne
+    ['filter-min-age', 'filter-max-age', 'filter-min-price', 'filter-max-price'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    
+    // Resetuj radio buttons
     document.querySelector('input[name="offerType"][value="all"]').checked = true;
+    
+    // Zaktualizuj wygląd checkboxów
+    document.querySelectorAll('.checkbox-modern').forEach(label => {
+        label.style.borderColor = '#e2e8f0';
+        label.style.background = '#f8fafc';
+    });
+    
+    // Wyróżnij domyślny
+    const defaultLabel = document.querySelector('input[name="offerType"][value="all"]').closest('.checkbox-modern');
+    if (defaultLabel) {
+        defaultLabel.style.borderColor = '#1a237e';
+        defaultLabel.style.background = '#e0e7ff';
+    }
     
     currentFilters = {
         position: '',
@@ -330,30 +642,46 @@ function resetFilters() {
 
 async function loadMarketData() {
     const list = document.getElementById('market-listings');
-    list.innerHTML = '<div class="loader" style="grid-column: 1/-1; text-align: center; padding: 60px; color: #64748b; font-weight: 500;">Analyzing market prospects...</div>';
+    list.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
+            <div class="loader" style="
+                display: inline-block;
+                width: 50px;
+                height: 50px;
+                border: 4px solid #e2e8f0;
+                border-top: 4px solid #1a237e;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-bottom: 20px;
+            "></div>
+            <div style="color: #64748b; font-weight: 600; font-size: 1rem;">Loading market data...</div>
+        </div>
+    `;
 
     try {
-        // Najpierw pobierz wszystkich zawodników z rynku z podstawowymi informacjami
+        // Pobierz dane z Supabase
         let query = supabaseClient
             .from('transfer_market')
             .select('*, players!inner(*)')
             .eq('status', 'active');
 
-        // Filtry muszą być zastosowane inaczej - poprzez osobne zapytanie do players
-        // lub przez pobranie wszystkich danych i filtrowanie po stronie klienta
-        
-        // Pobieramy wszystkie dane
         const { data, error } = await query.order('created_at', { ascending: false });
         
         if (error) {
             console.error("Supabase Error:", error);
-            list.innerHTML = `<div class="error" style="grid-column: 1/-1; text-align: center; padding: 60px; color: #ef4444; font-weight: 500;">Error: ${error.message}</div>`;
+            list.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
+                    <div style="color: #ef4444; font-size: 2rem; margin-bottom: 15px;">⚠️</div>
+                    <h3 style="margin: 0 0 10px 0; color: #ef4444; font-weight: 600;">Error loading data</h3>
+                    <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">${error.message}</p>
+                </div>
+            `;
             return;
         }
 
         allMarketData = data || [];
         
-        // Filtrowanie po stronie klienta (tymczasowe rozwiązanie)
+        // Filtrowanie danych
         allMarketData = allMarketData.filter(item => {
             const player = item.players;
             
@@ -370,13 +698,9 @@ async function loadMarketData() {
                 return false;
             }
             
-            // Filtruj potencjał (używając window.getPotentialData)
-            if (currentFilters.potential) {
-                const potData = getPotentialData(player.potential);
-                if (potData.label !== currentFilters.potential && 
-                    player.potential !== currentFilters.potential) {
-                    return false;
-                }
+            // Filtruj potencjał (NAPRAWIONE)
+            if (currentFilters.potential && player.potential !== currentFilters.potential) {
+                return false;
             }
             
             // Filtruj typ oferty
@@ -403,13 +727,19 @@ async function loadMarketData() {
             return true;
         });
         
-        console.log('Filtered data:', allMarketData.length, 'items');
+        console.log(`Filtered data: ${allMarketData.length} items`);
         updateMarketStats(allMarketData);
         displayCurrentPage();
         
     } catch (error) {
         console.error("Error loading market data:", error);
-        list.innerHTML = `<div class="error" style="grid-column: 1/-1; text-align: center; padding: 60px; color: #ef4444; font-weight: 500;">Error loading market data</div>`;
+        list.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
+                <div style="color: #ef4444; font-size: 2rem; margin-bottom: 15px;">⚠️</div>
+                <h3 style="margin: 0 0 10px 0; color: #ef4444; font-weight: 600;">Unexpected error</h3>
+                <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">Please try again later</p>
+            </div>
+        `;
     }
 }
 
@@ -422,17 +752,21 @@ function updateMarketStats(data) {
         return;
     }
 
-    document.getElementById('stat-total').textContent = data.length;
+    // Total players
+    document.getElementById('stat-total').textContent = data.length.toLocaleString();
 
+    // Average price
     const avgPrice = Math.round(data.reduce((sum, item) => {
         const price = item.current_price || item.buy_now_price || 0;
         return sum + price;
     }, 0) / data.length);
     document.getElementById('stat-avg-price').textContent = `$${avgPrice.toLocaleString()}`;
 
+    // Youngest player
     const youngest = Math.min(...data.map(item => item.players.age || 0));
     document.getElementById('stat-youngest').textContent = youngest;
 
+    // Highest OVR
     const highestOVR = Math.max(...data.map(item => calculateOVR(item.players) || 0));
     document.getElementById('stat-highest-ovr').textContent = highestOVR;
 }
@@ -445,10 +779,10 @@ function displayCurrentPage() {
 
     if (pageData.length === 0) {
         list.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 80px 20px; background: #f8fafc; border-radius: 12px; border: 2px dashed #e2e8f0;">
-                <div style="font-size: 3rem; margin-bottom: 20px; opacity: 0.3;">🏀</div>
-                <h3 style="margin: 0 0 10px 0; color: #64748b; font-weight: 600;">No players found</h3>
-                <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">Try adjusting your search filters</p>
+            <div style="grid-column: 1/-1; text-align: center; padding: 80px 20px; background: #f8fafc; border-radius: 16px; border: 2px dashed #e2e8f0;">
+                <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.2;">🏀</div>
+                <h3 style="margin: 0 0 10px 0; color: #475569; font-weight: 700; font-size: 1.3rem;">No players found</h3>
+                <p style="margin: 0; color: #94a3b8; font-size: 0.95rem; max-width: 400px; margin: 0 auto;">Try adjusting your search filters or check back later</p>
             </div>
         `;
     } else {
@@ -456,13 +790,39 @@ function displayCurrentPage() {
     }
 
     const totalPages = Math.ceil(allMarketData.length / pageSize) || 1;
-    document.getElementById('page-info').innerText = `Page ${currentPage} of ${totalPages} • ${allMarketData.length} players`;
+    document.getElementById('page-info').innerHTML = `
+        <span style="color: #1a237e;">${currentPage}</span>
+        <span style="color: #94a3b8;">/</span>
+        <span style="color: #64748b;">${totalPages}</span>
+        <span style="margin-left: 10px; color: #94a3b8;">•</span>
+        <span style="margin-left: 10px; color: #475569; font-weight: 600;">${allMarketData.length} players</span>
+    `;
     
+    // Aktualizuj przyciski paginacji
     const prevBtn = document.getElementById('prev-page');
     const nextBtn = document.getElementById('next-page');
     
-    if (prevBtn) prevBtn.disabled = currentPage === 1;
-    if (nextBtn) nextBtn.disabled = end >= allMarketData.length;
+    if (currentPage === 1) {
+        prevBtn.disabled = true;
+        prevBtn.style.opacity = '0.5';
+        prevBtn.style.cursor = 'not-allowed';
+    } else {
+        prevBtn.disabled = false;
+        prevBtn.style.opacity = '1';
+        prevBtn.style.cursor = 'pointer';
+    }
+    
+    if (end >= allMarketData.length) {
+        nextBtn.disabled = true;
+        nextBtn.style.opacity = '0.5';
+        nextBtn.style.cursor = 'not-allowed';
+        nextBtn.style.background = '#c7d2fe';
+    } else {
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = '1';
+        nextBtn.style.cursor = 'pointer';
+        nextBtn.style.background = '#1a237e';
+    }
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -473,11 +833,24 @@ function renderPlayerCard(item) {
 
     const marketVal = calculateMarketValue(p);
     const ovr = calculateOVR(p);
-    const accentColor = getPositionStyle(p.position);
+    const posStyle = getPositionStyle(p.position);
     const potData = getPotentialData(p.potential);
     
-    const rookieBadge = p.is_rookie ? `<span class="rookie-tag" style="background: #fef3c7; color: #92400e; font-size: 0.7rem; padding: 4px 10px; border-radius: 4px; font-weight: 800; display: inline-block; margin-left: 8px;">ROOKIE</span>` : '';
+    const rookieBadge = p.is_rookie ? `
+        <span style="
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 900;
+            display: inline-block;
+            margin-left: 8px;
+            border: 1px solid #fbbf24;
+        ">ROOKIE</span>
+    ` : '';
     
+    // Konwersja wzrostu
     const heightCm = p.height || 0;
     const inchesTotal = heightCm * 0.393701;
     const ft = Math.floor(inchesTotal / 12);
@@ -502,130 +875,333 @@ function renderPlayerCard(item) {
     const countryCode = p.country || p.nationality || "";
     const flagUrl = getFlagUrl(countryCode);
 
+    // Generowanie akcji i ceny
     let actionButtons = '';
     let priceInfo = '';
     
     if (item.type === 'auction' || item.type === 'both') {
         const bidPrice = item.current_price || 0;
-        const bidEnds = item.auction_ends ? new Date(item.auction_ends).toLocaleDateString() : 'Soon';
-        priceInfo = `
-            <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <span style="font-size: 0.8rem; color: #92400e; font-weight: 600;">Auction Price</span>
-                    <span style="font-size: 1.3rem; font-weight: 800; color: #d97706;">$${bidPrice.toLocaleString()}</span>
+        const bidEnds = item.auction_ends ? new Date(item.auction_ends).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : 'Soon';
+        
+        priceInfo += `
+            <div style="
+                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                border: 2px solid #fcd34d;
+                border-radius: 12px;
+                padding: 14px;
+                margin-bottom: 15px;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 0.75rem; color: #92400e; font-weight: 800; text-transform: uppercase;">Current Bid</span>
+                    <span style="font-size: 1.4rem; font-weight: 900; color: #b45309;">$${bidPrice.toLocaleString()}</span>
                 </div>
-                <div style="font-size: 0.75rem; color: #b45309; display: flex; align-items: center; gap: 6px;">
+                <div style="font-size: 0.75rem; color: #b45309; display: flex; align-items: center; gap: 6px; font-weight: 600;">
                     <span>⏱️</span> Ends: ${bidEnds}
                 </div>
             </div>
         `;
-        actionButtons += `<button class="bid-btn" onclick="handleBid('${item.id}', ${bidPrice})" style="background: ${accentColor}; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; flex: 1;">BID NOW</button>`;
+        actionButtons += `
+            <button onclick="handleBid('${item.id}', ${bidPrice})" style="
+                background: linear-gradient(135deg, ${posStyle.bg} 0%, #3730a3 100%);
+                color: ${posStyle.text};
+                border: none;
+                padding: 12px 20px;
+                border-radius: 10px;
+                font-weight: 900;
+                cursor: pointer;
+                font-size: 0.85rem;
+                flex: 1;
+                transition: all 0.2s;
+                box-shadow: 0 4px 12px rgba(${parseInt(posStyle.bg.slice(1,3), 16)}, ${parseInt(posStyle.bg.slice(3,5), 16)}, ${parseInt(posStyle.bg.slice(5,7), 16)}, 0.2);
+            ">BID NOW</button>
+        `;
     }
     
     if (item.type === 'buy_now' || item.type === 'both') {
         const buyNowPrice = item.buy_now_price || 0;
-        if (item.type === 'buy_now') {
-            priceInfo = `
-                <div style="background: #d1fae5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+        if (item.type === 'buy_now' || item.type === 'both') {
+            priceInfo += `
+                <div style="
+                    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+                    border: 2px solid #34d399;
+                    border-radius: 12px;
+                    padding: 14px;
+                    margin-bottom: 15px;
+                ">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 0.8rem; color: #065f46; font-weight: 600;">Buy Now Price</span>
-                        <span style="font-size: 1.3rem; font-weight: 800; color: #059669;">$${buyNowPrice.toLocaleString()}</span>
+                        <span style="font-size: 0.75rem; color: #065f46; font-weight: 800; text-transform: uppercase;">Buy Now</span>
+                        <span style="font-size: 1.4rem; font-weight: 900; color: #059669;">$${buyNowPrice.toLocaleString()}</span>
                     </div>
                 </div>
             `;
         }
-        actionButtons += `<button class="buy-btn" onclick="handleBuyNow('${item.id}', ${buyNowPrice})" style="background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; flex: 1;">BUY NOW</button>`;
+        actionButtons += `
+            <button onclick="handleBuyNow('${item.id}', ${buyNowPrice})" style="
+                background: linear-gradient(135deg, #059669 0%, #065f46 100%);
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 10px;
+                font-weight: 900;
+                cursor: pointer;
+                font-size: 0.85rem;
+                flex: 1;
+                transition: all 0.2s;
+                box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+            ">BUY NOW ⚡</button>
+        `;
     }
 
     const ovrPercentage = (ovr / 100) * 100;
     const ovrStyle = getOvrStyle(ovr);
 
     return `
-        <div class="player-card" style="position: relative; overflow: hidden; background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-            <div style="position: absolute; top: 15px; right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 5px;">
-                ${item.type === 'auction' ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; font-weight: 800;">AUCTION</span>' : ''}
-                ${item.type === 'buy_now' ? '<span style="background: #d1fae5; color: #065f46; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; font-weight: 800;">BUY NOW</span>' : ''}
-                ${item.type === 'both' ? '<span style="background: #dbeafe; color: #1e40af; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; font-weight: 800;">BOTH</span>' : ''}
+        <div class="player-card" style="
+            position: relative;
+            overflow: hidden;
+            background: white;
+            border-radius: 18px;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        ">
+            <!-- Badge typu oferty -->
+            <div style="position: absolute; top: 15px; right: 15px; z-index: 10;">
+                ${item.type === 'auction' ? `
+                    <span style="
+                        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                        color: #92400e;
+                        font-size: 0.65rem;
+                        padding: 6px 14px;
+                        border-radius: 20px;
+                        font-weight: 900;
+                        border: 2px solid #fcd34d;
+                    ">🏷️ AUCTION</span>
+                ` : ''}
+                ${item.type === 'buy_now' ? `
+                    <span style="
+                        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+                        color: #065f46;
+                        font-size: 0.65rem;
+                        padding: 6px 14px;
+                        border-radius: 20px;
+                        font-weight: 900;
+                        border: 2px solid #34d399;
+                    ">⚡ BUY NOW</span>
+                ` : ''}
+                ${item.type === 'both' ? `
+                    <span style="
+                        background: linear-gradient(135deg, #dbeafe 0%, #a5b4fc 100%);
+                        color: #1e40af;
+                        font-size: 0.65rem;
+                        padding: 6px 14px;
+                        border-radius: 20px;
+                        font-weight: 900;
+                        border: 2px solid #818cf8;
+                    ">🏷️⚡ BOTH</span>
+                ` : ''}
             </div>
 
-            <div class="card-side-accent" style="position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: ${accentColor}; border-radius: 16px 0 0 16px;"></div>
-            <div class="card-main" style="padding: 25px; padding-left: 30px;">
-                <div class="card-header" style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; gap: 20px; flex: 1;">
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" 
-                                 style="width: 85px; height: 85px; background: linear-gradient(135deg, #f3f4f6, #e5e7eb); border-radius: 12px; border: 3px solid #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            <div style="width: 100%;">
-                                <div style="height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
-                                    <div style="height: 100%; width: ${ovrPercentage}%; background: ${ovrStyle.border};"></div>
-                                </div>
-                                <div style="text-align: center; font-size: 0.75rem; font-weight: 800; color: ${ovrStyle.color}; margin-top: 5px;">
-                                    OVR: ${ovr}
-                                </div>
+            <!-- Akcent pozycji -->
+            <div style="
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 8px;
+                background: ${posStyle.bg};
+                border-radius: 18px 0 0 18px;
+            "></div>
+
+            <!-- Główna zawartość -->
+            <div style="padding: 25px; padding-left: 35px; flex: 1; display: flex; flex-direction: column;">
+                <!-- Nagłówek z avatarami -->
+                <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                    <!-- Avatar i OVR -->
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 100px;">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.first_name}${p.last_name}" 
+                             style="
+                                width: 90px;
+                                height: 90px;
+                                background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+                                border-radius: 16px;
+                                border: 4px solid white;
+                                box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+                             ">
+                        <div style="width: 100%; text-align: center;">
+                            <div style="
+                                height: 10px;
+                                background: #e5e7eb;
+                                border-radius: 5px;
+                                overflow: hidden;
+                                margin-bottom: 6px;
+                            ">
+                                <div style="height: 100%; width: ${ovrPercentage}%; background: ${ovrStyle.border};"></div>
+                            </div>
+                            <div style="
+                                font-size: 0.85rem;
+                                font-weight: 900;
+                                color: ${ovrStyle.color};
+                                background: ${ovrStyle.bg};
+                                padding: 4px 12px;
+                                border-radius: 20px;
+                                display: inline-block;
+                                border: 2px solid ${ovrStyle.border};
+                            ">
+                                OVR: ${ovr}
                             </div>
                         </div>
-                        
-                        <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px; flex-wrap: wrap;">
-                                <h3 style="margin: 0; font-size: 1.4rem; font-weight: 800; color: #1a237e;">
-                                    ${p.first_name} ${p.last_name}
-                                </h3>
-                                ${flagUrl ? `<img src="${flagUrl}" style="width: 24px; height: auto; border-radius: 2px; border: 1px solid #e2e8f0;">` : ''}
-                                ${rookieBadge}
+                    </div>
+
+                    <!-- Informacje o graczu -->
+                    <div style="flex: 1;">
+                        <!-- Imię i nazwisko -->
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                            <h3 style="margin: 0; font-size: 1.5rem; font-weight: 900; color: #1a237e; line-height: 1.2;">
+                                ${p.first_name} ${p.last_name}
+                            </h3>
+                            ${flagUrl ? `
+                                <img src="${flagUrl}" style="
+                                    width: 28px;
+                                    height: auto;
+                                    border-radius: 4px;
+                                    border: 2px solid #e2e8f0;
+                                ">
+                            ` : ''}
+                            ${rookieBadge}
+                        </div>
+
+                        <!-- Pozycja i potencjał -->
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                            <div style="
+                                background: ${posStyle.bg};
+                                color: ${posStyle.text};
+                                width: 44px;
+                                height: 44px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                border-radius: 12px;
+                                font-weight: 900;
+                                font-size: 1rem;
+                                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                            ">
+                                ${p.position}
                             </div>
-                            
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
-                                <div style="background: ${accentColor}; color: white; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 0.8rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                    ${p.position}
-                                </div>
-                                <span style="display: flex; align-items: center; gap: 6px; font-size: 0.95rem; color: #475569; font-weight: 600;">
-                                    <span style="color: ${potData.color}; font-size: 1.1rem;">${potData.icon}</span>
-                                    <span style="border-bottom: 3px solid ${potData.color}; padding-bottom: 2px;">${potData.label}</span>
-                                </span>
+                            <span style="
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                font-size: 0.95rem;
+                                color: ${potData.color};
+                                font-weight: 800;
+                                background: ${potData.color}15;
+                                padding: 8px 14px;
+                                border-radius: 10px;
+                                border: 2px solid ${potData.color}30;
+                            ">
+                                <span style="font-size: 1.2rem;">${potData.icon}</span>
+                                ${potData.label}
+                            </span>
+                        </div>
+
+                        <!-- Statystyki podstawowe -->
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                            <div>
+                                <div style="font-weight: 700; color: #64748b; font-size: 0.75rem; margin-bottom: 4px;">AGE</div>
+                                <div style="font-weight: 900; color: #1a237e; font-size: 1.2rem;">${p.age}</div>
                             </div>
-                            
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 0.9rem; color: #64748b; margin-top: 10px;">
-                                <div>
-                                    <div style="font-weight: 600; color: #475569; font-size: 0.8rem;">Age</div>
-                                    <div style="font-weight: 800; color: #1a237e; font-size: 1.1rem;">${p.age}</div>
-                                </div>
-                                <div>
-                                    <div style="font-weight: 600; color: #475569; font-size: 0.8rem;">Height</div>
-                                    <div style="font-weight: 800; color: #1a237e; font-size: 1.1rem;">${heightInFt}</div>
-                                </div>
-                                <div>
-                                    <div style="font-weight: 600; color: #475569; font-size: 0.8rem;">Salary</div>
-                                    <div style="font-weight: 800; color: #1a237e; font-size: 1.1rem;">$${(p.salary || 0).toLocaleString()}</div>
-                                </div>
+                            <div>
+                                <div style="font-weight: 700; color: #64748b; font-size: 0.75rem; margin-bottom: 4px;">HEIGHT</div>
+                                <div style="font-weight: 900; color: #1a237e; font-size: 1.2rem;">${heightInFt}</div>
+                            </div>
+                            <div>
+                                <div style="font-weight: 700; color: #64748b; font-size: 0.75rem; margin-bottom: 4px;">SALARY</div>
+                                <div style="font-weight: 900; color: #1a237e; font-size: 1.1rem;">$${(p.salary || 0).toLocaleString()}</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div style="margin: 20px 0; padding: 18px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                <!-- Umiejętności -->
+                <div style="
+                    margin: 20px 0;
+                    padding: 18px;
+                    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                    border-radius: 14px;
+                    border: 2px solid #e2e8f0;
+                    flex: 1;
+                ">
+                    <div style="
+                        display: grid;
+                        grid-template-columns: repeat(4, 1fr);
+                        gap: 12px;
+                    ">
                         ${Object.entries(skills).map(([key, value]) => `
-                            <div style="text-align: center; padding: 10px; background: ${value >= 15 ? '#d1fae5' : value >= 10 ? '#fef3c7' : '#f3f4f6'}; border-radius: 8px; border: 1px solid ${value >= 15 ? '#a7f3d0' : value >= 10 ? '#fde68a' : '#e5e7eb'};">
-                                <div style="font-size: 0.65rem; color: #64748b; font-weight: 600; margin-bottom: 4px; text-transform: uppercase;">${key}</div>
-                                <div style="font-size: 1.1rem; font-weight: 800; color: #1a237e;">${value}</div>
+                            <div style="
+                                text-align: center;
+                                padding: 12px 8px;
+                                background: ${value >= 15 ? '#d1fae5' : value >= 10 ? '#fef3c7' : '#f3f4f6'};
+                                border-radius: 10px;
+                                border: 2px solid ${value >= 15 ? '#a7f3d0' : value >= 10 ? '#fde68a' : '#e5e7eb'};
+                                transition: transform 0.2s;
+                            ">
+                                <div style="
+                                    font-size: 0.6rem;
+                                    color: ${value >= 15 ? '#065f46' : value >= 10 ? '#92400e' : '#64748b'};
+                                    font-weight: 900;
+                                    margin-bottom: 6px;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.5px;
+                                ">${key}</div>
+                                <div style="
+                                    font-size: 1.2rem;
+                                    font-weight: 900;
+                                    color: ${value >= 15 ? '#059669' : value >= 10 ? '#d97706' : '#475569'};
+                                ">${value}</div>
                             </div>
                         `).join('')}
                     </div>
                 </div>
 
-                <div class="card-footer">
+                <!-- Stopka z ceną i akcjami -->
+                <div style="margin-top: auto;">
                     ${priceInfo}
                     
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
+                        <!-- Wartość rynkowa -->
                         <div>
-                            <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Market Value</div>
-                            <div style="font-size: 1.3rem; font-weight: 800; color: #059669;">$${marketVal.toLocaleString()}</div>
+                            <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; margin-bottom: 4px;">MARKET VALUE</div>
+                            <div style="font-size: 1.4rem; font-weight: 900; color: #059669;">$${marketVal.toLocaleString()}</div>
                         </div>
                         
-                        <div class="action-container" style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <!-- Przyciski akcji -->
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end;">
                             ${actionButtons}
-                            <button onclick="showPlayerDetails('${p.id}')" 
-                                    style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                            <button onclick="showPlayerDetails('${p.id}')" style="
+                                background: #f8fafc;
+                                color: #475569;
+                                border: 2px solid #e2e8f0;
+                                padding: 12px 20px;
+                                border-radius: 10px;
+                                font-weight: 700;
+                                cursor: pointer;
+                                font-size: 0.85rem;
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                transition: all 0.2s;
+                                min-width: 100px;
+                                justify-content: center;
+                            ">
                                 <span style="font-size: 1rem;">👁️</span> Details
                             </button>
                         </div>
@@ -636,36 +1212,37 @@ function renderPlayerCard(item) {
     `;
 }
 
+// Globalne funkcje dla przycisków
 window.handleBid = (listingId, currentPrice) => {
-    const bidAmount = prompt(`Current bid: $${currentPrice.toLocaleString()}\n\nEnter your bid amount:`, currentPrice + 10000);
+    const bidAmount = prompt(`🏷️ Place Your Bid\n\nCurrent bid: $${currentPrice.toLocaleString()}\nEnter your bid amount:`, currentPrice + 10000);
     
     if (!bidAmount) return;
     
     const bid = parseInt(bidAmount);
     if (isNaN(bid) || bid <= currentPrice) {
-        alert(`Bid must be higher than current price ($${currentPrice.toLocaleString()})`);
+        alert(`❌ Bid must be higher than current price ($${currentPrice.toLocaleString()})`);
         return;
     }
     
     if (bid > window.currentTeamBalance) {
-        alert(`Insufficient funds! You have $${window.currentTeamBalance.toLocaleString()}, but bid requires $${bid.toLocaleString()}`);
+        alert(`💰 Insufficient funds!\nYou have: $${window.currentTeamBalance.toLocaleString()}\nRequired: $${bid.toLocaleString()}`);
         return;
     }
     
-    alert(`Bid placed successfully! Your bid: $${bid.toLocaleString()}\n\n(Full auction system coming soon!)`);
+    alert(`✅ Bid placed successfully!\n\nYour bid: $${bid.toLocaleString()}\n\n(Full auction system integration coming soon!)`);
 };
 
 window.handleBuyNow = async (listingId, price) => {
     if (price > window.currentTeamBalance) {
-        alert(`Insufficient funds! You have $${window.currentTeamBalance.toLocaleString()}, but purchase requires $${price.toLocaleString()}`);
+        alert(`💰 Insufficient funds!\nYou have: $${window.currentTeamBalance.toLocaleString()}\nRequired: $${price.toLocaleString()}`);
         return;
     }
     
-    const confirmBuy = confirm(`Do you want to buy this player immediately for $${price.toLocaleString()}?\n\nYour balance will be: $${(window.currentTeamBalance - price).toLocaleString()}`);
+    const confirmBuy = confirm(`🏀 Purchase Player\n\nBuy this player immediately for $${price.toLocaleString()}?\n\nYour balance will be: $${(window.currentTeamBalance - price).toLocaleString()}`);
     if (!confirmBuy) return;
 
     if (!window.currentTeamId) {
-        alert("Error: Team ID not found. Please refresh the page.");
+        alert("❌ Error: Team ID not found. Please refresh the page.");
         return;
     }
 
@@ -677,15 +1254,64 @@ window.handleBuyNow = async (listingId, price) => {
 
         if (error) throw error;
 
-        alert(`Congratulations! The player has joined your team.\n\nNew balance: $${(window.currentTeamBalance - price).toLocaleString()}`);
+        alert(`🎉 Congratulations!\nThe player has joined your team.\n\nNew balance: $${(window.currentTeamBalance - price).toLocaleString()}`);
         location.reload();
 
     } catch (err) {
         console.error("Purchase Error:", err.message);
-        alert("Transaction failed: " + err.message);
+        alert("❌ Transaction failed: " + err.message);
     }
 };
 
 window.showPlayerDetails = (playerId) => {
-    alert(`Player details modal for player ${playerId}\n\n(Player profile modal coming soon!)`);
+    alert(`👤 Player Profile: ${playerId}\n\n(Full player profile modal coming soon!)`);
 };
+
+// Dodaj styl animacji dla loadera
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .filter-select:focus, input:focus {
+        outline: none;
+        border-color: #1a237e !important;
+        box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1) !important;
+    }
+    
+    .player-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 16px 32px rgba(0,0,0,0.1) !important;
+        border-color: #c7d2fe !important;
+    }
+    
+    button:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
+    }
+    
+    @media (max-width: 1600px) {
+        #market-listings {
+            grid-template-columns: repeat(3, 1fr) !important;
+        }
+    }
+    
+    @media (max-width: 1200px) {
+        #market-listings {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        #market-listings {
+            grid-template-columns: 1fr !important;
+        }
+        
+        .market-modern-wrapper {
+            padding: 10px !important;
+        }
+    }
+`;
+document.head.appendChild(style);
