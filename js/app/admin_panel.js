@@ -1,9 +1,9 @@
 // js/app/admin_panel.js
 import { supabaseClient } from '../auth.js';
 import { 
-    adminUpdateSalaries,  // TYLKO TA FUNKCJA ISTNIEJE
-    updateAllPlayerMarketValues,
-    calculatePlayerDynamicWage  // DODAJ TĘ FUNKCJĘ
+    adminUpdateSalaries,
+    adminUpdateMarketValues,
+    calculatePlayerDynamicWage
 } from '../core/economy.js';
 
 // Zmienne globalne dla panelu
@@ -13,11 +13,19 @@ let systemStats = null;
 export async function renderAdminPanel(teamData) {
     console.log("[ADMIN] Renderowanie panelu admina...");
     
-    // Znajdź lub utwórz kontener
+    // SPRAWDZAMY DWA MOŻLIWE KONTENERY (dla kompatybilności)
     let container = document.getElementById('admin-panel-container');
     if (!container) {
-        console.error("[ADMIN] Brak kontenera admin-panel-container!");
-        return;
+        // Jeśli nie ma admin-panel-container, szukamy main-content
+        container = document.getElementById('main-content');
+    }
+    
+    if (!container) {
+        // Jeśli nadal nie ma kontenera, tworzymy nowy
+        console.error("[ADMIN] Brak kontenera! Tworzenie nowego...");
+        container = document.createElement('div');
+        container.id = 'admin-panel-container';
+        document.body.appendChild(container);
     }
 
     // Wyczyść poprzednie logi
@@ -216,16 +224,28 @@ function initAdminEventListeners() {
     console.log("[ADMIN] Inicjalizacja listenerów...");
     
     // Aktualizacja pensji
-    document.getElementById('btn-admin-update-salaries').addEventListener('click', handleSalaryUpdate);
+    const salaryBtn = document.getElementById('btn-admin-update-salaries');
+    if (salaryBtn) {
+        salaryBtn.addEventListener('click', handleSalaryUpdate);
+    }
     
     // Aktualizacja wartości rynkowych
-    document.getElementById('btn-admin-update-values').addEventListener('click', handleMarketValueUpdate);
+    const valueBtn = document.getElementById('btn-admin-update-values');
+    if (valueBtn) {
+        valueBtn.addEventListener('click', handleMarketValueUpdate);
+    }
     
     // Aktualizacja wszystkiego
-    document.getElementById('btn-admin-both-updates').addEventListener('click', handleBothUpdates);
+    const bothBtn = document.getElementById('btn-admin-both-updates');
+    if (bothBtn) {
+        bothBtn.addEventListener('click', handleBothUpdates);
+    }
     
     // Aktualizacja tylko mojej drużyny
-    document.getElementById('btn-admin-single-team').addEventListener('click', handleSingleTeamUpdate);
+    const singleBtn = document.getElementById('btn-admin-single-team');
+    if (singleBtn) {
+        singleBtn.addEventListener('click', handleSingleTeamUpdate);
+    }
     
     // Szybkie akcje
     document.querySelectorAll('.admin-quick-btn').forEach(btn => {
@@ -236,13 +256,21 @@ function initAdminEventListeners() {
     });
     
     // Zarządzanie bazą danych
-    document.getElementById('btn-export-data').addEventListener('click', handleExportData);
-    document.getElementById('btn-backup-db').addEventListener('click', handleBackupDB);
-    document.getElementById('btn-optimize-db').addEventListener('click', handleOptimizeDB);
+    const exportBtn = document.getElementById('btn-export-data');
+    if (exportBtn) exportBtn.addEventListener('click', handleExportData);
+    
+    const backupBtn = document.getElementById('btn-backup-db');
+    if (backupBtn) backupBtn.addEventListener('click', handleBackupDB);
+    
+    const optimizeBtn = document.getElementById('btn-optimize-db');
+    if (optimizeBtn) optimizeBtn.addEventListener('click', handleOptimizeDB);
     
     // Zarządzanie logami
-    document.getElementById('btn-clear-log').addEventListener('click', clearAdminLog);
-    document.getElementById('btn-export-log').addEventListener('click', exportAdminLog);
+    const clearLogBtn = document.getElementById('btn-clear-log');
+    if (clearLogBtn) clearLogBtn.addEventListener('click', clearAdminLog);
+    
+    const exportLogBtn = document.getElementById('btn-export-log');
+    if (exportLogBtn) exportLogBtn.addEventListener('click', exportAdminLog);
 }
 
 async function handleSalaryUpdate() {
@@ -251,6 +279,8 @@ async function handleSalaryUpdate() {
     const result = await adminUpdateSalaries();
     
     const resultDiv = document.getElementById('salary-update-result');
+    if (!resultDiv) return;
+    
     resultDiv.style.display = 'block';
     
     if (result.cancelled) {
@@ -288,16 +318,19 @@ async function handleMarketValueUpdate() {
     addAdminLog('Rozpoczynam aktualizację wartości rynkowych...', 'warning');
     
     try {
-        const result = await updateAllPlayerMarketValues();
+        const result = await adminUpdateMarketValues();
         
         const resultDiv = document.getElementById('salary-update-result');
+        if (!resultDiv) return;
+        
         resultDiv.style.display = 'block';
         
         if (result.success) {
             resultDiv.innerHTML = `
                 <div style="background: #dbeafe; border: 1px solid #bfdbfe; border-radius: 8px; padding: 15px; color: #1e40af;">
                     <strong>✅ Sukces:</strong> Zaktualizowano wartości rynkowe ${result.updatedCount} graczy.<br>
-                    <strong>W sumie:</strong> ${result.totalPlayers} graczy
+                    <strong>W sumie:</strong> ${result.totalCount} graczy<br>
+                    <strong>Komunikat:</strong> ${result.message || 'Aktualizacja zakończona pomyślnie'}
                 </div>
             `;
             addAdminLog(`Zaktualizowano wartości rynkowe ${result.updatedCount} graczy`, 'success');
@@ -329,9 +362,11 @@ async function handleBothUpdates() {
     const salaryResult = await adminUpdateSalaries();
     
     // 2. Aktualizuj wartości rynkowe
-    const valueResult = await updateAllPlayerMarketValues();
+    const valueResult = await adminUpdateMarketValues();
     
     const resultDiv = document.getElementById('salary-update-result');
+    if (!resultDiv) return;
+    
     resultDiv.style.display = 'block';
     
     let html = '<div style="background: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 8px; padding: 15px; color: #0369a1;">';
@@ -401,6 +436,8 @@ async function handleSingleTeamUpdate() {
         if (updateError) throw updateError;
         
         const resultDiv = document.getElementById('salary-update-result');
+        if (!resultDiv) return;
+        
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = `
             <div style="background: #d1fae5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 15px; color: #065f46;">
@@ -519,7 +556,10 @@ async function loadSystemStats() {
         };
         
         // Zaktualizuj UI
-        document.getElementById('system-stats').innerHTML = `
+        const statsContainer = document.getElementById('system-stats');
+        if (!statsContainer) return;
+        
+        statsContainer.innerHTML = `
             <div style="background: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 8px; padding: 15px; text-align: center;">
                 <div style="font-size: 0.8rem; color: #0369a1; font-weight: 600;">Gracze</div>
                 <div style="font-size: 1.2rem; font-weight: 800; color: #0c4a6e;">${systemStats.totalPlayers}</div>
