@@ -221,14 +221,14 @@ function initAdminConsole() {
     // Główna funkcja pokazująca panel admina
     async function showAdminPanel(isTestMode = false) {
         try {
-            // Znajdź kontener główny
-            let container = document.getElementById('main-content');
-            if (!container) {
-                // Jeśli nie ma, stwórz
-                container = document.createElement('div');
-                container.id = 'main-content';
-                document.body.appendChild(container);
-            }
+            // W funkcji showAdminPanel w app.js zmień:
+let container = document.getElementById('main-content');
+if (!container) {
+    // Jeśli nie ma, stwórz
+    container = document.createElement('div');
+    container.id = 'admin-panel-container'; // ZMIANA: zamiast 'main-content'
+    document.body.appendChild(container);
+}
             
             // Pokaż ładowanie
             container.innerHTML = `
