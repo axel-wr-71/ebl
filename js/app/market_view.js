@@ -59,22 +59,11 @@ function calculateMarketValue(player) {
     return Math.round((ovr * 10000 + (player.salary || 0) * 2) * ageFactor);
 }
 
-// Pobieranie danych potencjału zgodnie z roster_view.js
+// Pobieranie danych potencjału zgodnie z roster_actions.js
 function getPotentialData(potentialId) {
-    if (!potentialId) return { label: 'Unknown', color: '#94a3b8', icon: '👤' };
-    
-    // Sprawdź czy mamy globalne definicje potencjału
-    if (window.potentialDefinitions && Object.keys(window.potentialDefinitions).length > 0) {
-        // Szukaj po ID
-        const def = Object.values(window.potentialDefinitions).find(d => d.id === potentialId);
-        if (def) return def;
-        
-        // Szukaj po label
-        const defByLabel = Object.values(window.potentialDefinitions).find(d => 
-            d.label.toLowerCase() === potentialId.toLowerCase() ||
-            d.id.toLowerCase() === potentialId.toLowerCase()
-        );
-        if (defByLabel) return defByLabel;
+    // Używamy funkcji z roster_actions.js jeśli jest dostępna
+    if (window.getPotentialData) {
+        return window.getPotentialData(potentialId);
     }
     
     // Fallback dla brakujących definicji
@@ -91,7 +80,7 @@ function getPotentialData(potentialId) {
         'High Prospect': { label: 'Prospect', color: '#ec4899', icon: '🎯' }
     };
     
-    return fallbackMap[potentialId] || { label: potentialId || 'Unknown', color: '#94a3b8', icon: '👤' };
+    return fallbackMap[potentialId] || { label: 'Unknown', color: '#94a3b8', icon: '👤' };
 }
 
 // Generowanie opcji potencjału
@@ -117,279 +106,6 @@ function generatePotentialOptions() {
         <option value="Deep Bench">Deep Bench</option>
         <option value="Project Player">Project Player</option>
         <option value="High Prospect">High Prospect</option>
-    `;
-}
-
-// Funkcja do renderowania profilu zawodnika (jak w roster_view)
-function renderPlayerProfile(player) {
-    const potData = getPotentialData(player.potential);
-    const ovr = calculateOVR(player);
-    const ovrStyle = getOvrStyle(ovr);
-    const posStyle = getPositionStyle(player.position);
-    
-    const heightCm = player.height || 0;
-    const inchesTotal = heightCm * 0.393701;
-    const ft = Math.floor(inchesTotal / 12);
-    const inc = Math.round(inchesTotal % 12);
-    const heightInFt = heightCm > 0 ? `${ft}'${inc}"` : '--';
-
-    const countryCode = player.country || player.nationality || "";
-    const flagUrl = getFlagUrl(countryCode);
-
-    return `
-        <div style="
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            padding: 20px;
-        ">
-            <div style="
-                background: white;
-                border-radius: 20px;
-                max-width: 800px;
-                width: 100%;
-                max-height: 90vh;
-                overflow-y: auto;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-                position: relative;
-            ">
-                <!-- Nagłówek -->
-                <div style="
-                    background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
-                    color: white;
-                    padding: 30px;
-                    border-radius: 20px 20px 0 0;
-                    position: relative;
-                ">
-                    <button onclick="closePlayerProfile()" style="
-                        position: absolute;
-                        top: 20px;
-                        right: 20px;
-                        background: rgba(255, 255, 255, 0.2);
-                        color: white;
-                        border: none;
-                        width: 40px;
-                        height: 40px;
-                        border-radius: 50%;
-                        font-size: 1.2rem;
-                        cursor: pointer;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    ">✕</button>
-                    
-                    <div style="display: flex; align-items: center; gap: 25px;">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${player.first_name}${player.last_name}" 
-                             style="
-                                width: 120px;
-                                height: 120px;
-                                background: white;
-                                border-radius: 16px;
-                                border: 4px solid rgba(255, 255, 255, 0.3);
-                             ">
-                        <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;">
-                                <h1 style="margin: 0; font-size: 2rem; font-weight: 900;">
-                                    ${player.first_name} ${player.last_name}
-                                </h1>
-                                ${flagUrl ? `
-                                    <img src="${flagUrl}" style="
-                                        width: 40px;
-                                        height: auto;
-                                        border-radius: 6px;
-                                        border: 2px solid rgba(255, 255, 255, 0.3);
-                                    ">
-                                ` : ''}
-                                ${player.is_rookie ? `
-                                    <span style="
-                                        background: #fef3c7;
-                                        color: #92400e;
-                                        font-size: 0.8rem;
-                                        padding: 6px 14px;
-                                        border-radius: 20px;
-                                        font-weight: 900;
-                                        border: 2px solid #fcd34d;
-                                    ">ROOKIE</span>
-                                ` : ''}
-                            </div>
-                            
-                            <div style="display: flex; gap: 20px; margin-top: 15px;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="
-                                        background: ${posStyle.bg};
-                                        color: ${posStyle.text};
-                                        width: 50px;
-                                        height: 50px;
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        border-radius: 12px;
-                                        font-weight: 900;
-                                        font-size: 1.2rem;
-                                        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                                    ">
-                                        ${player.position}
-                                    </div>
-                                    <div>
-                                        <div style="font-size: 0.8rem; opacity: 0.8;">POSITION</div>
-                                        <div style="font-weight: 700;">${posStyle.label}</div>
-                                    </div>
-                                </div>
-                                
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="
-                                        width: 50px;
-                                        height: 50px;
-                                        background: ${ovrStyle.bg};
-                                        border: 3px solid ${ovrStyle.border};
-                                        border-radius: 12px;
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        font-weight: 900;
-                                        color: ${ovrStyle.color};
-                                        font-size: 1.4rem;
-                                    ">
-                                        ${ovr}
-                                    </div>
-                                    <div>
-                                        <div style="font-size: 0.8rem; opacity: 0.8;">OVERALL</div>
-                                        <div style="font-weight: 700;">${ovr}/100</div>
-                                    </div>
-                                </div>
-                                
-                                <div style="
-                                    background: ${potData.color}20;
-                                    border: 2px solid ${potData.color};
-                                    border-radius: 12px;
-                                    padding: 12px 20px;
-                                    display: flex;
-                                    align-items: center;
-                                    gap: 10px;
-                                ">
-                                    <span style="font-size: 1.5rem;">${potData.icon}</span>
-                                    <div>
-                                        <div style="font-size: 0.8rem; opacity: 0.8;">POTENTIAL</div>
-                                        <div style="font-weight: 700; color: ${potData.color};">${potData.label}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Główna zawartość -->
-                <div style="padding: 30px;">
-                    <!-- Informacje podstawowe -->
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
-                        <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px;">
-                            <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 8px;">AGE</div>
-                            <div style="font-size: 2rem; font-weight: 900; color: #1a237e;">${player.age}</div>
-                        </div>
-                        <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px;">
-                            <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 8px;">HEIGHT</div>
-                            <div style="font-size: 1.8rem; font-weight: 900; color: #1a237e;">${heightInFt}</div>
-                            <div style="font-size: 0.8rem; color: #94a3b8;">${heightCm} cm</div>
-                        </div>
-                        <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px;">
-                            <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 8px;">SALARY</div>
-                            <div style="font-size: 1.8rem; font-weight: 900; color: #059669;">$${(player.salary || 0).toLocaleString()}</div>
-                            <div style="font-size: 0.8rem; color: #94a3b8;">per season</div>
-                        </div>
-                        <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px;">
-                            <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 8px;">MARKET VALUE</div>
-                            <div style="font-size: 1.8rem; font-weight: 900; color: #059669;">$${calculateMarketValue(player).toLocaleString()}</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Umiejętności -->
-                    <h3 style="color: #1a237e; margin-bottom: 20px; font-size: 1.2rem; font-weight: 900;">SKILLS RATINGS</h3>
-                    <div style="
-                        display: grid;
-                        grid-template-columns: repeat(3, 1fr);
-                        gap: 15px;
-                        margin-bottom: 30px;
-                    ">
-                        ${[
-                            { label: '2PT Shot', value: player.skill_2pt || 0 },
-                            { label: '3PT Shot', value: player.skill_3pt || 0 },
-                            { label: 'Dunking', value: player.skill_dunk || 0 },
-                            { label: 'Free Throw', value: player.skill_ft || 0 },
-                            { label: 'Passing', value: player.skill_passing || 0 },
-                            { label: 'Dribbling', value: player.skill_dribbling || 0 },
-                            { label: 'Stamina', value: player.skill_stamina || 0 },
-                            { label: 'Rebounding', value: player.skill_rebound || 0 },
-                            { label: 'Blocking', value: player.skill_block || 0 },
-                            { label: 'Stealing', value: player.skill_steal || 0 },
-                            { label: '1on1 Offense', value: player.skill_1on1_off || 0 },
-                            { label: '1on1 Defense', value: player.skill_1on1_def || 0 }
-                        ].map(skill => `
-                            <div style="
-                                background: ${skill.value >= 15 ? '#d1fae5' : skill.value >= 10 ? '#fef3c7' : '#f3f4f6'};
-                                border: 2px solid ${skill.value >= 15 ? '#a7f3d0' : skill.value >= 10 ? '#fde68a' : '#e5e7eb'};
-                                border-radius: 10px;
-                                padding: 15px;
-                            ">
-                                <div style="
-                                    display: flex;
-                                    justify-content: space-between;
-                                    align-items: center;
-                                    margin-bottom: 8px;
-                                ">
-                                    <div style="
-                                        font-weight: 700;
-                                        color: ${skill.value >= 15 ? '#065f46' : skill.value >= 10 ? '#92400e' : '#475569'};
-                                    ">${skill.label}</div>
-                                    <div style="
-                                        font-size: 1.4rem;
-                                        font-weight: 900;
-                                        color: ${skill.value >= 15 ? '#059669' : skill.value >= 10 ? '#d97706' : '#475569'};
-                                    ">${skill.value}</div>
-                                </div>
-                                <div style="
-                                    height: 8px;
-                                    background: #e5e7eb;
-                                    border-radius: 4px;
-                                    overflow: hidden;
-                                ">
-                                    <div style="
-                                        height: 100%;
-                                        width: ${(skill.value / 20) * 100}%;
-                                        background: ${skill.value >= 15 ? '#10b981' : skill.value >= 10 ? '#f59e0b' : '#94a3b8'};
-                                    "></div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    
-                    <!-- Przycisk zamknięcia -->
-                    <div style="text-align: center; margin-top: 30px;">
-                        <button onclick="closePlayerProfile()" style="
-                            background: #1a237e;
-                            color: white;
-                            border: none;
-                            padding: 15px 40px;
-                            border-radius: 12px;
-                            font-weight: 800;
-                            cursor: pointer;
-                            font-size: 1rem;
-                            display: inline-flex;
-                            align-items: center;
-                            gap: 10px;
-                        ">
-                            <span>←</span> Back to Market
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
     `;
 }
 
@@ -1392,19 +1108,62 @@ function renderPlayerCard(item) {
     const posStyle = getPositionStyle(p.position);
     const potData = getPotentialData(p.potential);
     
+    // Etykieta Rookie (przeniesiona pod OVR)
     const rookieBadge = p.is_rookie ? `
         <span style="
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
             color: #92400e;
-            font-size: 0.7rem;
-            padding: 4px 10px;
-            border-radius: 20px;
+            font-size: 0.6rem;
+            padding: 3px 8px;
+            border-radius: 10px;
             font-weight: 900;
-            display: inline-block;
-            margin-left: 8px;
-            border: 1px solid #fbbf24;
+            border: 1px solid #fcd34d;
+            white-space: nowrap;
         ">ROOKIE</span>
     ` : '';
+    
+    // Etykieta typu oferty (przeniesiona pod OVR)
+    let offerTypeBadge = '';
+    if (item.type === 'auction') {
+        offerTypeBadge = `
+            <span style="
+                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                color: #92400e;
+                font-size: 0.6rem;
+                padding: 3px 8px;
+                border-radius: 10px;
+                font-weight: 900;
+                border: 1px solid #fcd34d;
+                white-space: nowrap;
+            ">🏷️ AUCTION</span>
+        `;
+    } else if (item.type === 'buy_now') {
+        offerTypeBadge = `
+            <span style="
+                background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+                color: #065f46;
+                font-size: 0.6rem;
+                padding: 3px 8px;
+                border-radius: 10px;
+                font-weight: 900;
+                border: 1px solid #34d399;
+                white-space: nowrap;
+            ">⚡ BUY NOW</span>
+        `;
+    } else if (item.type === 'both') {
+        offerTypeBadge = `
+            <span style="
+                background: linear-gradient(135deg, #dbeafe 0%, #a5b4fc 100%);
+                color: #1e40af;
+                font-size: 0.6rem;
+                padding: 3px 8px;
+                border-radius: 10px;
+                font-weight: 900;
+                border: 1px solid #818cf8;
+                white-space: nowrap;
+            ">🏷️⚡ BOTH</span>
+        `;
+    }
     
     // Konwersja wzrostu
     const heightCm = p.height || 0;
@@ -1529,43 +1288,6 @@ function renderPlayerCard(item) {
             display: flex;
             flex-direction: column;
         ">
-            <!-- Badge typu oferty -->
-            <div style="position: absolute; top: 15px; right: 15px; z-index: 10;">
-                ${item.type === 'auction' ? `
-                    <span style="
-                        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-                        color: #92400e;
-                        font-size: 0.65rem;
-                        padding: 6px 14px;
-                        border-radius: 20px;
-                        font-weight: 900;
-                        border: 2px solid #fcd34d;
-                    ">🏷️ AUCTION</span>
-                ` : ''}
-                ${item.type === 'buy_now' ? `
-                    <span style="
-                        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-                        color: #065f46;
-                        font-size: 0.65rem;
-                        padding: 6px 14px;
-                        border-radius: 20px;
-                        font-weight: 900;
-                        border: 2px solid #34d399;
-                    ">⚡ BUY NOW</span>
-                ` : ''}
-                ${item.type === 'both' ? `
-                    <span style="
-                        background: linear-gradient(135deg, #dbeafe 0%, #a5b4fc 100%);
-                        color: #1e40af;
-                        font-size: 0.65rem;
-                        padding: 6px 14px;
-                        border-radius: 20px;
-                        font-weight: 900;
-                        border: 2px solid #818cf8;
-                    ">🏷️⚡ BOTH</span>
-                ` : ''}
-            </div>
-
             <!-- Akcent pozycji -->
             <div style="
                 position: absolute;
@@ -1581,7 +1303,7 @@ function renderPlayerCard(item) {
             <div style="padding: 25px; padding-left: 35px; flex: 1; display: flex; flex-direction: column;">
                 <!-- Nagłówek z avatarami -->
                 <div style="display: flex; gap: 20px; margin-bottom: 20px;">
-                    <!-- Avatar i OVR -->
+                    <!-- Avatar i OVR z etykietami -->
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 100px;">
                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.first_name}${p.last_name}" 
                              style="
@@ -1593,15 +1315,17 @@ function renderPlayerCard(item) {
                                 box-shadow: 0 6px 12px rgba(0,0,0,0.1);
                              ">
                         <div style="width: 100%; text-align: center;">
+                            <!-- Pasek OVR -->
                             <div style="
                                 height: 10px;
                                 background: #e5e7eb;
                                 border-radius: 5px;
                                 overflow: hidden;
-                                margin-bottom: 6px;
+                                margin-bottom: 8px;
                             ">
                                 <div style="height: 100%; width: ${ovrPercentage}%; background: ${ovrStyle.border};"></div>
                             </div>
+                            <!-- Wartość OVR -->
                             <div style="
                                 font-size: 0.85rem;
                                 font-weight: 900;
@@ -1611,8 +1335,14 @@ function renderPlayerCard(item) {
                                 border-radius: 20px;
                                 display: inline-block;
                                 border: 2px solid ${ovrStyle.border};
+                                margin-bottom: 8px;
                             ">
                                 OVR: ${ovr}
+                            </div>
+                            <!-- Etykiety Rookie i typu oferty -->
+                            <div style="display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;">
+                                ${rookieBadge}
+                                ${offerTypeBadge}
                             </div>
                         </div>
                     </div>
@@ -1632,7 +1362,6 @@ function renderPlayerCard(item) {
                                     border: 2px solid #e2e8f0;
                                 ">
                             ` : ''}
-                            ${rookieBadge}
                         </div>
 
                         <!-- Pozycja i potencjał -->
@@ -1829,9 +1558,12 @@ window.showPlayerProfile = async (playerId) => {
         
         const player = listing.players;
         
-        // Renderuj profil
-        const profileHtml = renderPlayerProfile(player);
-        document.body.insertAdjacentHTML('beforeend', profileHtml);
+        // Użyj funkcji z roster_actions.js
+        if (window.RosterActions && window.RosterActions.showProfile) {
+            window.RosterActions.showProfile(player);
+        } else {
+            alert("❌ Profile viewer not available. Please make sure roster_actions.js is loaded.");
+        }
         
     } catch (error) {
         console.error("Error loading player profile:", error);
@@ -1840,11 +1572,6 @@ window.showPlayerProfile = async (playerId) => {
 };
 
 // Funkcje pomocnicze dla modali
-window.closePlayerProfile = () => {
-    const modal = document.getElementById('player-profile-modal');
-    if (modal) modal.remove();
-};
-
 window.closeBidModal = () => {
     const modal = document.getElementById('bid-modal');
     if (modal) modal.remove();
@@ -1967,10 +1694,6 @@ style.textContent = `
     button:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
-    }
-    
-    #player-profile-modal {
-        animation: fadeIn 0.3s ease;
     }
     
     #bid-modal {
