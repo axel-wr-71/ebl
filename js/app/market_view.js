@@ -106,18 +106,18 @@ function generatePotentialButtons() {
             background: ${currentFilters.potential === pot.id ? pot.color + '20' : '#f8fafc'};
             color: ${currentFilters.potential === pot.id ? pot.color : '#64748b'};
             border: 2px solid ${currentFilters.potential === pot.id ? pot.color : '#e2e8f0'};
-            padding: 10px 16px;
-            border-radius: 10px;
-            font-weight: 700;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             transition: all 0.2s;
             white-space: nowrap;
         ">
-            <span>${pot.emoji}</span>
+            <span style="font-size: 0.9rem;">${pot.emoji}</span>
             ${pot.label}
         </button>
     `).join('');
@@ -143,51 +143,51 @@ function renderBidModal(listingId, currentPrice, player) {
         ">
             <div style="
                 background: white;
-                border-radius: 20px;
-                max-width: 500px;
+                border-radius: 16px;
+                max-width: 450px;
                 width: 100%;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
                 position: relative;
             ">
                 <!-- Nagłówek -->
                 <div style="
                     background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
                     color: white;
-                    padding: 25px;
-                    border-radius: 20px 20px 0 0;
+                    padding: 20px;
+                    border-radius: 16px 16px 0 0;
                     position: relative;
                 ">
                     <button onclick="closeBidModal()" style="
                         position: absolute;
-                        top: 20px;
-                        right: 20px;
+                        top: 15px;
+                        right: 15px;
                         background: rgba(255, 255, 255, 0.2);
                         color: white;
                         border: none;
-                        width: 36px;
-                        height: 36px;
+                        width: 32px;
+                        height: 32px;
                         border-radius: 50%;
-                        font-size: 1rem;
+                        font-size: 0.9rem;
                         cursor: pointer;
                         display: flex;
                         align-items: center;
                         justify-content: center;
                     ">✕</button>
                     
-                    <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
                         <div style="
-                            width: 60px;
-                            height: 60px;
+                            width: 48px;
+                            height: 48px;
                             background: rgba(255, 255, 255, 0.2);
-                            border-radius: 12px;
+                            border-radius: 10px;
                             display: flex;
                             align-items: center;
                             justify-content: center;
-                            font-size: 2rem;
+                            font-size: 1.5rem;
                         ">🏷️</div>
                         <div>
-                            <h2 style="margin: 0; font-size: 1.5rem; font-weight: 900;">PLACE A BID</h2>
-                            <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9rem;">
+                            <h2 style="margin: 0; font-size: 1.3rem; font-weight: 800;">PLACE A BID</h2>
+                            <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 0.85rem;">
                                 ${player.first_name} ${player.last_name}
                             </p>
                         </div>
@@ -195,49 +195,49 @@ function renderBidModal(listingId, currentPrice, player) {
                 </div>
                 
                 <!-- Zawartość -->
-                <div style="padding: 30px;">
+                <div style="padding: 24px;">
                     <!-- Informacje o aktualnej ofercie -->
                     <div style="
                         background: #fef3c7;
                         border: 2px solid #fcd34d;
-                        border-radius: 12px;
-                        padding: 20px;
-                        margin-bottom: 25px;
+                        border-radius: 10px;
+                        padding: 16px;
+                        margin-bottom: 20px;
                     ">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <div>
-                                <div style="font-size: 0.8rem; color: #92400e; font-weight: 600; text-transform: uppercase;">Current Bid</div>
-                                <div style="font-size: 2rem; font-weight: 900; color: #b45309;">$${currentPrice.toLocaleString()}</div>
+                                <div style="font-size: 0.75rem; color: #92400e; font-weight: 600; text-transform: uppercase;">Current Bid</div>
+                                <div style="font-size: 1.8rem; font-weight: 900; color: #b45309;">$${currentPrice.toLocaleString()}</div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-size: 0.8rem; color: #92400e; font-weight: 600; text-transform: uppercase;">Your Balance</div>
-                                <div style="font-size: 1.5rem; font-weight: 900; color: #1a237e;">$${window.currentTeamBalance.toLocaleString()}</div>
+                                <div style="font-size: 0.75rem; color: #92400e; font-weight: 600; text-transform: uppercase;">Your Balance</div>
+                                <div style="font-size: 1.4rem; font-weight: 900; color: #1a237e;">$${window.currentTeamBalance.toLocaleString()}</div>
                             </div>
                         </div>
                         <div style="
                             background: rgba(180, 83, 9, 0.1);
-                            border-radius: 8px;
-                            padding: 10px 15px;
-                            font-size: 0.85rem;
+                            border-radius: 6px;
+                            padding: 8px 12px;
+                            font-size: 0.8rem;
                             color: #92400e;
                             display: flex;
                             align-items: center;
-                            gap: 8px;
+                            gap: 6px;
                         ">
                             <span>📈</span>
-                            Minimum bid: <strong style="margin-left: 5px;">$${minBid.toLocaleString()}</strong>
+                            Minimum bid: <strong style="margin-left: 4px;">$${minBid.toLocaleString()}</strong>
                         </div>
                     </div>
                     
                     <!-- Formularz licytacji -->
-                    <div style="margin-bottom: 30px;">
-                        <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #475569;">
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #475569; font-size: 0.9rem;">
                             Enter Your Bid Amount ($)
                         </label>
                         <div style="position: relative;">
                             <span style="
                                 position: absolute;
-                                left: 15px;
+                                left: 12px;
                                 top: 50%;
                                 transform: translateY(-50%);
                                 color: #64748b;
@@ -249,10 +249,10 @@ function renderBidModal(listingId, currentPrice, player) {
                                    step="1000"
                                    style="
                                         width: 100%;
-                                        padding: 16px 16px 16px 40px;
+                                        padding: 14px 14px 14px 32px;
                                         border: 2px solid #e2e8f0;
-                                        border-radius: 12px;
-                                        font-size: 1.2rem;
+                                        border-radius: 10px;
+                                        font-size: 1.1rem;
                                         font-weight: 700;
                                         color: #1a237e;
                                         box-sizing: border-box;
@@ -261,17 +261,17 @@ function renderBidModal(listingId, currentPrice, player) {
                         </div>
                         
                         <!-- Szybkie przyciski -->
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px;">
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px;">
                             ${[10000, 25000, 50000, 100000].map(amount => `
                                 <button onclick="setBidAmount(${currentPrice + amount})" style="
                                     background: #f1f5f9;
                                     color: #475569;
                                     border: 2px solid #e2e8f0;
-                                    padding: 10px;
-                                    border-radius: 8px;
-                                    font-weight: 700;
+                                    padding: 8px;
+                                    border-radius: 6px;
+                                    font-weight: 600;
                                     cursor: pointer;
-                                    font-size: 0.85rem;
+                                    font-size: 0.8rem;
                                     transition: all 0.2s;
                                 ">
                                     +$${amount.toLocaleString()}
@@ -284,27 +284,27 @@ function renderBidModal(listingId, currentPrice, player) {
                     <div id="bid-preview" style="
                         background: #f0f9ff;
                         border: 2px solid #bae6fd;
-                        border-radius: 12px;
-                        padding: 20px;
-                        margin-bottom: 25px;
+                        border-radius: 10px;
+                        padding: 16px;
+                        margin-bottom: 20px;
                     ">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <div>
-                                <div style="font-size: 0.8rem; color: #0369a1; font-weight: 600; text-transform: uppercase;">Your Bid</div>
-                                <div id="preview-bid-amount" style="font-size: 1.8rem; font-weight: 900; color: #0c4a6e;">$${minBid.toLocaleString()}</div>
+                                <div style="font-size: 0.75rem; color: #0369a1; font-weight: 600; text-transform: uppercase;">Your Bid</div>
+                                <div id="preview-bid-amount" style="font-size: 1.6rem; font-weight: 900; color: #0c4a6e;">$${minBid.toLocaleString()}</div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-size: 0.8rem; color: #0369a1; font-weight: 600; text-transform: uppercase;">New Balance</div>
-                                <div id="preview-new-balance" style="font-size: 1.5rem; font-weight: 900; color: ${window.currentTeamBalance - minBid >= 0 ? '#059669' : '#ef4444'};">$${(window.currentTeamBalance - minBid).toLocaleString()}</div>
+                                <div style="font-size: 0.75rem; color: #0369a1; font-weight: 600; text-transform: uppercase;">New Balance</div>
+                                <div id="preview-new-balance" style="font-size: 1.3rem; font-weight: 900; color: ${window.currentTeamBalance - minBid >= 0 ? '#059669' : '#ef4444'};">$${(window.currentTeamBalance - minBid).toLocaleString()}</div>
                             </div>
                         </div>
                         <div id="bid-warning" style="
-                            font-size: 0.85rem;
+                            font-size: 0.8rem;
                             color: ${window.currentTeamBalance - minBid >= 0 ? '#059669' : '#ef4444'};
                             display: flex;
                             align-items: center;
-                            gap: 8px;
-                            margin-top: 10px;
+                            gap: 6px;
+                            margin-top: 8px;
                         ">
                             ${window.currentTeamBalance - minBid >= 0 ? 
                                 '✅ Sufficient funds available' : 
@@ -313,17 +313,17 @@ function renderBidModal(listingId, currentPrice, player) {
                     </div>
                     
                     <!-- Przyciski akcji -->
-                    <div style="display: flex; gap: 15px;">
+                    <div style="display: flex; gap: 12px;">
                         <button onclick="closeBidModal()" style="
                             flex: 1;
                             background: #f1f5f9;
                             color: #64748b;
                             border: 2px solid #e2e8f0;
-                            padding: 16px;
-                            border-radius: 12px;
-                            font-weight: 800;
+                            padding: 14px;
+                            border-radius: 10px;
+                            font-weight: 700;
                             cursor: pointer;
-                            font-size: 0.95rem;
+                            font-size: 0.9rem;
                             transition: all 0.2s;
                         ">
                             Cancel
@@ -333,11 +333,11 @@ function renderBidModal(listingId, currentPrice, player) {
                             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
                             color: white;
                             border: none;
-                            padding: 16px;
-                            border-radius: 12px;
+                            padding: 14px;
+                            border-radius: 10px;
                             font-weight: 800;
                             cursor: pointer;
-                            font-size: 0.95rem;
+                            font-size: 0.9rem;
                             transition: all 0.2s;
                         ">
                             PLACE BID
@@ -373,15 +373,15 @@ export async function renderMarketView(teamData, players = []) {
             <div class="market-management-header" style="
                 background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
                 color: white;
-                padding: 20px 32px;
-                margin-bottom: 30px;
+                padding: 18px 24px;
+                margin-bottom: 24px;
                 border-radius: 12px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
             ">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <div style="
-                            font-size: 1.2rem;
+                            font-size: 1.1rem;
                             font-weight: 800;
                             margin-bottom: 4px;
                             color: #cbd5e1;
@@ -390,7 +390,7 @@ export async function renderMarketView(teamData, players = []) {
                             🏀 TRANSFER MARKET
                         </div>
                         <div style="
-                            font-size: 0.9rem;
+                            font-size: 0.85rem;
                             color: #94a3b8;
                             font-weight: 500;
                         ">
@@ -400,14 +400,14 @@ export async function renderMarketView(teamData, players = []) {
                     <div style="
                         background: rgba(255, 255, 255, 0.1);
                         backdrop-filter: blur(10px);
-                        padding: 14px 24px;
-                        border-radius: 10px;
+                        padding: 12px 20px;
+                        border-radius: 8px;
                         border: 1px solid rgba(255, 255, 255, 0.15);
                         text-align: center;
-                        min-width: 180px;
+                        min-width: 160px;
                     ">
-                        <div style="font-size: 0.8rem; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">AVAILABLE FUNDS</div>
-                        <div style="font-size: 1.6rem; font-weight: 900; color: white;">$${(teamData.balance || 0).toLocaleString()}</div>
+                        <div style="font-size: 0.75rem; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">AVAILABLE FUNDS</div>
+                        <div style="font-size: 1.4rem; font-weight: 900; color: white;">$${(teamData.balance || 0).toLocaleString()}</div>
                     </div>
                 </div>
             </div>
@@ -415,28 +415,28 @@ export async function renderMarketView(teamData, players = []) {
             <!-- Panel filtrów -->
             <div class="filters-panel" style="
                 background: white;
-                border-radius: 16px;
-                padding: 28px;
-                margin-bottom: 30px;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                border-radius: 14px;
+                padding: 24px;
+                margin-bottom: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
                 border: 1px solid #e2e8f0;
             ">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                    <h3 style="margin:0; font-size: 1.1rem; color:#1a237e; font-weight:800;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin:0; font-size: 1rem; color:#1a237e; font-weight:800;">
                         🔍 PLAYER SEARCH FILTERS
                     </h3>
                     <button id="btn-reset-filters" style="
                         background: #f8fafc;
                         color: #64748b;
                         border: 1px solid #e2e8f0;
-                        padding: 10px 20px;
+                        padding: 8px 16px;
                         border-radius: 8px;
                         font-weight: 600;
                         cursor: pointer;
-                        font-size: 0.85rem;
+                        font-size: 0.8rem;
                         display: flex;
                         align-items: center;
-                        gap: 8px;
+                        gap: 6px;
                         transition: all 0.2s;
                     ">
                         <span>🔄</span> Reset All
@@ -444,24 +444,24 @@ export async function renderMarketView(teamData, players = []) {
                 </div>
 
                 <!-- Filtry pozycji jako przyciski -->
-                <div style="margin-bottom: 25px;">
-                    <div style="font-size: 0.8rem; color: #475569; margin-bottom: 12px; font-weight: 600; text-transform: uppercase;">
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 0.75rem; color: #475569; margin-bottom: 10px; font-weight: 600; text-transform: uppercase;">
                         Position
                     </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                         <button type="button" class="position-btn ${currentFilters.position === '' ? 'active' : ''}" data-position="" style="
                             background: ${currentFilters.position === '' ? '#1a237e' : '#f8fafc'};
                             color: ${currentFilters.position === '' ? 'white' : '#64748b'};
-                            border: 2px solid ${currentFilters.position === '' ? '#1a237e' : '#e2e8f0'};
-                            padding: 10px 20px;
-                            border-radius: 10px;
+                            border: 1px solid ${currentFilters.position === '' ? '#1a237e' : '#e2e8f0'};
+                            padding: 8px 16px;
+                            border-radius: 8px;
                             font-weight: 700;
                             cursor: pointer;
-                            font-size: 0.85rem;
+                            font-size: 0.8rem;
                             transition: all 0.2s;
                             display: flex;
                             align-items: center;
-                            gap: 8px;
+                            gap: 6px;
                         ">
                             <span>🌟</span> ALL
                         </button>
@@ -469,98 +469,98 @@ export async function renderMarketView(teamData, players = []) {
                         <button type="button" class="position-btn ${currentFilters.position === 'PG' ? 'active' : ''}" data-position="PG" style="
                             background: ${currentFilters.position === 'PG' ? '#1e40af' : '#f8fafc'};
                             color: ${currentFilters.position === 'PG' ? '#dbeafe' : '#1e40af'};
-                            border: 2px solid ${currentFilters.position === 'PG' ? '#1e40af' : '#e2e8f0'};
-                            padding: 10px 20px;
-                            border-radius: 10px;
+                            border: 1px solid ${currentFilters.position === 'PG' ? '#1e40af' : '#e2e8f0'};
+                            padding: 8px 16px;
+                            border-radius: 8px;
                             font-weight: 700;
                             cursor: pointer;
-                            font-size: 0.85rem;
+                            font-size: 0.8rem;
                             transition: all 0.2s;
                         ">PG</button>
                         
                         <button type="button" class="position-btn ${currentFilters.position === 'SG' ? 'active' : ''}" data-position="SG" style="
                             background: ${currentFilters.position === 'SG' ? '#5b21b6' : '#f8fafc'};
                             color: ${currentFilters.position === 'SG' ? '#f3e8ff' : '#5b21b6'};
-                            border: 2px solid ${currentFilters.position === 'SG' ? '#5b21b6' : '#e2e8f0'};
-                            padding: 10px 20px;
-                            border-radius: 10px;
+                            border: 1px solid ${currentFilters.position === 'SG' ? '#5b21b6' : '#e2e8f0'};
+                            padding: 8px 16px;
+                            border-radius: 8px;
                             font-weight: 700;
                             cursor: pointer;
-                            font-size: 0.85rem;
+                            font-size: 0.8rem;
                             transition: all 0.2s;
                         ">SG</button>
                         
                         <button type="button" class="position-btn ${currentFilters.position === 'SF' ? 'active' : ''}" data-position="SF" style="
                             background: ${currentFilters.position === 'SF' ? '#065f46' : '#f8fafc'};
                             color: ${currentFilters.position === 'SF' ? '#d1fae5' : '#065f46'};
-                            border: 2px solid ${currentFilters.position === 'SF' ? '#065f46' : '#e2e8f0'};
-                            padding: 10px 20px;
-                            border-radius: 10px;
+                            border: 1px solid ${currentFilters.position === 'SF' ? '#065f46' : '#e2e8f0'};
+                            padding: 8px 16px;
+                            border-radius: 8px;
                             font-weight: 700;
                             cursor: pointer;
-                            font-size: 0.85rem;
+                            font-size: 0.8rem;
                             transition: all 0.2s;
                         ">SF</button>
                         
                         <button type="button" class="position-btn ${currentFilters.position === 'PF' ? 'active' : ''}" data-position="PF" style="
                             background: ${currentFilters.position === 'PF' ? '#9a3412' : '#f8fafc'};
                             color: ${currentFilters.position === 'PF' ? '#ffedd5' : '#9a3412'};
-                            border: 2px solid ${currentFilters.position === 'PF' ? '#9a3412' : '#e2e8f0'};
-                            padding: 10px 20px;
-                            border-radius: 10px;
+                            border: 1px solid ${currentFilters.position === 'PF' ? '#9a3412' : '#e2e8f0'};
+                            padding: 8px 16px;
+                            border-radius: 8px;
                             font-weight: 700;
                             cursor: pointer;
-                            font-size: 0.85rem;
+                            font-size: 0.8rem;
                             transition: all 0.2s;
                         ">PF</button>
                         
                         <button type="button" class="position-btn ${currentFilters.position === 'C' ? 'active' : ''}" data-position="C" style="
                             background: ${currentFilters.position === 'C' ? '#F5AD27' : '#f8fafc'};
                             color: ${currentFilters.position === 'C' ? '#92400e' : '#92400e'};
-                            border: 2px solid ${currentFilters.position === 'C' ? '#F5AD27' : '#e2e8f0'};
-                            padding: 10px 20px;
-                            border-radius: 10px;
+                            border: 1px solid ${currentFilters.position === 'C' ? '#F5AD27' : '#e2e8f0'};
+                            padding: 8px 16px;
+                            border-radius: 8px;
                             font-weight: 700;
                             cursor: pointer;
-                            font-size: 0.85rem;
+                            font-size: 0.8rem;
                             transition: all 0.2s;
                         ">C</button>
                     </div>
                 </div>
 
                 <!-- Filtry potencjału jako przyciski -->
-                <div style="margin-bottom: 25px;">
-                    <div style="font-size: 0.8rem; color: #475569; margin-bottom: 12px; font-weight: 600; text-transform: uppercase;">
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 0.75rem; color: #475569; margin-bottom: 10px; font-weight: 600; text-transform: uppercase;">
                         Potential
                     </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px; max-height: 120px; overflow-y: auto; padding-right: 10px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 100px; overflow-y: auto; padding-right: 8px;">
                         ${generatePotentialButtons()}
                     </div>
                 </div>
 
                 <!-- Grid filtrów numerycznych -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px;">
                     <!-- Wiek -->
                     <div class="filter-group">
-                        <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
+                        <label style="display: block; font-size: 0.75rem; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase;">
                             Age Range
                         </label>
-                        <div style="display: flex; gap: 10px;">
+                        <div style="display: flex; gap: 8px;">
                             <input id="filter-min-age" type="number" min="18" max="40" placeholder="Min" value="${currentFilters.minAge || ''}" style="
                                 flex: 1;
-                                padding: 12px;
-                                border: 2px solid #e2e8f0;
-                                border-radius: 10px;
-                                font-size: 0.9rem;
+                                padding: 10px;
+                                border: 1px solid #e2e8f0;
+                                border-radius: 8px;
+                                font-size: 0.85rem;
                                 text-align: center;
                             ">
-                            <div style="color: #94a3b8; align-self: center; font-weight: 600;">→</div>
+                            <div style="color: #94a3b8; align-self: center; font-weight: 600; font-size: 0.9rem;">→</div>
                             <input id="filter-max-age" type="number" min="18" max="40" placeholder="Max" value="${currentFilters.maxAge || ''}" style="
                                 flex: 1;
-                                padding: 12px;
-                                border: 2px solid #e2e8f0;
-                                border-radius: 10px;
-                                font-size: 0.9rem;
+                                padding: 10px;
+                                border: 1px solid #e2e8f0;
+                                border-radius: 8px;
+                                font-size: 0.85rem;
                                 text-align: center;
                             ">
                         </div>
@@ -568,25 +568,25 @@ export async function renderMarketView(teamData, players = []) {
 
                     <!-- Pensja -->
                     <div class="filter-group">
-                        <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
+                        <label style="display: block; font-size: 0.75rem; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase;">
                             Salary Range ($)
                         </label>
-                        <div style="display: flex; gap: 10px;">
+                        <div style="display: flex; gap: 8px;">
                             <input id="filter-min-salary" type="number" min="0" placeholder="Min" value="${currentFilters.minSalary || ''}" style="
                                 flex: 1;
-                                padding: 12px;
-                                border: 2px solid #e2e8f0;
-                                border-radius: 10px;
-                                font-size: 0.9rem;
+                                padding: 10px;
+                                border: 1px solid #e2e8f0;
+                                border-radius: 8px;
+                                font-size: 0.85rem;
                                 text-align: center;
                             ">
-                            <div style="color: #94a3b8; align-self: center; font-weight: 600;">→</div>
+                            <div style="color: #94a3b8; align-self: center; font-weight: 600; font-size: 0.9rem;">→</div>
                             <input id="filter-max-salary" type="number" min="0" placeholder="Max" value="${currentFilters.maxSalary || ''}" style="
                                 flex: 1;
-                                padding: 12px;
-                                border: 2px solid #e2e8f0;
-                                border-radius: 10px;
-                                font-size: 0.9rem;
+                                padding: 10px;
+                                border: 1px solid #e2e8f0;
+                                border-radius: 8px;
+                                font-size: 0.85rem;
                                 text-align: center;
                             ">
                         </div>
@@ -594,25 +594,25 @@ export async function renderMarketView(teamData, players = []) {
 
                     <!-- Cena -->
                     <div class="filter-group">
-                        <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
+                        <label style="display: block; font-size: 0.75rem; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase;">
                             Price Range ($)
                         </label>
-                        <div style="display: flex; gap: 10px;">
+                        <div style="display: flex; gap: 8px;">
                             <input id="filter-min-price" type="number" min="0" placeholder="Min" value="${currentFilters.minPrice || ''}" style="
                                 flex: 1;
-                                padding: 12px;
-                                border: 2px solid #e2e8f0;
-                                border-radius: 10px;
-                                font-size: 0.9rem;
+                                padding: 10px;
+                                border: 1px solid #e2e8f0;
+                                border-radius: 8px;
+                                font-size: 0.85rem;
                                 text-align: center;
                             ">
-                            <div style="color: #94a3b8; align-self: center; font-weight: 600;">→</div>
+                            <div style="color: #94a3b8; align-self: center; font-weight: 600; font-size: 0.9rem;">→</div>
                             <input id="filter-max-price" type="number" min="0" placeholder="Max" value="${currentFilters.maxPrice || ''}" style="
                                 flex: 1;
-                                padding: 12px;
-                                border: 2px solid #e2e8f0;
-                                border-radius: 10px;
-                                font-size: 0.9rem;
+                                padding: 10px;
+                                border: 1px solid #e2e8f0;
+                                border-radius: 8px;
+                                font-size: 0.85rem;
                                 text-align: center;
                             ">
                         </div>
@@ -620,34 +620,34 @@ export async function renderMarketView(teamData, players = []) {
                 </div>
 
                 <!-- Filtry checkbox -->
-                <div style="border-top: 2px solid #f1f5f9; padding-top: 25px;">
-                    <div style="font-size: 0.85rem; color: #475569; margin-bottom: 15px; font-weight: 600;">
+                <div style="border-top: 1px solid #f1f5f9; padding-top: 20px;">
+                    <div style="font-size: 0.8rem; color: #475569; margin-bottom: 12px; font-weight: 600;">
                         Offer Type
                     </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                         <label class="checkbox-modern" style="
                             display: flex;
                             align-items: center;
-                            gap: 12px;
+                            gap: 10px;
                             cursor: pointer;
-                            padding: 12px 20px;
+                            padding: 10px 16px;
                             background: #f8fafc;
-                            border-radius: 10px;
-                            border: 2px solid #e2e8f0;
+                            border-radius: 8px;
+                            border: 1px solid #e2e8f0;
                             transition: all 0.2s;
                             user-select: none;
                             flex: 1;
-                            min-width: 180px;
+                            min-width: 160px;
                         ">
                             <input type="radio" name="offerType" value="all" ${currentFilters.offerType === 'all' ? 'checked' : ''}
                                    style="transform: scale(1.2); accent-color: #1a237e;">
-                            <div style="font-weight: 600; color: #475569;">All Offers</div>
+                            <div style="font-weight: 600; color: #475569; font-size: 0.85rem;">All Offers</div>
                             <div style="
                                 margin-left: auto;
                                 background: #e2e8f0;
                                 color: #64748b;
-                                font-size: 0.75rem;
-                                padding: 4px 8px;
+                                font-size: 0.7rem;
+                                padding: 3px 6px;
                                 border-radius: 4px;
                                 font-weight: 700;
                             ">Default</div>
@@ -656,26 +656,26 @@ export async function renderMarketView(teamData, players = []) {
                         <label class="checkbox-modern" style="
                             display: flex;
                             align-items: center;
-                            gap: 12px;
+                            gap: 10px;
                             cursor: pointer;
-                            padding: 12px 20px;
+                            padding: 10px 16px;
                             background: #f8fafc;
-                            border-radius: 10px;
-                            border: 2px solid #e2e8f0;
+                            border-radius: 8px;
+                            border: 1px solid #e2e8f0;
                             transition: all 0.2s;
                             user-select: none;
                             flex: 1;
-                            min-width: 180px;
+                            min-width: 160px;
                         ">
                             <input type="radio" name="offerType" value="auction" ${currentFilters.offerType === 'auction' ? 'checked' : ''}
                                    style="transform: scale(1.2); accent-color: #1a237e;">
-                            <div style="font-weight: 600; color: #475569;">Auction Only</div>
+                            <div style="font-weight: 600; color: #475569; font-size: 0.85rem;">Auction Only</div>
                             <div style="
                                 margin-left: auto;
                                 background: #fef3c7;
                                 color: #92400e;
-                                font-size: 0.75rem;
-                                padding: 4px 8px;
+                                font-size: 0.7rem;
+                                padding: 3px 6px;
                                 border-radius: 4px;
                                 font-weight: 700;
                             ">🏷️ Bid</div>
@@ -684,26 +684,26 @@ export async function renderMarketView(teamData, players = []) {
                         <label class="checkbox-modern" style="
                             display: flex;
                             align-items: center;
-                            gap: 12px;
+                            gap: 10px;
                             cursor: pointer;
-                            padding: 12px 20px;
+                            padding: 10px 16px;
                             background: #f8fafc;
-                            border-radius: 10px;
-                            border: 2px solid #e2e8f0;
+                            border-radius: 8px;
+                            border: 1px solid #e2e8f0;
                             transition: all 0.2s;
                             user-select: none;
                             flex: 1;
-                            min-width: 180px;
+                            min-width: 160px;
                         ">
                             <input type="radio" name="offerType" value="buy_now" ${currentFilters.offerType === 'buy_now' ? 'checked' : ''}
                                    style="transform: scale(1.2); accent-color: #1a237e;">
-                            <div style="font-weight: 600; color: #475569;">Buy Now Only</div>
+                            <div style="font-weight: 600; color: #475569; font-size: 0.85rem;">Buy Now Only</div>
                             <div style="
                                 margin-left: auto;
                                 background: #d1fae5;
                                 color: #065f46;
-                                font-size: 0.75rem;
-                                padding: 4px 8px;
+                                font-size: 0.7rem;
+                                padding: 3px 6px;
                                 border-radius: 4px;
                                 font-weight: 700;
                             ">⚡ Instant</div>
@@ -712,103 +712,103 @@ export async function renderMarketView(teamData, players = []) {
                 </div>
 
                 <!-- Przycisk wyszukiwania -->
-                <div style="margin-top: 30px; text-align: center;">
+                <div style="margin-top: 24px; text-align: center;">
                     <button id="btn-search-market" style="
                         background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
                         color: white;
                         border: none;
-                        padding: 16px 40px;
-                        border-radius: 12px;
+                        padding: 14px 32px;
+                        border-radius: 10px;
                         font-weight: 800;
                         cursor: pointer;
-                        font-size: 1rem;
+                        font-size: 0.9rem;
                         display: inline-flex;
                         align-items: center;
-                        gap: 12px;
-                        box-shadow: 0 6px 20px rgba(26, 35, 126, 0.25);
+                        gap: 10px;
+                        box-shadow: 0 4px 12px rgba(26, 35, 126, 0.2);
                         transition: all 0.3s;
                     ">
-                        <span style="font-size: 1.2rem;">🔍</span>
+                        <span style="font-size: 1rem;">🔍</span>
                         SEARCH PLAYERS
                     </button>
                 </div>
             </div>
 
             <!-- Statystyki -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
                 <div style="
                     background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-                    border: 2px solid #bae6fd;
-                    border-radius: 12px;
-                    padding: 20px;
+                    border: 1px solid #bae6fd;
+                    border-radius: 10px;
+                    padding: 16px;
                     text-align: center;
                 ">
-                    <div style="font-size: 0.8rem; color: #0369a1; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">Total Players</div>
-                    <div id="stat-total" style="font-size: 2rem; font-weight: 900; color: #0c4a6e;">0</div>
+                    <div style="font-size: 0.75rem; color: #0369a1; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">Total Players</div>
+                    <div id="stat-total" style="font-size: 1.6rem; font-weight: 900; color: #0c4a6e;">0</div>
                 </div>
                 <div style="
                     background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-                    border: 2px solid #a7f3d0;
-                    border-radius: 12px;
-                    padding: 20px;
+                    border: 1px solid #a7f3d0;
+                    border-radius: 10px;
+                    padding: 16px;
                     text-align: center;
                 ">
-                    <div style="font-size: 0.8rem; color: #15803d; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">Avg Price</div>
-                    <div id="stat-avg-price" style="font-size: 2rem; font-weight: 900; color: #166534;">$0</div>
+                    <div style="font-size: 0.75rem; color: #15803d; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">Avg Price</div>
+                    <div id="stat-avg-price" style="font-size: 1.6rem; font-weight: 900; color: #166534;">$0</div>
                 </div>
                 <div style="
                     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-                    border: 2px solid #fcd34d;
-                    border-radius: 12px;
-                    padding: 20px;
+                    border: 1px solid #fcd34d;
+                    border-radius: 10px;
+                    padding: 16px;
                     text-align: center;
                 ">
-                    <div style="font-size: 0.8rem; color: #d97706; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">Youngest</div>
-                    <div id="stat-youngest" style="font-size: 2rem; font-weight: 900; color: #92400e;">18</div>
+                    <div style="font-size: 0.75rem; color: #d97706; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">Youngest</div>
+                    <div id="stat-youngest" style="font-size: 1.6rem; font-weight: 900; color: #92400e;">18</div>
                 </div>
                 <div style="
                     background: linear-gradient(135deg, #fae8ff 0%, #f5d0fe 100%);
-                    border: 2px solid #f0abfc;
-                    border-radius: 12px;
-                    padding: 20px;
+                    border: 1px solid #f0abfc;
+                    border-radius: 10px;
+                    padding: 16px;
                     text-align: center;
                 ">
-                    <div style="font-size: 0.8rem; color: #a21caf; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">Highest OVR</div>
-                    <div id="stat-highest-ovr" style="font-size: 2rem; font-weight: 900; color: #86198f;">0</div>
+                    <div style="font-size: 0.75rem; color: #a21caf; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">Highest OVR</div>
+                    <div id="stat-highest-ovr" style="font-size: 1.6rem; font-weight: 900; color: #86198f;">0</div>
                 </div>
             </div>
 
-            <!-- Lista ofert w grid 4 kolumny -->
+            <!-- Lista ofert w grid 3 kolumny (dla lepszej czytelności) -->
             <div id="market-listings" style="
                 display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                gap: 20px;
-                margin-bottom: 40px;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 16px;
+                margin-bottom: 32px;
             "></div>
 
             <!-- Paginacja -->
             <div class="market-pagination" style="
-                margin-top: 40px;
-                padding: 25px;
+                margin-top: 32px;
+                padding: 20px;
                 background: #f8fafc;
-                border-radius: 16px;
+                border-radius: 12px;
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                gap: 20px;
+                gap: 16px;
             ">
                 <button id="prev-page" class="pag-btn" style="
                     background: white;
                     color: #475569;
-                    border: 2px solid #e2e8f0;
-                    padding: 12px 24px;
-                    border-radius: 10px;
+                    border: 1px solid #e2e8f0;
+                    padding: 10px 20px;
+                    border-radius: 8px;
                     font-weight: 700;
                     cursor: pointer;
-                    font-size: 0.9rem;
+                    font-size: 0.85rem;
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                     transition: all 0.2s;
                 ">
                     <span>←</span> Previous
@@ -816,24 +816,24 @@ export async function renderMarketView(teamData, players = []) {
                 <div id="page-info" style="
                     font-weight: 800;
                     color: #1a237e;
-                    font-size: 0.95rem;
+                    font-size: 0.9rem;
                     background: white;
-                    padding: 10px 20px;
-                    border-radius: 10px;
-                    border: 2px solid #e2e8f0;
+                    padding: 8px 16px;
+                    border-radius: 8px;
+                    border: 1px solid #e2e8f0;
                 "></div>
                 <button id="next-page" class="pag-btn" style="
                     background: #1a237e;
                     color: white;
-                    border: 2px solid #1a237e;
-                    padding: 12px 24px;
-                    border-radius: 10px;
+                    border: 1px solid #1a237e;
+                    padding: 10px 20px;
+                    border-radius: 8px;
                     font-weight: 700;
                     cursor: pointer;
-                    font-size: 0.9rem;
+                    font-size: 0.85rem;
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                     transition: all 0.2s;
                 ">
                     Next <span>→</span>
@@ -1038,18 +1038,18 @@ function resetFilters() {
 async function loadMarketData() {
     const list = document.getElementById('market-listings');
     list.innerHTML = `
-        <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
+        <div style="grid-column: 1/-1; text-align: center; padding: 50px 20px;">
             <div class="loader" style="
                 display: inline-block;
-                width: 50px;
-                height: 50px;
-                border: 4px solid #e2e8f0;
-                border-top: 4px solid #1a237e;
+                width: 40px;
+                height: 40px;
+                border: 3px solid #e2e8f0;
+                border-top: 3px solid #1a237e;
                 border-radius: 50%;
                 animation: spin 1s linear infinite;
-                margin-bottom: 20px;
+                margin-bottom: 15px;
             "></div>
-            <div style="color: #64748b; font-weight: 600; font-size: 1rem;">Loading market data...</div>
+            <div style="color: #64748b; font-weight: 600; font-size: 0.9rem;">Loading market data...</div>
         </div>
     `;
 
@@ -1065,10 +1065,10 @@ async function loadMarketData() {
         if (error) {
             console.error("Supabase Error:", error);
             list.innerHTML = `
-                <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
-                    <div style="color: #ef4444; font-size: 2rem; margin-bottom: 15px;">⚠️</div>
-                    <h3 style="margin: 0 0 10px 0; color: #ef4444; font-weight: 600;">Error loading data</h3>
-                    <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">${error.message}</p>
+                <div style="grid-column: 1/-1; text-align: center; padding: 50px 20px;">
+                    <div style="color: #ef4444; font-size: 1.5rem; margin-bottom: 10px;">⚠️</div>
+                    <h3 style="margin: 0 0 8px 0; color: #ef4444; font-weight: 600; font-size: 1rem;">Error loading data</h3>
+                    <p style="margin: 0; color: #94a3b8; font-size: 0.8rem;">${error.message}</p>
                 </div>
             `;
             return;
@@ -1138,10 +1138,10 @@ async function loadMarketData() {
     } catch (error) {
         console.error("Error loading market data:", error);
         list.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
-                <div style="color: #ef4444; font-size: 2rem; margin-bottom: 15px;">⚠️</div>
-                <h3 style="margin: 0 0 10px 0; color: #ef4444; font-weight: 600;">Unexpected error</h3>
-                <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">Please try again later</p>
+            <div style="grid-column: 1/-1; text-align: center; padding: 50px 20px;">
+                <div style="color: #ef4444; font-size: 1.5rem; margin-bottom: 10px;">⚠️</div>
+                <h3 style="margin: 0 0 8px 0; color: #ef4444; font-weight: 600; font-size: 1rem;">Unexpected error</h3>
+                <p style="margin: 0; color: #94a3b8; font-size: 0.8rem;">Please try again later</p>
             </div>
         `;
     }
@@ -1183,10 +1183,10 @@ function displayCurrentPage() {
 
     if (pageData.length === 0) {
         list.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 80px 20px; background: #f8fafc; border-radius: 16px; border: 2px dashed #e2e8f0;">
-                <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.2;">🏀</div>
-                <h3 style="margin: 0 0 10px 0; color: #475569; font-weight: 700; font-size: 1.3rem;">No players found</h3>
-                <p style="margin: 0; color: #94a3b8; font-size: 0.95rem; max-width: 400px; margin: 0 auto;">Try adjusting your search filters or check back later</p>
+            <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; background: #f8fafc; border-radius: 12px; border: 1px dashed #e2e8f0;">
+                <div style="font-size: 2.5rem; margin-bottom: 15px; opacity: 0.2;">🏀</div>
+                <h3 style="margin: 0 0 8px 0; color: #475569; font-weight: 700; font-size: 1.1rem;">No players found</h3>
+                <p style="margin: 0; color: #94a3b8; font-size: 0.85rem; max-width: 350px; margin: 0 auto;">Try adjusting your search filters or check back later</p>
             </div>
         `;
     } else {
@@ -1198,8 +1198,8 @@ function displayCurrentPage() {
         <span style="color: #1a237e;">${currentPage}</span>
         <span style="color: #94a3b8;">/</span>
         <span style="color: #64748b;">${totalPages}</span>
-        <span style="margin-left: 10px; color: #94a3b8;">•</span>
-        <span style="margin-left: 10px; color: #475569; font-weight: 600;">${allMarketData.length} players</span>
+        <span style="margin-left: 8px; color: #94a3b8;">•</span>
+        <span style="margin-left: 8px; color: #475569; font-weight: 600;">${allMarketData.length} players</span>
     `;
     
     // Aktualizuj przyciski paginacji
@@ -1245,9 +1245,9 @@ function renderPlayerCard(item) {
         <span style="
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
             color: #92400e;
-            font-size: 0.6rem;
-            padding: 3px 6px;
-            border-radius: 8px;
+            font-size: 0.55rem;
+            padding: 2px 5px;
+            border-radius: 6px;
             font-weight: 700;
             border: 1px solid #fcd34d;
             white-space: nowrap;
@@ -1261,9 +1261,9 @@ function renderPlayerCard(item) {
             <span style="
                 background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
                 color: #92400e;
-                font-size: 0.6rem;
-                padding: 3px 6px;
-                border-radius: 8px;
+                font-size: 0.55rem;
+                padding: 2px 5px;
+                border-radius: 6px;
                 font-weight: 700;
                 border: 1px solid #fcd34d;
                 white-space: nowrap;
@@ -1274,9 +1274,9 @@ function renderPlayerCard(item) {
             <span style="
                 background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
                 color: #065f46;
-                font-size: 0.6rem;
-                padding: 3px 6px;
-                border-radius: 8px;
+                font-size: 0.55rem;
+                padding: 2px 5px;
+                border-radius: 6px;
                 font-weight: 700;
                 border: 1px solid #34d399;
                 white-space: nowrap;
@@ -1287,9 +1287,9 @@ function renderPlayerCard(item) {
             <span style="
                 background: linear-gradient(135deg, #dbeafe 0%, #a5b4fc 100%);
                 color: #1e40af;
-                font-size: 0.6rem;
-                padding: 3px 6px;
-                border-radius: 8px;
+                font-size: 0.55rem;
+                padding: 2px 5px;
+                border-radius: 6px;
                 font-weight: 700;
                 border: 1px solid #818cf8;
                 white-space: nowrap;
@@ -1345,16 +1345,16 @@ function renderPlayerCard(item) {
         priceInfo += `
             <div style="
                 background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-                border: 2px solid #fcd34d;
-                border-radius: 10px;
-                padding: 12px;
-                margin-bottom: 12px;
+                border: 1px solid #fcd34d;
+                border-radius: 8px;
+                padding: 10px;
+                margin-bottom: 10px;
             ">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <span style="font-size: 0.7rem; color: #92400e; font-weight: 700; text-transform: uppercase;">Current Bid</span>
-                    <span style="font-size: 1.2rem; font-weight: 900; color: #b45309;">$${bidPrice.toLocaleString()}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                    <span style="font-size: 0.65rem; color: #92400e; font-weight: 700; text-transform: uppercase;">Current Bid</span>
+                    <span style="font-size: 1rem; font-weight: 900; color: #b45309;">$${bidPrice.toLocaleString()}</span>
                 </div>
-                <div style="font-size: 0.7rem; color: #b45309; display: flex; align-items: center; gap: 4px; font-weight: 600;">
+                <div style="font-size: 0.65rem; color: #b45309; display: flex; align-items: center; gap: 4px; font-weight: 600;">
                     <span>⏱️</span> Ends: ${bidEnds}
                 </div>
             </div>
@@ -1364,14 +1364,14 @@ function renderPlayerCard(item) {
                 background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
                 color: white;
                 border: none;
-                padding: 10px 16px;
-                border-radius: 8px;
-                font-weight: 800;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-weight: 700;
                 cursor: pointer;
-                font-size: 0.8rem;
+                font-size: 0.75rem;
                 flex: 1;
                 transition: all 0.2s;
-                box-shadow: 0 4px 8px rgba(245, 158, 11, 0.2);
+                box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
             ">BID NOW</button>
         `;
     }
@@ -1382,14 +1382,14 @@ function renderPlayerCard(item) {
             priceInfo += `
                 <div style="
                     background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-                    border: 2px solid #34d399;
-                    border-radius: 10px;
-                    padding: 12px;
-                    margin-bottom: 12px;
+                    border: 1px solid #34d399;
+                    border-radius: 8px;
+                    padding: 10px;
+                    margin-bottom: 10px;
                 ">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 0.7rem; color: #065f46; font-weight: 700; text-transform: uppercase;">Buy Now</span>
-                        <span style="font-size: 1.2rem; font-weight: 900; color: #059669;">$${buyNowPrice.toLocaleString()}</span>
+                        <span style="font-size: 0.65rem; color: #065f46; font-weight: 700; text-transform: uppercase;">Buy Now</span>
+                        <span style="font-size: 1rem; font-weight: 900; color: #059669;">$${buyNowPrice.toLocaleString()}</span>
                     </div>
                 </div>
             `;
@@ -1399,14 +1399,14 @@ function renderPlayerCard(item) {
                 background: linear-gradient(135deg, #059669 0%, #065f46 100%);
                 color: white;
                 border: none;
-                padding: 10px 16px;
-                border-radius: 8px;
-                font-weight: 800;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-weight: 700;
                 cursor: pointer;
-                font-size: 0.8rem;
+                font-size: 0.75rem;
                 flex: 1;
                 transition: all 0.2s;
-                box-shadow: 0 4px 8px rgba(5, 150, 105, 0.2);
+                box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
             ">BUY NOW ⚡</button>
         `;
     }
@@ -1419,9 +1419,9 @@ function renderPlayerCard(item) {
             position: relative;
             overflow: hidden;
             background: white;
-            border-radius: 14px;
+            border-radius: 12px;
             border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             transition: all 0.3s ease;
             height: 100%;
             display: flex;
@@ -1433,53 +1433,53 @@ function renderPlayerCard(item) {
                 left: 0;
                 top: 0;
                 bottom: 0;
-                width: 6px;
+                width: 4px;
                 background: ${posStyle.bg};
-                border-radius: 14px 0 0 14px;
+                border-radius: 12px 0 0 12px;
             "></div>
 
             <!-- Główna zawartość -->
-            <div style="padding: 18px; padding-left: 24px; flex: 1; display: flex; flex-direction: column;">
+            <div style="padding: 16px; padding-left: 20px; flex: 1; display: flex; flex-direction: column;">
                 <!-- Nagłówek z avatarami -->
-                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                     <!-- Avatar i OVR z etykietami -->
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 80px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 70px;">
                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.first_name}${p.last_name}" 
                              style="
-                                width: 70px;
-                                height: 70px;
+                                width: 60px;
+                                height: 60px;
                                 background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-                                border-radius: 12px;
-                                border: 3px solid white;
-                                box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+                                border-radius: 10px;
+                                border: 2px solid white;
+                                box-shadow: 0 2px 6px rgba(0,0,0,0.06);
                              ">
                         <div style="width: 100%; text-align: center;">
                             <!-- Pasek OVR -->
                             <div style="
-                                height: 8px;
+                                height: 6px;
                                 background: #e5e7eb;
-                                border-radius: 4px;
+                                border-radius: 3px;
                                 overflow: hidden;
-                                margin-bottom: 6px;
+                                margin-bottom: 4px;
                             ">
                                 <div style="height: 100%; width: ${ovrPercentage}%; background: ${ovrStyle.border};"></div>
                             </div>
                             <!-- Wartość OVR -->
                             <div style="
-                                font-size: 0.75rem;
+                                font-size: 0.7rem;
                                 font-weight: 900;
                                 color: ${ovrStyle.color};
                                 background: ${ovrStyle.bg};
-                                padding: 3px 10px;
-                                border-radius: 16px;
+                                padding: 2px 8px;
+                                border-radius: 12px;
                                 display: inline-block;
                                 border: 1px solid ${ovrStyle.border};
-                                margin-bottom: 6px;
+                                margin-bottom: 4px;
                             ">
                                 OVR: ${ovr}
                             </div>
                             <!-- Etykiety Rookie i typu oferty -->
-                            <div style="display: flex; justify-content: center; gap: 4px; flex-wrap: wrap;">
+                            <div style="display: flex; justify-content: center; gap: 3px; flex-wrap: wrap;">
                                 ${rookieBadge}
                                 ${offerTypeBadge}
                             </div>
@@ -1489,150 +1489,140 @@ function renderPlayerCard(item) {
                     <!-- Informacje o graczu -->
                     <div style="flex: 1;">
                         <!-- Imię i nazwisko -->
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
-                            <h3 style="margin: 0; font-size: 1.1rem; font-weight: 900; color: #1a237e; line-height: 1.2;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
+                            <h3 style="margin: 0; font-size: 0.95rem; font-weight: 900; color: #1a237e; line-height: 1.2;">
                                 ${p.first_name} ${p.last_name}
                             </h3>
                             ${flagUrl ? `
                                 <img src="${flagUrl}" style="
-                                    width: 22px;
+                                    width: 18px;
                                     height: auto;
-                                    border-radius: 3px;
+                                    border-radius: 2px;
                                     border: 1px solid #e2e8f0;
                                 ">
                             ` : ''}
                         </div>
 
                         <!-- Pozycja i potencjał -->
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
                             <div style="
                                 background: ${posStyle.bg};
                                 color: ${posStyle.text};
-                                width: 34px;
-                                height: 34px;
+                                width: 28px;
+                                height: 28px;
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
-                                border-radius: 8px;
+                                border-radius: 6px;
                                 font-weight: 900;
-                                font-size: 0.9rem;
-                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                font-size: 0.8rem;
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
                             ">
                                 ${p.position}
                             </div>
                             <span style="
                                 display: flex;
                                 align-items: center;
-                                gap: 6px;
-                                font-size: 0.85rem;
+                                gap: 4px;
+                                font-size: 0.75rem;
                                 color: ${potData.color};
                                 font-weight: 800;
                                 background: ${potData.color}15;
-                                padding: 6px 10px;
-                                border-radius: 8px;
+                                padding: 4px 8px;
+                                border-radius: 6px;
                                 border: 1px solid ${potData.color}30;
                             ">
-                                <span style="font-size: 1rem;">${potData.icon}</span>
+                                <span style="font-size: 0.9rem;">${potData.icon}</span>
                                 ${potData.label}
                             </span>
                         </div>
 
                         <!-- Statystyki podstawowe -->
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
                             <div>
-                                <div style="font-weight: 700; color: #64748b; font-size: 0.7rem; margin-bottom: 2px;">AGE</div>
-                                <div style="font-weight: 900; color: #1a237e; font-size: 1rem;">${p.age}</div>
+                                <div style="font-weight: 700; color: #64748b; font-size: 0.65rem; margin-bottom: 2px;">AGE</div>
+                                <div style="font-weight: 900; color: #1a237e; font-size: 0.9rem;">${p.age}</div>
                             </div>
                             <div>
-                                <div style="font-weight: 700; color: #64748b; font-size: 0.7rem; margin-bottom: 2px;">HEIGHT</div>
-                                <div style="font-weight: 900; color: #1a237e; font-size: 0.9rem;">${heightDisplay}</div>
+                                <div style="font-weight: 700; color: #64748b; font-size: 0.65rem; margin-bottom: 2px;">HEIGHT</div>
+                                <div style="font-weight: 900; color: #1a237e; font-size: 0.8rem;">${heightDisplay}</div>
                             </div>
                             <div>
-                                <div style="font-weight: 700; color: #64748b; font-size: 0.7rem; margin-bottom: 2px;">SALARY</div>
-                                <div style="font-weight: 900; color: #1a237e; font-size: 0.9rem;">$${(p.salary || 0).toLocaleString()}</div>
+                                <div style="font-weight: 700; color: #64748b; font-size: 0.65rem; margin-bottom: 2px;">SALARY</div>
+                                <div style="font-weight: 900; color: #1a237e; font-size: 0.8rem;">$${(p.salary || 0).toLocaleString()}</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Umiejętności pogrupowane -->
+                <!-- Umiejętności pogrupowane - skrócona wersja -->
                 <div style="
-                    margin: 12px 0;
-                    padding: 14px;
+                    margin: 10px 0;
+                    padding: 10px;
                     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-                    border-radius: 10px;
+                    border-radius: 8px;
                     border: 1px solid #e2e8f0;
                     flex: 1;
                 ">
                     <!-- ATTACK -->
-                    <div style="margin-bottom: 15px;">
-                        <div style="font-size: 0.7rem; color: #dc2626; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-size: 0.65rem; color: #dc2626; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.3px;">
                             ⚔️ ATTACK
                         </div>
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
                             ${attackSkills.map(skill => `
                                 <div style="
                                     text-align: center;
-                                    padding: 10px 4px;
+                                    padding: 6px 3px;
                                     background: ${skill.value >= 15 ? '#fee2e2' : skill.value >= 10 ? '#fef3c7' : '#f3f4f6'};
-                                    border-radius: 8px;
+                                    border-radius: 6px;
                                     border: 1px solid ${skill.value >= 15 ? '#fca5a5' : skill.value >= 10 ? '#fde68a' : '#e5e7eb'};
                                 ">
                                     <div style="
                                         font-size: 0.6rem;
                                         color: ${skill.value >= 15 ? '#dc2626' : skill.value >= 10 ? '#92400e' : '#64748b'};
                                         font-weight: 800;
-                                        margin-bottom: 4px;
+                                        margin-bottom: 3px;
                                         text-transform: uppercase;
-                                        letter-spacing: 0.2px;
+                                        letter-spacing: 0.1px;
                                     ">${skill.key}</div>
                                     <div style="
-                                        font-size: 1rem;
+                                        font-size: 0.9rem;
                                         font-weight: 900;
                                         color: ${skill.value >= 15 ? '#dc2626' : skill.value >= 10 ? '#d97706' : '#475569'};
                                     ">${skill.value}</div>
-                                    <div style="
-                                        font-size: 0.55rem;
-                                        color: #94a3b8;
-                                        margin-top: 2px;
-                                    ">${skill.label}</div>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
                     
                     <!-- DEFENSE -->
-                    <div style="margin-bottom: 15px;">
-                        <div style="font-size: 0.7rem; color: #1d4ed8; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-size: 0.65rem; color: #1d4ed8; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.3px;">
                             🛡️ DEFENSE
                         </div>
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
                             ${defenseSkills.map(skill => `
                                 <div style="
                                     text-align: center;
-                                    padding: 10px 4px;
+                                    padding: 6px 3px;
                                     background: ${skill.value >= 15 ? '#dbeafe' : skill.value >= 10 ? '#fef3c7' : '#f3f4f6'};
-                                    border-radius: 8px;
+                                    border-radius: 6px;
                                     border: 1px solid ${skill.value >= 15 ? '#93c5fd' : skill.value >= 10 ? '#fde68a' : '#e5e7eb'};
                                 ">
                                     <div style="
                                         font-size: 0.6rem;
                                         color: ${skill.value >= 15 ? '#1d4ed8' : skill.value >= 10 ? '#92400e' : '#64748b'};
                                         font-weight: 800;
-                                        margin-bottom: 4px;
+                                        margin-bottom: 3px;
                                         text-transform: uppercase;
-                                        letter-spacing: 0.2px;
+                                        letter-spacing: 0.1px;
                                     ">${skill.key}</div>
                                     <div style="
-                                        font-size: 1rem;
+                                        font-size: 0.9rem;
                                         font-weight: 900;
                                         color: ${skill.value >= 15 ? '#1d4ed8' : skill.value >= 10 ? '#d97706' : '#475569'};
                                     ">${skill.value}</div>
-                                    <div style="
-                                        font-size: 0.55rem;
-                                        color: #94a3b8;
-                                        margin-top: 2px;
-                                    ">${skill.label}</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -1640,36 +1630,31 @@ function renderPlayerCard(item) {
                     
                     <!-- GENERAL -->
                     <div>
-                        <div style="font-size: 0.7rem; color: #059669; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">
+                        <div style="font-size: 0.65rem; color: #059669; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.3px;">
                             ⚙️ GENERAL
                         </div>
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
                             ${generalSkills.map(skill => `
                                 <div style="
                                     text-align: center;
-                                    padding: 10px 4px;
+                                    padding: 6px 3px;
                                     background: ${skill.value >= 15 ? '#d1fae5' : skill.value >= 10 ? '#fef3c7' : '#f3f4f6'};
-                                    border-radius: 8px;
+                                    border-radius: 6px;
                                     border: 1px solid ${skill.value >= 15 ? '#a7f3d0' : skill.value >= 10 ? '#fde68a' : '#e5e7eb'};
                                 ">
                                     <div style="
                                         font-size: 0.6rem;
                                         color: ${skill.value >= 15 ? '#059669' : skill.value >= 10 ? '#92400e' : '#64748b'};
                                         font-weight: 800;
-                                        margin-bottom: 4px;
+                                        margin-bottom: 3px;
                                         text-transform: uppercase;
-                                        letter-spacing: 0.2px;
+                                        letter-spacing: 0.1px;
                                     ">${skill.key}</div>
                                     <div style="
-                                        font-size: 1rem;
+                                        font-size: 0.9rem;
                                         font-weight: 900;
                                         color: ${skill.value >= 15 ? '#059669' : skill.value >= 10 ? '#d97706' : '#475569'};
                                     ">${skill.value}</div>
-                                    <div style="
-                                        font-size: 0.55rem;
-                                        color: #94a3b8;
-                                        margin-top: 2px;
-                                    ">${skill.label}</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -1680,33 +1665,33 @@ function renderPlayerCard(item) {
                 <div style="margin-top: auto;">
                     ${priceInfo}
                     
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                         <!-- Wartość rynkowa -->
                         <div>
-                            <div style="font-size: 0.7rem; color: #64748b; font-weight: 700; margin-bottom: 2px;">MARKET VALUE</div>
-                            <div style="font-size: 1.1rem; font-weight: 900; color: #059669;">$${marketVal.toLocaleString()}</div>
+                            <div style="font-size: 0.65rem; color: #64748b; font-weight: 700; margin-bottom: 2px;">MARKET VALUE</div>
+                            <div style="font-size: 1rem; font-weight: 900; color: #059669;">$${marketVal.toLocaleString()}</div>
                         </div>
                         
                         <!-- Przyciski akcji -->
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
                             ${actionButtons}
                             <button onclick="showPlayerProfile('${p.id}')" style="
                                 background: #f8fafc;
                                 color: #475569;
                                 border: 1px solid #e2e8f0;
-                                padding: 8px 12px;
-                                border-radius: 8px;
+                                padding: 6px 10px;
+                                border-radius: 6px;
                                 font-weight: 700;
                                 cursor: pointer;
-                                font-size: 0.8rem;
+                                font-size: 0.75rem;
                                 display: flex;
                                 align-items: center;
-                                gap: 6px;
+                                gap: 4px;
                                 transition: all 0.2s;
-                                min-width: 80px;
+                                min-width: 70px;
                                 justify-content: center;
                             ">
-                                <span style="font-size: 0.9rem;">👁️</span> Profile
+                                <span style="font-size: 0.8rem;">👁️</span> Profile
                             </button>
                         </div>
                     </div>
@@ -1905,24 +1890,24 @@ style.textContent = `
     }
     
     .player-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
         border-color: #c7d2fe !important;
     }
     
     button:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.12) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important;
     }
     
     .position-btn:hover:not(.active) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important;
     }
     
     .potential-btn:hover:not(.active) {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important;
     }
     
     #bid-modal {
@@ -1934,43 +1919,61 @@ style.textContent = `
         to { opacity: 1; }
     }
     
+    /* Dla bardzo dużych ekranów (4 kolumny) */
+    @media (min-width: 2000px) {
+        #market-listings {
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 18px !important;
+        }
+    }
+    
+    /* Dla ekranów 1600px+ (3 kolumny - domyślne) */
     @media (max-width: 1600px) {
         #market-listings {
             grid-template-columns: repeat(3, 1fr) !important;
-            gap: 16px !important;
+            gap: 14px !important;
         }
     }
     
+    /* Dla tabletów (2 kolumny) */
     @media (max-width: 1200px) {
         #market-listings {
             grid-template-columns: repeat(2, 1fr) !important;
-            gap: 14px !important;
-        }
-        
-        .filters-panel .checkbox-modern {
-            min-width: 150px !important;
-        }
-    }
-    
-    @media (max-width: 768px) {
-        #market-listings {
-            grid-template-columns: 1fr !important;
             gap: 12px !important;
         }
         
-        .market-modern-wrapper {
-            padding: 10px !important;
-        }
-        
-        .filters-panel {
-            padding: 20px !important;
+        .filters-panel .checkbox-modern {
+            min-width: 140px !important;
         }
         
         .market-management-header {
-            padding: 20px !important;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
             text-align: center;
+        }
+        
+        .market-management-header > div:first-child {
+            text-align: center;
+        }
+    }
+    
+    /* Dla telefonów (1 kolumna) */
+    @media (max-width: 768px) {
+        #market-listings {
+            grid-template-columns: 1fr !important;
+            gap: 10px !important;
+        }
+        
+        .market-modern-wrapper {
+            padding: 8px !important;
+        }
+        
+        .filters-panel {
+            padding: 16px !important;
+        }
+        
+        .market-management-header {
+            padding: 16px !important;
         }
         
         .filters-panel .checkbox-modern {
@@ -1978,8 +1981,39 @@ style.textContent = `
         }
         
         .position-btn, .potential-btn {
-            padding: 8px 12px !important;
-            font-size: 0.8rem !important;
+            padding: 6px 10px !important;
+            font-size: 0.75rem !important;
+        }
+        
+        .market-pagination {
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        #page-info {
+            order: -1;
+        }
+    }
+    
+    /* Dla bardzo małych telefonów */
+    @media (max-width: 480px) {
+        .filters-panel {
+            padding: 12px !important;
+        }
+        
+        .player-card {
+            padding: 12px !important;
+            padding-left: 16px !important;
+        }
+        
+        .position-btn, .potential-btn {
+            padding: 5px 8px !important;
+            font-size: 0.7rem !important;
+        }
+        
+        #btn-search-market {
+            padding: 12px 24px !important;
+            font-size: 0.85rem !important;
         }
     }
 `;
