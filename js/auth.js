@@ -7,20 +7,53 @@ export const supabaseClient = _supabase;
 window.supabase = _supabase;
 
 import { initApp, switchTab } from './app/app.js';
-import { initContentManager, showTerms, showPrivacy } from './content-manager.js';
+import { initContentManager } from './content-manager.js';
 
 window.POTENTIAL_MAP = [];
 
 // Globalne zmienne dla modalów
 let registerModal, loginModal;
-let contentManager = null; // Dodano zmienną contentManager
+let contentManager = null;
+
+// DODANO: Lista adminów - przeniesiona z index.html dla spójności
+window.adminEmails = ['strubbe23@gmail.com', 'admin@ebl.com', 'info.ebl.game@gmail.com'];
 
 /**
  * Nowe funkcje autoryzacji admina
  */
 
 /**
- * Sprawdza uprawnienia admina
+ * Sprawdza uprawnienia admina na podstawie emaila
+ */
+export async function checkAdminEmail() {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        
+        if (!user) {
+            console.log("[AUTH] Brak zalogowanego użytkownika");
+            return { isAdmin: false, user: null, reason: "not_logged_in" };
+        }
+        
+        const userEmail = user.email?.toLowerCase();
+        const isAdmin = userEmail && window.adminEmails.includes(userEmail);
+        
+        console.log(`[AUTH] Sprawdzanie admina: email=${userEmail}, isAdmin=${isAdmin}`);
+        
+        return { 
+            isAdmin, 
+            user: user, 
+            email: userEmail,
+            reason: isAdmin ? "admin_by_email" : "not_in_admin_list"
+        };
+        
+    } catch (error) {
+        console.error("[AUTH] Błąd sprawdzania uprawnień:", error);
+        return { isAdmin: false, reason: "system_error", error: error.message };
+    }
+}
+
+/**
+ * Sprawdza uprawnienia admina na podstawie roli w bazie
  */
 export async function checkAdminPermissions() {
     try {
@@ -742,6 +775,17 @@ export async function checkUser() {
 
         await fetchManagerTeam(user.id);
         await setupUI(profile?.role || 'manager');
+        
+        // DODANO: Sprawdź czy użytkownik jest adminem
+        const adminCheck = await checkAdminEmail();
+        console.log('[AUTH] Admin check result:', adminCheck);
+        
+        if (adminCheck.isAdmin) {
+            window.gameState = window.gameState || {};
+            window.gameState.isAdmin = true;
+            console.log('[AUTH] Użytkownik jest administratorem');
+        }
+        
     } else {
         // Wywołujemy bezpieczne pokazanie logowania
         window.showLogin();
@@ -764,6 +808,12 @@ _supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN') checkUser();
     if (event === 'SIGNED_OUT') window.showLogin();
 });
+
+// DODANO: Funkcja pomocnicza do sprawdzania admina
+window.isUserAdmin = async function() {
+    const result = await checkAdminEmail();
+    return result.isAdmin;
+};
 
 // Inicjalizacja przy załadowaniu strony
 document.addEventListener('DOMContentLoaded', async () => {
