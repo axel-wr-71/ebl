@@ -3,7 +3,6 @@
 import { signIn, signUp, logout } from './js/auth.js';
 import { switchTab, initApp } from './js/app/app.js';
 import { initContentManager } from './js/content-manager.js';
-import { initAdminPanel } from './admin.js';
 
 // Inicjalizacja content managera
 let contentManager = null;
@@ -57,9 +56,22 @@ window.setupUI = async function(role) {
     
     await initApp();
     await switchTab('m-roster');
+};
 
-    // DODAJ TĘ LINIĘ - zainicjuj panel admina
-    initAdminPanel();
+// Udostępnij funkcję switchTab globalnie dla panelu admina
+window.switchTab = switchTab;
+
+// Funkcja do otwierania panelu admina (do wywołania z konsoli)
+window.openAdminPanel = function() {
+    const adminTab = document.getElementById('tab-m-admin');
+    if (adminTab && adminTab.style.display !== 'none') {
+        switchTab('m-admin');
+        console.log('[ADMIN] Panel administracyjny otwarty');
+        return true;
+    } else {
+        console.log('[ADMIN] Brak uprawnień do panelu administracyjnego');
+        return false;
+    }
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
