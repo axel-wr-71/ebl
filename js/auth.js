@@ -9,51 +9,17 @@ window.supabase = _supabase;
 import { initApp, switchTab } from './app/app.js';
 import { initContentManager } from './content-manager.js';
 
+// ==================== GLOBALNE ZMIENNE ====================
 window.POTENTIAL_MAP = [];
-
-// Globalne zmienne dla modalów
-let registerModal, loginModal;
 let contentManager = null;
 
-// DODANO: Lista adminów - przeniesiona z index.html dla spójności
+// Lista adminów (używana w checkAdminEmail)
 window.adminEmails = ['strubbe23@gmail.com', 'admin@ebl.online.alex'];
 
-/**
- * Nowe funkcje autoryzacji admina
- */
+// ==================== FUNKCJE ADMIN PANEL ====================
 
 /**
- * Sprawdza uprawnienia admina na podstawie emaila
- */
-export async function checkAdminEmail() {
-    try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        
-        if (!user) {
-            console.log("[AUTH] Brak zalogowanego użytkownika");
-            return { isAdmin: false, user: null, reason: "not_logged_in" };
-        }
-        
-        const userEmail = user.email?.toLowerCase();
-        const isAdmin = userEmail && window.adminEmails.includes(userEmail);
-        
-        console.log(`[AUTH] Sprawdzanie admina: email=${userEmail}, isAdmin=${isAdmin}`);
-        
-        return { 
-            isAdmin, 
-            user: user, 
-            email: userEmail,
-            reason: isAdmin ? "admin_by_email" : "not_in_admin_list"
-        };
-        
-    } catch (error) {
-        console.error("[AUTH] Błąd sprawdzania uprawnień:", error);
-        return { isAdmin: false, reason: "system_error", error: error.message };
-    }
-}
-
-/**
- * Sprawdza uprawnienia admina na podstawie roli w bazie
+ * Sprawdza uprawnienia admina na podstawie roli w bazie (główna funkcja dla panelu admina)
  */
 export async function checkAdminPermissions() {
     try {
@@ -64,10 +30,10 @@ export async function checkAdminPermissions() {
             return { hasAccess: false, reason: "not_logged_in" };
         }
         
-        // Pobierz profil użytkownika
+        // Pobierz pełny profil użytkownika
         const { data: profile, error } = await supabaseClient
             .from('profiles')
-            .select('role, team_id, username, email')
+            .select('*')
             .eq('id', user.id)
             .single();
         
@@ -78,12 +44,15 @@ export async function checkAdminPermissions() {
         
         // Sprawdź warunki admina
         const isAdminRole = profile.role === 'admin';
+        const isAdminFlag = profile.is_admin === true;
         const hasNoTeam = profile.team_id === null;
         
-        console.log(`[AUTH] Sprawdzanie admina: role=${profile.role}, team_id=${profile.team_id}`);
-        console.log(`[AUTH] Warunki: isAdminRole=${isAdminRole}, hasNoTeam=${hasNoTeam}`);
+        console.log(`[AUTH] Sprawdzanie admina: role=${profile.role}, is_admin=${profile.is_admin}, team_id=${profile.team_id}`);
         
-        if (isAdminRole && hasNoTeam) {
+        // Admin musi mieć: role='admin' LUB is_admin=true ORAZ team_id=NULL
+        const hasAccess = (isAdminRole || isAdminFlag) && hasNoTeam;
+        
+        if (hasAccess) {
             return { 
                 hasAccess: true, 
                 user: user, 
@@ -94,8 +63,10 @@ export async function checkAdminPermissions() {
             return { 
                 hasAccess: false, 
                 reason: "insufficient_permissions",
+                profile: profile,
                 details: {
                     isAdminRole,
+                    isAdminFlag,
                     hasNoTeam
                 }
             };
@@ -112,18 +83,8 @@ export async function checkAdminPermissions() {
  */
 export async function validateAdminPassword(password) {
     try {
-        // Hasło w zmiennych środowiskowych
-        const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD;
-        
-        if (!adminPassword) {
-            console.warn("[AUTH] Brak hasła admina w zmiennych środowiskowych, używam domyślnego");
-            // Dla testów - w produkcji zawsze używaj zmiennych środowiskowych!
-            const defaultPassword = "admin123secure"; // TYLKO DO TESTOW!
-            return { 
-                valid: password === defaultPassword, 
-                message: password === defaultPassword ? "Hasło poprawne" : "Nieprawidłowe hasło" 
-            };
-        }
+        // Hasło admina - w produkcji użyj zmiennych środowiskowych
+        const adminPassword = "NBA2024!ADMIN"; // Hasło admina
         
         if (password === adminPassword) {
             return { valid: true, message: "Hasło poprawne" };
@@ -160,22 +121,10 @@ export function resetAdminSession() {
     localStorage.removeItem('admin_blocked_until');
 }
 
-/**
- * Inicjalizacja Content Managera
- */
-async function initContent() {
-    contentManager = await initContentManager(_supabase, {
-        preload: true,
-        preloadKeys: ['terms_of_service', 'privacy_policy']
-    });
-    
-    // Aktualizuj funkcje globalne
-    window.showTerms = () => contentManager.showTerms();
-    window.showPrivacy = () => contentManager.showPrivacy();
-}
+// ==================== FUNKCJE POMOCNICZE ====================
 
 /**
- * FUNKCJA NAPRAWIAJĄCA NAZWĘ DRUŻYNY W PRAWYM GÓRNYM ROGU
+ * Pobiera dane drużyny dla użytkownika i aktualizuje nagłówek
  */
 async function fetchManagerTeam(userId) {
     try {
@@ -199,20 +148,22 @@ async function fetchManagerTeam(userId) {
         if (teamError) throw teamError;
 
         if (team) {
-            // Safari/MacBook selectors
             const headerTeamName = document.getElementById('display-team-name');
             const headerLeagueName = document.getElementById('display-league-name');
 
             if (headerTeamName) headerTeamName.textContent = team.team_name;
             if (headerLeagueName) headerLeagueName.textContent = team.league_name;
             
-            console.log("[AUTH] Nagłówek zaktualizowany pomyślnie:", team.team_name);
+            console.log("[AUTH] Nagłówek zaktualizowany:", team.team_name);
         }
     } catch (err) {
         console.warn("[AUTH] Błąd podczas pobierania danych do nagłówka:", err.message);
     }
 }
 
+/**
+ * Pobiera definicje potencjałów graczy
+ */
 async function fetchPotentialDefinitions() {
     try {
         const { data, error } = await _supabase
@@ -229,129 +180,6 @@ async function fetchPotentialDefinitions() {
 }
 
 /**
- * Inicjalizacja systemu modalów
- */
-function initAuthModals() {
-    registerModal = document.getElementById('registerModal');
-    loginModal = document.getElementById('loginModal');
-    
-    if (!registerModal || !loginModal) {
-        console.warn('[AUTH] Modale nie znalezione w DOM - prawdopodobnie użytkownik jest zalogowany');
-        return;
-    }
-    
-    bindAuthEvents();
-}
-
-/**
- * Podpięcie event listenerów do modalów
- */
-function bindAuthEvents() {
-    // Przyciski na stronie głównej
-    const signupBtn = document.getElementById('btn-signup-action');
-    const loginBtn = document.getElementById('btn-login-action');
-    
-    if (signupBtn) {
-        signupBtn.removeEventListener('click', oldSignUp); // Usuń starego listenera
-        signupBtn.addEventListener('click', showRegisterModal);
-    }
-    
-    if (loginBtn) {
-        loginBtn.removeEventListener('click', oldSignIn); // Usuń starego listenera
-        loginBtn.addEventListener('click', showLoginModal);
-    }
-    
-    // Zamknięcie modalów
-    document.querySelectorAll('.modal-close').forEach(btn => {
-        btn.addEventListener('click', hideAllModals);
-    });
-    
-    // Kliknięcie poza modalem
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) hideAllModals();
-        });
-    });
-    
-    // Przełączanie między modalami
-    const switchToLogin = document.getElementById('switch-to-login');
-    const switchToRegister = document.getElementById('switch-to-register');
-    
-    if (switchToLogin) {
-        switchToLogin.addEventListener('click', (e) => {
-            e.preventDefault();
-            showLoginModal();
-        });
-    }
-    
-    if (switchToRegister) {
-        switchToRegister.addEventListener('click', (e) => {
-            e.preventDefault();
-            showRegisterModal();
-        });
-    }
-    
-    // Formularz rejestracji
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-        registerForm.addEventListener('submit', handleRegister);
-    }
-    
-    // Formularz logowania
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
-    
-    // Klawisz Escape zamyka modale
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') hideAllModals();
-    });
-}
-
-/**
- * Pokazuje modal rejestracji
- */
-export function showRegisterModal() {
-    hideAllModals();
-    if (registerModal) {
-        registerModal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-        
-        // Ustaw focus na pierwsze pole
-        setTimeout(() => {
-            const emailInput = document.getElementById('register-email');
-            if (emailInput) emailInput.focus();
-        }, 100);
-    }
-}
-
-/**
- * Pokazuje modal logowania
- */
-export function showLoginModal() {
-    hideAllModals();
-    if (loginModal) {
-        loginModal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-        
-        setTimeout(() => {
-            const emailInput = document.getElementById('login-email');
-            if (emailInput) emailInput.focus();
-        }, 100);
-    }
-}
-
-/**
- * Ukrywa wszystkie modale
- */
-function hideAllModals() {
-    if (registerModal) registerModal.classList.add('hidden');
-    if (loginModal) loginModal.classList.add('hidden');
-    document.body.style.overflow = 'auto';
-}
-
-/**
  * Znajduje losową drużynę-bota w najniższej lidze
  */
 async function findBotTeamForNewUser() {
@@ -362,9 +190,9 @@ async function findBotTeamForNewUser() {
             .select('*')
             .eq('is_bot', true)
             .eq('available_for_new_user', true)
-            .is('owner_id', null);  // Używamy owner_id!
+            .is('owner_id', null);
         
-        // Spróbuj znaleźć drużynę w najniższej lidze (najwyższy level)
+        // Spróbuj znaleźć drużynę w najniższej lidze
         try {
             const { data: lowestLeague } = await supabaseClient
                 .from('leagues')
@@ -380,9 +208,7 @@ async function findBotTeamForNewUser() {
             console.log('[AUTH] Nie znaleziono lig, szukamy dowolnej bot-drużyny');
         }
         
-        // Losowe pobranie jednej drużyny
         query = query.limit(1);
-        
         const { data: teams, error } = await query;
         
         if (error) throw error;
@@ -407,138 +233,6 @@ async function findBotTeamForNewUser() {
         console.error('Error finding bot team:', error);
         return null;
     }
-}
-
-/**
- * Obsługa rejestracji użytkownika
- */
-async function handleRegister(e) {
-    e.preventDefault();
-    
-    const email = document.getElementById('register-email').value.trim();
-    const password = document.getElementById('register-password').value;
-    const passwordConfirm = document.getElementById('register-password-confirm').value;
-    const username = document.getElementById('register-username').value.trim();
-    const teamName = document.getElementById('register-teamname').value.trim();
-    const country = document.getElementById('register-country').value;
-    const termsAccepted = document.getElementById('register-terms').checked;
-    const newsletter = document.getElementById('register-newsletter')?.checked || false;
-    
-    // Walidacja
-    if (!validateRegisterForm(email, password, passwordConfirm, username, teamName, country, termsAccepted)) {
-        return;
-    }
-    
-    // Przycisk ładowania
-    const submitBtn = e.target.querySelector('.btn-submit');
-    const btnText = submitBtn.querySelector('#register-btn-text');
-    const loading = submitBtn.querySelector('#register-loading');
-    
-    if (btnText) btnText.style.display = 'none';
-    if (loading) loading.style.display = 'flex';
-    submitBtn.disabled = true;
-    
-    try {
-        // 1. Rejestracja w Supabase Auth
-        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    username: username,
-                    newsletter_subscribed: newsletter
-                }
-            }
-        });
-        
-        if (authError) throw authError;
-        
-        const userId = authData.user.id;
-        
-        // 2. Znajdź losową drużynę-bota
-        const botTeam = await findBotTeamForNewUser();
-        if (!botTeam) {
-            throw new Error('Brak dostępnych drużyn do przypisania. Spróbuj ponownie później.');
-        }
-        
-        // 3. Zaktualizuj drużynę (przypisz użytkownika i zmień nazwę)
-        const { error: teamUpdateError } = await supabaseClient
-            .from('teams')
-            .update({
-                owner_id: userId,           // owner_id, nie user_id!
-                team_name: teamName,
-                country_code: country,
-                is_bot: false,
-                available_for_new_user: false
-            })
-            .eq('id', botTeam.id);
-            
-        if (teamUpdateError) throw teamUpdateError;
-        
-        // 4. Utwórz profil użytkownika (DODANO: email)
-        const { error: profileError } = await supabaseClient
-            .from('profiles')
-            .insert([{
-                id: userId,
-                email: email, // DODANO: Email do profilu
-                username: username,
-                team_id: botTeam.id,
-                role: 'manager',
-                newsletter_subscribed: newsletter,
-                terms_accepted: termsAccepted,
-                terms_accepted_at: new Date().toISOString()
-            }]);
-            
-        if (profileError) throw profileError;
-        
-        // 5. Sukces!
-        showMessage('register-message', 
-            '✅ Registration successful! Check your email to confirm your account.', 
-            'success'
-        );
-        
-        // Wyczyść formularz
-        e.target.reset();
-        
-        // Automatyczne logowanie po 3 sekundach
-        setTimeout(async () => {
-            hideAllModals();
-            // Spróbuj automatycznie zalogować
-            const { error: loginError } = await supabaseClient.auth.signInWithPassword({
-                email,
-                password
-            });
-            
-            if (!loginError) {
-                window.location.reload();
-            }
-        }, 3000);
-        
-    } catch (error) {
-        console.error('Registration error:', error);
-        showMessage('register-message', getErrorMessage(error), 'error');
-    } finally {
-        // Przywróć przycisk
-        if (btnText) btnText.style.display = 'block';
-        if (loading) loading.style.display = 'none';
-        submitBtn.disabled = false;
-    }
-}
-
-/**
- * Sprawdza złożoność hasła
- */
-function validatePasswordComplexity(password) {
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    
-    return {
-        isValid: hasLowerCase && hasUpperCase && hasNumbers,
-        hasLowerCase,
-        hasUpperCase,
-        hasNumbers
-    };
 }
 
 /**
@@ -613,32 +307,19 @@ function validateRegisterForm(email, password, passwordConfirm, username, teamNa
 }
 
 /**
- * Obsługa logowania w modal
+ * Sprawdza złożoność hasła
  */
-async function handleLogin(e) {
-    e.preventDefault();
+function validatePasswordComplexity(password) {
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumbers = /\d/.test(password);
     
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    
-    try {
-        const { error } = await supabaseClient.auth.signInWithPassword({
-            email,
-            password
-        });
-        
-        if (error) throw error;
-        
-        // Sukces - zamknij modal
-        hideAllModals();
-        
-        // Sprawdź użytkownika (to zaktualizuje UI)
-        await checkUser();
-        
-    } catch (error) {
-        console.error('Login error:', error);
-        showMessage('login-message', getErrorMessage(error), 'error');
-    }
+    return {
+        isValid: hasLowerCase && hasUpperCase && hasNumbers,
+        hasLowerCase,
+        hasUpperCase,
+        hasNumbers
+    };
 }
 
 /**
@@ -677,26 +358,274 @@ function showMessage(elementId, text, type) {
     }
 }
 
-// Zachowaj stare funkcje dla kompatybilności wstecznej
-async function oldSignIn() {
-    const e = document.getElementById('email')?.value;
-    const p = document.getElementById('password')?.value;
-    console.log("[AUTH] Próba logowania (stara metoda)...");
-    const { error } = await _supabase.auth.signInWithPassword({ email: e, password: p });
-    if (error) {
-        alert("Error: " + error.message);
-    } else {
-        await checkUser();
+// ==================== OBSŁUGA MODALI ====================
+
+let registerModal, loginModal;
+
+/**
+ * Inicjalizacja systemu modalów
+ */
+function initAuthModals() {
+    registerModal = document.getElementById('registerModal');
+    loginModal = document.getElementById('loginModal');
+    
+    if (!registerModal || !loginModal) {
+        console.warn('[AUTH] Modale nie znalezione w DOM - prawdopodobnie użytkownik jest zalogowany');
+        return;
+    }
+    
+    bindAuthEvents();
+}
+
+/**
+ * Podpięcie event listenerów do modalów
+ */
+function bindAuthEvents() {
+    // Przyciski na stronie głównej
+    const signupBtn = document.getElementById('btn-signup-action');
+    const loginBtn = document.getElementById('btn-login-action');
+    
+    if (signupBtn) {
+        signupBtn.removeEventListener('click', oldSignUp);
+        signupBtn.addEventListener('click', showRegisterModal);
+    }
+    
+    if (loginBtn) {
+        loginBtn.removeEventListener('click', oldSignIn);
+        loginBtn.addEventListener('click', showLoginModal);
+    }
+    
+    // Zamknięcie modalów
+    document.querySelectorAll('.modal-close').forEach(btn => {
+        btn.addEventListener('click', hideAllModals);
+    });
+    
+    // Kliknięcie poza modalem
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) hideAllModals();
+        });
+    });
+    
+    // Przełączanie między modalami
+    const switchToLogin = document.getElementById('switch-to-login');
+    const switchToRegister = document.getElementById('switch-to-register');
+    
+    if (switchToLogin) {
+        switchToLogin.addEventListener('click', (e) => {
+            e.preventDefault();
+            showLoginModal();
+        });
+    }
+    
+    if (switchToRegister) {
+        switchToRegister.addEventListener('click', (e) => {
+            e.preventDefault();
+            showRegisterModal();
+        });
+    }
+    
+    // Formularz rejestracji
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', handleRegister);
+    }
+    
+    // Formularz logowania
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+    
+    // Klawisz Escape zamyka modale
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') hideAllModals();
+    });
+}
+
+/**
+ * Pokazuje modal rejestracji
+ */
+export function showRegisterModal() {
+    hideAllModals();
+    if (registerModal) {
+        registerModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        setTimeout(() => {
+            const emailInput = document.getElementById('register-email');
+            if (emailInput) emailInput.focus();
+        }, 100);
     }
 }
 
-async function oldSignUp() {
-    const e = document.getElementById('email')?.value;
-    const p = document.getElementById('password')?.value;
-    const { error } = await _supabase.auth.signUp({ email: e, password: p });
-    if (error) alert("Registration error: " + error.message);
-    else alert("Account created! You can now log in.");
+/**
+ * Pokazuje modal logowania
+ */
+export function showLoginModal() {
+    hideAllModals();
+    if (loginModal) {
+        loginModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        setTimeout(() => {
+            const emailInput = document.getElementById('login-email');
+            if (emailInput) emailInput.focus();
+        }, 100);
+    }
 }
+
+/**
+ * Ukrywa wszystkie modale
+ */
+function hideAllModals() {
+    if (registerModal) registerModal.classList.add('hidden');
+    if (loginModal) loginModal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+// ==================== OBSŁUGA REJESTRACJI I LOGOWANIA ====================
+
+/**
+ * Obsługa rejestracji użytkownika
+ */
+async function handleRegister(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('register-email').value.trim();
+    const password = document.getElementById('register-password').value;
+    const passwordConfirm = document.getElementById('register-password-confirm').value;
+    const username = document.getElementById('register-username').value.trim();
+    const teamName = document.getElementById('register-teamname').value.trim();
+    const country = document.getElementById('register-country').value;
+    const termsAccepted = document.getElementById('register-terms').checked;
+    const newsletter = document.getElementById('register-newsletter')?.checked || false;
+    
+    // Walidacja
+    if (!validateRegisterForm(email, password, passwordConfirm, username, teamName, country, termsAccepted)) {
+        return;
+    }
+    
+    // Przycisk ładowania
+    const submitBtn = e.target.querySelector('.btn-submit');
+    const btnText = submitBtn.querySelector('#register-btn-text');
+    const loading = submitBtn.querySelector('#register-loading');
+    
+    if (btnText) btnText.style.display = 'none';
+    if (loading) loading.style.display = 'flex';
+    submitBtn.disabled = true;
+    
+    try {
+        // 1. Rejestracja w Supabase Auth
+        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    username: username,
+                    newsletter_subscribed: newsletter
+                }
+            }
+        });
+        
+        if (authError) throw authError;
+        
+        const userId = authData.user.id;
+        
+        // 2. Znajdź losową drużynę-bota
+        const botTeam = await findBotTeamForNewUser();
+        if (!botTeam) {
+            throw new Error('Brak dostępnych drużyn do przypisania. Spróbuj ponownie później.');
+        }
+        
+        // 3. Zaktualizuj drużynę
+        const { error: teamUpdateError } = await supabaseClient
+            .from('teams')
+            .update({
+                owner_id: userId,
+                team_name: teamName,
+                country_code: country,
+                is_bot: false,
+                available_for_new_user: false
+            })
+            .eq('id', botTeam.id);
+            
+        if (teamUpdateError) throw teamUpdateError;
+        
+        // 4. Utwórz profil użytkownika
+        const { error: profileError } = await supabaseClient
+            .from('profiles')
+            .insert([{
+                id: userId,
+                email: email,
+                username: username,
+                team_id: botTeam.id,
+                role: 'manager',
+                newsletter_subscribed: newsletter,
+                terms_accepted: termsAccepted,
+                terms_accepted_at: new Date().toISOString()
+            }]);
+            
+        if (profileError) throw profileError;
+        
+        // 5. Sukces!
+        showMessage('register-message', 
+            '✅ Registration successful! Check your email to confirm your account.', 
+            'success'
+        );
+        
+        e.target.reset();
+        
+        // Automatyczne logowanie po 3 sekundach
+        setTimeout(async () => {
+            hideAllModals();
+            const { error: loginError } = await supabaseClient.auth.signInWithPassword({
+                email,
+                password
+            });
+            
+            if (!loginError) {
+                window.location.reload();
+            }
+        }, 3000);
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        showMessage('register-message', getErrorMessage(error), 'error');
+    } finally {
+        if (btnText) btnText.style.display = 'block';
+        if (loading) loading.style.display = 'none';
+        submitBtn.disabled = false;
+    }
+}
+
+/**
+ * Obsługa logowania w modal
+ */
+async function handleLogin(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    
+    try {
+        const { error } = await supabaseClient.auth.signInWithPassword({
+            email,
+            password
+        });
+        
+        if (error) throw error;
+        
+        hideAllModals();
+        await checkUser();
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        showMessage('login-message', getErrorMessage(error), 'error');
+    }
+}
+
+// ==================== INTERFEJS UŻYTKOWNIKA ====================
 
 /**
  * Zaktualizowana funkcja setupUI - eliminuje migotanie
@@ -747,6 +676,8 @@ window.showLogin = function() {
     setTimeout(initAuthModals, 100);
 };
 
+// ==================== GŁÓWNA FUNKCJA CHECKUSER ====================
+
 export async function checkUser() {
     // Sprawdzamy sesję
     const { data: { session } } = await _supabase.auth.getSession();
@@ -766,7 +697,7 @@ export async function checkUser() {
                 .from('profiles')
                 .insert([{ 
                     id: user.id, 
-                    email: user.email, // DODANO: Email przy tworzeniu profilu
+                    email: user.email,
                     role: 'manager' 
                 }])
                 .select().single();
@@ -776,14 +707,12 @@ export async function checkUser() {
         await fetchManagerTeam(user.id);
         await setupUI(profile?.role || 'manager');
         
-        // DODANO: Sprawdź czy użytkownik jest adminem
-        const adminCheck = await checkAdminEmail();
-        console.log('[AUTH] Admin check result:', adminCheck);
-        
-        if (adminCheck.isAdmin) {
+        // Sprawdź czy użytkownik ma uprawnienia admina
+        const adminCheck = await checkAdminPermissions();
+        if (adminCheck.hasAccess) {
             window.gameState = window.gameState || {};
             window.gameState.isAdmin = true;
-            console.log('[AUTH] Użytkownik jest administratorem');
+            console.log('[AUTH] Użytkownik ma uprawnienia administratora');
         }
         
     } else {
@@ -792,6 +721,79 @@ export async function checkUser() {
     }
 }
 window.checkUser = checkUser;
+
+// ==================== INICJALIZACJA CONTENT MANAGERA ====================
+
+/**
+ * Inicjalizacja Content Managera
+ */
+async function initContent() {
+    contentManager = await initContentManager(_supabase, {
+        preload: true,
+        preloadKeys: ['terms_of_service', 'privacy_policy']
+    });
+    
+    // Aktualizuj funkcje globalne
+    window.showTerms = () => contentManager.showTerms();
+    window.showPrivacy = () => contentManager.showPrivacy();
+}
+
+// ==================== STARE FUNKCJE (DLA KOMPATYBILNOŚCI) ====================
+
+/**
+ * Stare funkcje dla kompatybilności wstecznej
+ */
+async function oldSignIn() {
+    const e = document.getElementById('email')?.value;
+    const p = document.getElementById('password')?.value;
+    console.log("[AUTH] Próba logowania (stara metoda)...");
+    const { error } = await _supabase.auth.signInWithPassword({ email: e, password: p });
+    if (error) {
+        alert("Error: " + error.message);
+    } else {
+        await checkUser();
+    }
+}
+
+async function oldSignUp() {
+    const e = document.getElementById('email')?.value;
+    const p = document.getElementById('password')?.value;
+    const { error } = await _supabase.auth.signUp({ email: e, password: p });
+    if (error) alert("Registration error: " + error.message);
+    else alert("Account created! You can now log in.");
+}
+
+/**
+ * Stare funkcje checkAdminEmail - używana w niektórych miejscach
+ */
+export async function checkAdminEmail() {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        
+        if (!user) {
+            console.log("[AUTH] Brak zalogowanego użytkownika");
+            return { isAdmin: false, user: null, reason: "not_logged_in" };
+        }
+        
+        const userEmail = user.email?.toLowerCase();
+        const isAdmin = userEmail && window.adminEmails.includes(userEmail);
+        
+        console.log(`[AUTH] Sprawdzanie admina (email): email=${userEmail}, isAdmin=${isAdmin}`);
+        
+        return { 
+            isAdmin, 
+            user: user, 
+            email: userEmail,
+            reason: isAdmin ? "admin_by_email" : "not_in_admin_list"
+        };
+        
+    } catch (error) {
+        console.error("[AUTH] Błąd sprawdzania uprawnień:", error);
+        return { isAdmin: false, reason: "system_error", error: error.message };
+    }
+}
+
+// ==================== API FUNKCJI AUTH ====================
 
 // Nowe funkcje signIn i signUp dla kompatybilności
 export const signIn = showLoginModal;
@@ -803,22 +805,23 @@ export const logout = async () => {
 };
 window.logout = logout;
 
-// Nasłuchiwanie zmian stanu (kluczowe dla Safari przy odświeżaniu)
+// Funkcja pomocnicza do sprawdzania admina
+window.isUserAdmin = async function() {
+    const result = await checkAdminPermissions();
+    return result.hasAccess;
+};
+
+// ==================== NASŁUCHIWANIE ZMIAN STANU ====================
+
 _supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN') checkUser();
     if (event === 'SIGNED_OUT') window.showLogin();
 });
 
-// DODANO: Funkcja pomocnicza do sprawdzania admina
-window.isUserAdmin = async function() {
-    const result = await checkAdminEmail();
-    return result.isAdmin;
-};
+// ==================== INICJALIZACJA PRZY ZAŁADOWANIU ====================
 
-// Inicjalizacja przy załadowaniu strony
 document.addEventListener('DOMContentLoaded', async () => {
-    await initContent(); // Dodano inicjalizację content managera
+    await initContent();
     checkUser();
-    // Inicjalizuj modale z opóźnieniem, aby DOM miał czas na załadowanie
     setTimeout(initAuthModals, 500);
 });
