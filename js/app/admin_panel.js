@@ -59,29 +59,32 @@ export async function renderAdminPanel(teamData) {
                 </div>
             </div>
 
-            <!-- KARTY STATYSTYK -->
+            <!-- KARTY STATYSTYK (TERAZ KLIKALNE!) -->
             <div style="padding: 25px 30px 10px 30px; background: white;">
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
-                    <div class="admin-stat-card" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+                    <button class="admin-stat-card clickable-card" data-card-action="management" style="border:none; cursor:pointer; background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
                         <div class="stat-icon">👥</div>
                         <div class="stat-title">Zarządzanie</div>
                         <div class="stat-subtitle">Gracze i drużyny</div>
-                    </div>
-                    <div class="admin-stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+                    </button>
+                    
+                    <button class="admin-stat-card clickable-card" data-card-action="economy" style="border:none; cursor:pointer; background: linear-gradient(135deg, #10b981, #059669);">
                         <div class="stat-icon">💰</div>
                         <div class="stat-title">Ekonomia</div>
                         <div class="stat-subtitle">Pensje i finanse</div>
-                    </div>
-                    <div class="admin-stat-card" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                    </button>
+                    
+                    <button class="admin-stat-card clickable-card" data-card-action="statistics" style="border:none; cursor:pointer; background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
                         <div class="stat-icon">📊</div>
                         <div class="stat-title">Statystyki</div>
                         <div class="stat-subtitle">Dane systemowe</div>
-                    </div>
-                    <div class="admin-stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                    </button>
+                    
+                    <button class="admin-stat-card clickable-card" data-card-action="system" style="border:none; cursor:pointer; background: linear-gradient(135deg, #f59e0b, #d97706);">
                         <div class="stat-icon">⚙️</div>
                         <div class="stat-title">System</div>
                         <div class="stat-subtitle">Konfiguracja</div>
-                    </div>
+                    </button>
                 </div>
             </div>
 
@@ -254,6 +257,11 @@ export async function renderAdminPanel(teamData) {
 function initAdminEventListeners() {
     console.log("[ADMIN] Inicjalizacja listenerów...");
     
+    // ===== KLIKALNE KARTY STATYSTYK =====
+    document.querySelectorAll('.admin-stat-card.clickable-card').forEach(card => {
+        card.addEventListener('click', handleStatCardClick);
+    });
+    
     // Aktualizacja pensji - otwiera modal z parametrami
     const salaryBtn = document.getElementById('btn-admin-update-salaries');
     if (salaryBtn) {
@@ -301,7 +309,312 @@ function initAdminEventListeners() {
     if (exportLogBtn) exportLogBtn.addEventListener('click', exportAdminLog);
 }
 
-// --- MODALE DLA PARAMETRÓW ---
+// ===== FUNKCJA OBSŁUGI KLIKNIĘĆ KART =====
+function handleStatCardClick(event) {
+    const card = event.currentTarget;
+    const action = card.getAttribute('data-card-action');
+    const title = card.querySelector('.stat-title')?.textContent || 'Karta';
+    
+    // Efekt wizualny kliknięcia
+    card.style.transform = 'scale(0.97)';
+    setTimeout(() => {
+        card.style.transform = '';
+    }, 150);
+    
+    // Logowanie akcji
+    addAdminLog(`Kliknięto kartę: ${title}`, 'info');
+    
+    // Wywołanie odpowiedniej funkcji w zależności od karty
+    switch(action) {
+        case 'management':
+            showManagementModal();
+            break;
+        case 'economy':
+            showEconomyModal();
+            break;
+        case 'statistics':
+            showStatisticsModal();
+            break;
+        case 'system':
+            showSystemModal();
+            break;
+        default:
+            showGenericModal(title);
+    }
+}
+
+// ===== MODALE DLA KART =====
+
+function showManagementModal() {
+    const modalHTML = `
+        <div class="admin-card-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; display:flex; justify-content:center; align-items:center;">
+            <div style="background:white; border-radius:12px; padding:30px; width:90%; max-width:600px; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                <h3 style="margin-top:0; color:#1a237e; font-weight:800; display:flex; align-items:center; gap:10px;">
+                    <span>👥</span> Zarządzanie Graczami i Drużynami
+                </h3>
+                <p style="color:#64748b; font-size:1rem; margin-bottom:25px;">
+                    Zarządzanie graczami, drużynami i treningami. Możesz przeglądać, edytować i usuwać elementy systemu.
+                </p>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <button onclick="showAllPlayers()" style="background:#3b82f6; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        👥 Wszyscy Gracze
+                    </button>
+                    <button onclick="showAllTeams()" style="background:#10b981; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        🏀 Wszystkie Drużyny
+                    </button>
+                    <button onclick="showCoachesManagement()" style="background:#8b5cf6; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        🎓 Trenerzy
+                    </button>
+                    <button onclick="showTrainingManagement()" style="background:#f59e0b; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        💪 Treningi
+                    </button>
+                </div>
+                
+                <div style="margin-top:20px; background:#f8fafc; padding:15px; border-radius:8px;">
+                    <p style="color:#64748b; font-size:0.9rem; margin:0;">
+                        <strong>📊 Statystyki:</strong><br>
+                        • Zarządzaj 600+ graczami<br>
+                        • Zarządzaj 30+ drużynami<br>
+                        • Przeglądaj historię treningów
+                    </p>
+                </div>
+                
+                <button onclick="this.closest('.admin-card-modal').remove()" 
+                        style="margin-top:25px; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; padding:12px 24px; border-radius:8px; font-weight:600; cursor:pointer; width:100%;">
+                    ✕ Zamknij panel zarządzania
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function showEconomyModal() {
+    const modalHTML = `
+        <div class="admin-card-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; display:flex; justify-content:center; align-items:center;">
+            <div style="background:white; border-radius:12px; padding:30px; width:90%; max-width:600px; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                <h3 style="margin-top:0; color:#1a237e; font-weight:800; display:flex; align-items:center; gap:10px;">
+                    <span>💰</span> Ekonomia i Finanse
+                </h3>
+                <p style="color:#64748b; font-size:1rem; margin-bottom:25px;">
+                    Zarządzanie finansami, pensjami graczy i wartościami rynkowymi. Aktualizuj stawki według nowych algorytmów.
+                </p>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <button onclick="document.getElementById('btn-admin-update-salaries').click(); this.closest('.admin-card-modal').remove();" 
+                            style="background:#10b981; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        🔄 Aktualizuj Pensje
+                    </button>
+                    <button onclick="document.getElementById('btn-admin-update-values').click(); this.closest('.admin-card-modal').remove();" 
+                            style="background:#3b82f6; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        💰 Wartości Rynkowe
+                    </button>
+                    <button onclick="showFinancialReports()" style="background:#8b5cf6; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        📈 Raporty Finansowe
+                    </button>
+                    <button onclick="showSalaryAnalysis()" style="background:#f59e0b; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        📊 Analiza Pensji
+                    </button>
+                </div>
+                
+                <div style="margin-top:20px; background:#f8fafc; padding:15px; border-radius:8px;">
+                    <p style="color:#64748b; font-size:0.9rem; margin:0;">
+                        <strong>💵 Aktualne statystyki:</strong><br>
+                        • Średnia pensja: $${systemStats?.avgSalary?.toLocaleString() || '0'}<br>
+                        • Łączne pensje: $${systemStats?.totalSalary?.toLocaleString() || '0'}<br>
+                        • Balans drużyn: $${systemStats?.totalBalance?.toLocaleString() || '0'}
+                    </p>
+                </div>
+                
+                <button onclick="this.closest('.admin-card-modal').remove()" 
+                        style="margin-top:25px; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; padding:12px 24px; border-radius:8px; font-weight:600; cursor:pointer; width:100%;">
+                    ✕ Zamknij panel ekonomii
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function showStatisticsModal() {
+    const modalHTML = `
+        <div class="admin-card-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; display:flex; justify-content:center; align-items:center;">
+            <div style="background:white; border-radius:12px; padding:30px; width:90%; max-width:600px; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                <h3 style="margin-top:0; color:#1a237e; font-weight:800; display:flex; align-items:center; gap:10px;">
+                    <span>📊</span> Statystyki Systemowe
+                </h3>
+                <p style="color:#64748b; font-size:1rem; margin-bottom:25px;">
+                    Analiza danych systemowych, statystyki graczy, drużyn i meczów. Generuj raporty i wykresy.
+                </p>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <button onclick="document.querySelector('[data-action=\"recalculate-stats\"]').click(); this.closest('.admin-card-modal').remove();" 
+                            style="background:#8b5cf6; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        📊 Przelicz Statystyki
+                    </button>
+                    <button onclick="loadSystemStats(); this.closest('.admin-card-modal').remove();" 
+                            style="background:#3b82f6; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        🔄 Odśwież Statystyki
+                    </button>
+                    <button onclick="generateStatsReport()" style="background:#10b981; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        📈 Generuj Raport
+                    </button>
+                    <button onclick="showPlayerStatsAnalysis()" style="background:#f59e0b; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        🏀 Statystyki Graczy
+                    </button>
+                </div>
+                
+                <div style="margin-top:20px; background:#f8fafc; padding:15px; border-radius:8px;">
+                    <p style="color:#64748b; font-size:0.9rem; margin:0;">
+                        <strong>📈 Aktualne dane systemowe:</strong><br>
+                        • Gracze: ${systemStats?.totalPlayers || '0'}<br>
+                        • Drużyny: ${systemStats?.totalTeams || '0'}<br>
+                        • Aktywne oferty: ${systemStats?.activeListings || '0'}<br>
+                        • Użytkownicy: ${systemStats?.totalUsers || '0'}
+                    </p>
+                </div>
+                
+                <button onclick="this.closest('.admin-card-modal').remove()" 
+                        style="margin-top:25px; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; padding:12px 24px; border-radius:8px; font-weight:600; cursor:pointer; width:100%;">
+                    ✕ Zamknij panel statystyk
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function showSystemModal() {
+    const modalHTML = `
+        <div class="admin-card-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; display:flex; justify-content:center; align-items:center;">
+            <div style="background:white; border-radius:12px; padding:30px; width:90%; max-width:600px; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                <h3 style="margin-top:0; color:#1a237e; font-weight:800; display:flex; align-items:center; gap:10px;">
+                    <span>⚙️</span> Konfiguracja Systemu
+                </h3>
+                <p style="color:#64748b; font-size:1rem; margin-bottom:25px;">
+                    Konfiguracja systemu, backup bazy danych, optymalizacja i zarządzanie użytkownikami.
+                </p>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <button onclick="document.getElementById('btn-backup-db').click(); this.closest('.admin-card-modal').remove();" 
+                            style="background:#059669; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        💾 Utwórz Backup
+                    </button>
+                    <button onclick="document.getElementById('btn-optimize-db').click(); this.closest('.admin-card-modal').remove();" 
+                            style="background:#7c3aed; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        🔧 Optymalizuj DB
+                    </button>
+                    <button onclick="document.getElementById('btn-analyze-db').click(); this.closest('.admin-card-modal').remove();" 
+                            style="background:#d97706; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        📊 Analiza DB
+                    </button>
+                    <button onclick="showSystemConfiguration()" style="background:#1e40af; color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        ⚙️ Konfiguracja
+                    </button>
+                </div>
+                
+                <div style="margin-top:20px; background:#f8fafc; padding:15px; border-radius:8px;">
+                    <p style="color:#64748b; font-size:0.9rem; margin:0;">
+                        <strong>🔧 Narzędzia systemowe:</strong><br>
+                        • Backup całej bazy danych<br>
+                        • Optymalizacja tabel i indeksów<br>
+                        • Analiza użycia zasobów<br>
+                        • Konfiguracja parametrów systemu
+                    </p>
+                </div>
+                
+                <div style="margin-top:15px; background:#fef3c7; padding:12px; border-radius:8px; border-left:4px solid #f59e0b;">
+                    <p style="color:#92400e; font-size:0.85rem; margin:0;">
+                        ⚠️ <strong>Uwaga:</strong> Operacje systemowe mogą wpłynąć na działanie aplikacji. Wykonuj je w godzinach niższego obciążenia.
+                    </p>
+                </div>
+                
+                <button onclick="this.closest('.admin-card-modal').remove()" 
+                        style="margin-top:25px; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; padding:12px 24px; border-radius:8px; font-weight:600; cursor:pointer; width:100%;">
+                    ✕ Zamknij panel systemu
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function showGenericModal(title) {
+    const modalHTML = `
+        <div class="admin-card-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; display:flex; justify-content:center; align-items:center;">
+            <div style="background:white; border-radius:12px; padding:30px; width:90%; max-width:500px; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                <h3 style="margin-top:0; color:#1a237e; font-weight:800; display:flex; align-items:center; gap:10px;">
+                    <span>ℹ️</span> ${title}
+                </h3>
+                <p style="color:#64748b; font-size:1rem; margin-bottom:25px;">
+                    Funkcja w budowie. Wkrótce pojawią się tutaj narzędzia do zarządzania.
+                </p>
+                
+                <button onclick="this.closest('.admin-card-modal').remove()" 
+                        style="margin-top:20px; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; padding:12px 24px; border-radius:8px; font-weight:600; cursor:pointer; width:100%;">
+                    ✕ Zamknij
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// ===== FUNKCJE POMOCNICZE DLA MODALI =====
+
+// Placeholder functions - można je później zaimplementować
+function showAllPlayers() {
+    addAdminLog('Otwieranie listy wszystkich graczy...', 'info');
+    alert('Lista wszystkich graczy - funkcja w budowie!');
+}
+
+function showAllTeams() {
+    addAdminLog('Otwieranie listy wszystkich drużyn...', 'info');
+    alert('Lista wszystkich drużyn - funkcja w budowie!');
+}
+
+function showCoachesManagement() {
+    addAdminLog('Otwieranie zarządzania trenerami...', 'info');
+    alert('Zarządzanie trenerami - funkcja w budowie!');
+}
+
+function showTrainingManagement() {
+    addAdminLog('Otwieranie zarządzania treningami...', 'info');
+    alert('Zarządzanie treningami - funkcja w budowie!');
+}
+
+function showFinancialReports() {
+    addAdminLog('Generowanie raportów finansowych...', 'info');
+    alert('Raporty finansowe - funkcja w budowie!');
+}
+
+function showSalaryAnalysis() {
+    addAdminLog('Analiza struktur wynagrodzeń...', 'info');
+    alert('Analiza pensji - funkcja w budowie!');
+}
+
+function generateStatsReport() {
+    addAdminLog('Generowanie raportu statystycznego...', 'info');
+    alert('Generowanie raportu - funkcja w budowie!');
+}
+
+function showPlayerStatsAnalysis() {
+    addAdminLog('Analiza statystyk graczy...', 'info');
+    alert('Analiza statystyk graczy - funkcja w budowie!');
+}
+
+function showSystemConfiguration() {
+    addAdminLog('Otwieranie konfiguracji systemu...', 'info');
+    alert('Konfiguracja systemu - funkcja w budowie!');
+}
+
+// ===== MODALE DLA PARAMETRÓW (EKONOMIA) =====
 
 function showSalaryParametersModal() {
     const modalHTML = `
@@ -572,7 +885,7 @@ function getCurrentTeamId() {
 }
 
 async function handleSingleTeamUpdate() {
-    const teamId = getCurrentTeamId();
+    let teamId = getCurrentTeamId();
     
     if (!teamId) {
         // Spróbuj pobrać z bazy danych
@@ -698,64 +1011,20 @@ async function recalculatePlayerStatistics() {
     addAdminLog('Rozpoczynam przeliczanie statystyk graczy...', 'warning');
     
     try {
-        // 1. Przelicz średnie statystyki sezonowe z player_stats
-        addAdminLog('Przeliczanie średnich statystyk...', 'info');
+        // Użyj funkcji RPC w Supabase
+        const { data, error } = await supabaseClient.rpc('recalculate_season_stats');
         
-        const { data: seasonStats, error: statsError } = await supabaseClient.rpc(
-            'recalculate_season_stats'
-        );
-        
-        if (statsError) {
-            // Jeśli funkcja RPC nie istnieje, wykonujemy ręczne przeliczenie
-            addAdminLog('Funkcja RPC nie dostępna, wykonuję ręczne przeliczenie...', 'warning');
-            
-            // Pobierz wszystkie statystyki graczy
-            const { data: allStats, error } = await supabaseClient
-                .from('player_stats')
-                .select('*');
-                
-            if (error) throw error;
-            
-            // Grupuj statystyki po player_id i sezonie
-            const statsByPlayer = {};
-            allStats.forEach(stat => {
-                const key = `${stat.player_id}_${stat.season}`;
-                if (!statsByPlayer[key]) {
-                    statsByPlayer[key] = {
-                        player_id: stat.player_id,
-                        season: stat.season,
-                        games: 0,
-                        total_points: 0,
-                        total_rebounds: 0,
-                        total_assists: 0,
-                        total_steals: 0,
-                        total_blocks: 0,
-                        total_turnovers: 0,
-                        total_minutes: 0
-                    };
-                }
-                
-                statsByPlayer[key].games += 1;
-                statsByPlayer[key].total_points += (stat.points || 0);
-                statsByPlayer[key].total_rebounds += (stat.rebounds || 0);
-                statsByPlayer[key].total_assists += (stat.assists || 0);
-                statsByPlayer[key].total_steals += (stat.steals || 0);
-                statsByPlayer[key].total_blocks += (stat.blocks || 0);
-                statsByPlayer[key].total_turnovers += (stat.turnovers || 0);
-                statsByPlayer[key].total_minutes += (stat.minutes_played || 0);
-            });
-            
-            addAdminLog(`Przeliczono statystyki dla ${Object.keys(statsByPlayer).length} kombinacji gracz/sezon`, 'info');
+        if (error) {
+            throw new Error(`Błąd RPC: ${error.message}`);
         }
         
-        // 2. Aktualizuj rankingi
-        addAdminLog('Aktualizacja rankingów...', 'info');
-        
-        // 3. Przelicz efektywność graczy
-        addAdminLog('Przeliczanie efektywności...', 'info');
-        
-        addAdminLog('✅ Statystyki przeliczone pomyślnie!', 'success');
-        alert('✅ Statystyki zostały przeliczone!');
+        if (data && data.success) {
+            addAdminLog(`✅ ${data.message} | Przetworzono: ${data.processed_count}`, 'success');
+            alert(`✅ ${data.message}\nPrzetworzono: ${data.processed_count} rekordów`);
+        } else {
+            addAdminLog('❌ Błąd przeliczania statystyk', 'error');
+            alert('❌ Błąd przeliczania statystyk');
+        }
         
     } catch (error) {
         addAdminLog(`❌ Błąd przeliczania statystyk: ${error.message}`, 'error');
@@ -771,63 +1040,20 @@ async function fixPlayersData() {
     addAdminLog('Rozpoczynam naprawę danych graczy...', 'warning');
     
     try {
-        let fixedCount = 0;
+        // Użyj funkcji RPC w Supabase
+        const { data, error } = await supabaseClient.rpc('fix_players_data');
         
-        // 1. Napraw nieprawidłowe OVR (poza zakresem 0-100)
-        addAdminLog('Sprawdzanie OVR graczy...', 'info');
-        
-        const { data: players, error } = await supabaseClient
-            .from('players')
-            .select('id, overall_rating, potential')
-            .or('overall_rating.lt.0,overall_rating.gt.100');
-            
-        if (!error && players && players.length > 0) {
-            const updates = players.map(player => ({
-                id: player.id,
-                overall_rating: Math.min(100, Math.max(0, player.overall_rating || 50))
-            }));
-            
-            const { error: updateError } = await supabaseClient
-                .from('players')
-                .upsert(updates, { onConflict: 'id' });
-                
-            if (!updateError) {
-                fixedCount += updates.length;
-                addAdminLog(`Naprawiono OVR dla ${updates.length} graczy`, 'success');
-            }
+        if (error) {
+            throw new Error(`Błąd RPC: ${error.message}`);
         }
         
-        // 2. Napraw nieprawidłowy wiek (<18 lub >45)
-        addAdminLog('Sprawdzanie wieku graczy...', 'info');
-        
-        const { data: agePlayers, error: ageError } = await supabaseClient
-            .from('players')
-            .select('id, age')
-            .or('age.lt.18,age.gt.45');
-            
-        if (!ageError && agePlayers && agePlayers.length > 0) {
-            const ageUpdates = agePlayers.map(player => ({
-                id: player.id,
-                age: Math.min(45, Math.max(18, player.age || 25))
-            }));
-            
-            const { error: ageUpdateError } = await supabaseClient
-                .from('players')
-                .upsert(ageUpdates, { onConflict: 'id' });
-                
-            if (!ageUpdateError) {
-                fixedCount += ageUpdates.length;
-                addAdminLog(`Naprawiono wiek dla ${ageUpdates.length} graczy`, 'success');
-            }
+        if (data && data.success) {
+            addAdminLog(`✅ ${data.message} | Naprawiono: ${data.total_fixed} rekordów`, 'success');
+            alert(`✅ ${data.message}\nNaprawiono: ${data.total_fixed} rekordów`);
+        } else {
+            addAdminLog('❌ Błąd naprawy danych', 'error');
+            alert('❌ Błąd naprawy danych');
         }
-        
-        // 3. Napraw nieprawidłowe umiejętności (<0 lub >99)
-        addAdminLog('Sprawdzanie umiejętności graczy...', 'info');
-        
-        // Możesz dodać sprawdzanie poszczególnych umiejętności
-        
-        addAdminLog(`✅ Naprawa zakończona. Naprawiono ${fixedCount} rekordów.`, 'success');
-        alert(`✅ Naprawiono dane dla ${fixedCount} graczy!`);
         
     } catch (error) {
         addAdminLog(`❌ Błąd naprawy danych: ${error.message}`, 'error');
@@ -1056,36 +1282,20 @@ async function handleOptimizeDB() {
     addAdminLog('Optymalizacja bazy danych...', 'warning');
     
     try {
-        // 1. Wyczyść stare logi
-        const monthAgo = new Date();
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        // Użyj funkcji RPC w Supabase
+        const { data, error } = await supabaseClient.rpc('update_statistics');
         
-        const { error: logsError } = await supabaseClient
-            .from('league_logs')
-            .delete()
-            .lt('created_at', monthAgo.toISOString());
-            
-        if (!logsError) {
-            addAdminLog('Stare logi wyczyszczone', 'success');
+        if (error) {
+            throw new Error(`Błąd RPC: ${error.message}`);
         }
         
-        // 2. Usuń zakończone oferty transferowe starsze niż 30 dni
-        const { error: marketError } = await supabaseClient
-            .from('transfer_market')
-            .delete()
-            .eq('status', 'completed')
-            .lt('created_at', monthAgo.toISOString());
-            
-        if (!marketError) {
-            addAdminLog('Stare oferty transferowe usunięte', 'success');
+        if (data && data.success) {
+            addAdminLog(`✅ ${data.message} | Zaktualizowano: ${data.teams_updated} drużyn`, 'success');
+            alert(`✅ ${data.message}\nZaktualizowano: ${data.teams_updated} drużyn`);
+        } else {
+            addAdminLog('❌ Błąd optymalizacji', 'error');
+            alert('❌ Błąd optymalizacji');
         }
-        
-        // 3. Zaktualizuj statystyki
-        await supabaseClient.rpc('update_statistics');
-        addAdminLog('Statystyki zaktualizowane', 'success');
-        
-        addAdminLog('✅ Optymalizacja bazy danych zakończona pomyślnie!', 'success');
-        alert('✅ Baza danych została zoptymalizowana!');
         
     } catch (error) {
         addAdminLog(`❌ Błąd optymalizacji: ${error.message}`, 'error');
@@ -1332,11 +1542,20 @@ function injectAdminStyles() {
             text-align: center;
             transition: transform 0.2s, box-shadow 0.2s;
             cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 140px;
         }
         
         .admin-stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .admin-stat-card:active {
+            transform: translateY(-2px) scale(0.98);
         }
         
         .stat-icon {
@@ -1463,6 +1682,19 @@ function injectAdminStyles() {
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .admin-card-modal {
+            animation: fadeIn 0.2s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
         }
     `;
     
