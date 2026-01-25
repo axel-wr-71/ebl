@@ -70,10 +70,8 @@ async function loadDynamicNavigation() {
         const navContainer = document.getElementById('main-nav-container'); 
         if (!navContainer) return;
 
-        // Sprawdź, czy użytkownik jest adminem
-        const userEmail = user.email; // możemy użyć user.email z supabase
-        const adminEmails = ['strubbe23@gmail.com', 'admin@ebl.com', 'info.ebl.game@gmail.com'];
-        const isAdmin = userEmail && adminEmails.includes(userEmail.toLowerCase());
+        // Sprawdź, czy użytkownik jest adminem - używamy window.gameState.isAdmin
+        const isAdmin = window.gameState.isAdmin || false;
 
         // Jeśli jest adminem, dodajemy zakładkę admina na końcu
         let navHTML = settings.map(s => `
@@ -235,19 +233,16 @@ async function renderAdminView(team, players) {
     
     // Sprawdź czy użytkownik jest adminem
     const userEmail = JSON.parse(localStorage.getItem('supabase.auth.token'))?.currentSession?.user?.email;
-    const adminEmails = ['strubbe23@gmail.com', 'admin@ebl.com', 'info.ebl.game@gmail.com'];
     
     console.log('[ADMIN] Email użytkownika:', userEmail);
-    console.log('[ADMIN] Lista adminów:', adminEmails);
-    console.log('[ADMIN] Czy jest adminem?', userEmail && adminEmails.includes(userEmail.toLowerCase()));
+    console.log('[ADMIN] Czy jest adminem?', window.gameState.isAdmin);
     
-    if (!userEmail || !adminEmails.includes(userEmail.toLowerCase())) {
+    if (!window.gameState.isAdmin) {
         container.innerHTML = `
             <div style="padding: 50px; text-align: center;">
                 <h2 style="color: #ef4444;">❌ Brak uprawnień</h2>
                 <p style="color: #64748b;">Nie masz dostępu do panelu administracyjnego.</p>
                 <p>Twój email: ${userEmail || 'niezalogowany'}</p>
-                <p>Wymagane emaile: ${adminEmails.join(', ')}</p>
             </div>
         `;
         return;
