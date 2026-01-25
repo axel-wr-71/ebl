@@ -57,6 +57,9 @@ window.setupUI = async function(role) {
     
     await initApp();
     await switchTab('m-roster');
+
+    // DODAJ TĘ LINIĘ - zainicjuj panel admina
+    initAdminPanel();
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
