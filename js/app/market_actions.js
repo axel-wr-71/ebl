@@ -401,15 +401,19 @@ export function renderBidModal(listingId, currentPrice, player) {
 }
 
 // Globalne funkcje dla przycisków
-export async function handleBid(listingId, currentPrice, playerId) {
+export async function handleBid(listingId, currentPrice, playerId, allMarketData) {
+    console.log('handleBid called with:', { listingId, currentPrice, playerId });
+    
     // Znajdź zawodnika
-    const listing = window.allMarketData?.find(item => item.id === listingId);
+    const listing = allMarketData?.find(item => item.id === listingId);
     if (!listing) {
+        console.error('Listing not found in allMarketData:', listingId, allMarketData);
         alert("❌ Player listing not found!");
         return;
     }
     
     const player = listing.players;
+    console.log('Found player:', player);
     
     // Renderuj modal licytacji
     const modalHtml = renderBidModal(listingId, currentPrice, player);
@@ -419,15 +423,19 @@ export async function handleBid(listingId, currentPrice, playerId) {
     updateBidPreview(currentPrice + 10000);
 }
 
-export async function handleBuyNow(listingId, price, playerId) {
+export async function handleBuyNow(listingId, price, playerId, allMarketData) {
+    console.log('handleBuyNow called with:', { listingId, price, playerId });
+    
     // Znajdź zawodnika
-    const listing = window.allMarketData?.find(item => item.id === listingId);
+    const listing = allMarketData?.find(item => item.id === listingId);
     if (!listing) {
+        console.error('Listing not found in allMarketData:', listingId, allMarketData);
         alert("❌ Player listing not found!");
         return;
     }
     
     const player = listing.players;
+    console.log('Found player:', player);
     
     // Renderuj modal Buy Now
     const modalHtml = renderBuyNowModal(listingId, price, player);
@@ -464,16 +472,20 @@ export async function confirmBuyNow(listingId, price) {
     }
 }
 
-export async function showPlayerProfile(playerId) {
+export async function showPlayerProfile(playerId, allMarketData) {
+    console.log('showPlayerProfile called with:', playerId);
+    
     try {
         // Znajdź zawodnika w danych rynku
-        const listing = window.allMarketData?.find(item => item.players.id === playerId);
+        const listing = allMarketData?.find(item => item.players.id === playerId);
         if (!listing) {
+            console.error('Player not found in allMarketData:', playerId, allMarketData);
             alert("❌ Player not found!");
             return;
         }
         
         const player = listing.players;
+        console.log('Found player for profile:', player);
         
         // Użyj funkcji z roster_actions.js
         if (window.RosterActions && window.RosterActions.showProfile) {
