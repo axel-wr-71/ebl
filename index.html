@@ -1000,7 +1000,7 @@
             <img src="https://flagcdn.com/w40/us.png" class="lang-flag active" alt="EN">
             <img src="https://flagcdn.com/w40/pl.png" class="lang-flag" alt="PL">
         </div>
-    </header>
+</header>
     
     <main class="hero-content">
         <div class="hero-grid">
@@ -1224,6 +1224,17 @@
     <!-- DODANO: Kontener dla modułu League -->
     <div id="m-league" class="tab-content">
         <!-- Moduł League będzie renderowany tutaj -->
+    </div>
+    
+    <!-- DODANO: Kontener dla modułu Admin -->
+    <div id="m-admin" class="tab-content">
+        <div id="admin-view-container" style="padding: 20px;">
+            <h2>Panel Administracyjny</h2>
+            <div id="admin-content">
+                <p>Tylko administratorzy mają dostęp do tej sekcji.</p>
+                <div id="admin-stats"></div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1500,6 +1511,61 @@
         
         await initApp();
         await switchTab('m-roster');
+        
+        // DODANO: Sprawdź uprawnienia admina po zalogowaniu
+        setTimeout(() => {
+            checkAdminPermissions();
+        }, 1000);
+    };
+
+    // DODANO: Funkcja sprawdzająca uprawnienia admina
+    function checkAdminPermissions() {
+        const currentUser = JSON.parse(localStorage.getItem('supabase.auth.token'))?.currentSession?.user;
+        const userEmail = currentUser?.email;
+        
+        // Lista adminów (tutaj możesz dodać swoje emaile)
+        const adminEmails = [
+            'admin@ebl.com',
+            'info.ebl.game@gmail.com',
+            'twoj@email.com'  // DODAJ SWÓJ EMAIL TUTAJ
+        ];
+        
+        if (userEmail && adminEmails.includes(userEmail.toLowerCase())) {
+            console.log('[ADMIN] User is admin:', userEmail);
+            addAdminTab();
+        } else {
+            console.log('[ADMIN] User is NOT admin:', userEmail);
+        }
+    }
+
+    // DODANO: Funkcja dodająca zakładkę admina
+    function addAdminTab() {
+        const navContainer = document.getElementById('main-nav-container');
+        if (!navContainer) return;
+        
+        // Sprawdź czy zakładka już istnieje
+        if (!document.getElementById('tab-m-admin')) {
+            const adminTab = document.createElement('button');
+            adminTab.className = 'btn-tab';
+            adminTab.id = 'tab-m-admin';
+            adminTab.innerHTML = '🔧 Admin';
+            adminTab.onclick = () => switchTab('m-admin');
+            
+            navContainer.appendChild(adminTab);
+        }
+    }
+
+    // DODANO: Funkcja do otwierania panelu admina (do wywołania z konsoli)
+    window.openAdminPanel = function() {
+        const adminTab = document.getElementById('tab-m-admin');
+        if (adminTab && adminTab.style.display !== 'none') {
+            switchTab('m-admin');
+            console.log('[ADMIN] Panel administracyjny otwarty');
+            return true;
+        } else {
+            console.log('[ADMIN] Brak uprawnień do panelu administracyjnego');
+            return false;
+        }
     };
 
     document.addEventListener('DOMContentLoaded', async () => {
