@@ -70,7 +70,13 @@ async function loadDynamicNavigation() {
         const navContainer = document.getElementById('main-nav-container'); 
         if (!navContainer) return;
 
-        navContainer.innerHTML = settings.map(s => `
+        // Sprawdź, czy użytkownik jest adminem
+        const userEmail = user.email; // możemy użyć user.email z supabase
+        const adminEmails = ['strubbe23@gmail.com', 'admin@ebl.com', 'info.ebl.game@gmail.com'];
+        const isAdmin = userEmail && adminEmails.includes(userEmail.toLowerCase());
+
+        // Jeśli jest adminem, dodajemy zakładkę admina na końcu
+        let navHTML = settings.map(s => `
             <button class="btn-tab" 
                     data-tab="${s.app_modules.module_key}" 
                     onclick="switchTab('${s.app_modules.module_key}')">
@@ -78,6 +84,20 @@ async function loadDynamicNavigation() {
                 <span class="tab-label">${s.app_modules.display_name}</span>
             </button>
         `).join('');
+
+        if (isAdmin) {
+            navHTML += `
+                <button class="btn-tab" 
+                        data-tab="m-admin" 
+                        onclick="switchTab('m-admin')">
+                    <span class="tab-icon">🔧</span>
+                    <span class="tab-label">Admin</span>
+                </button>
+            `;
+            console.log('[ADMIN] Zakładka Admin dodana do menu');
+        }
+
+        navContainer.innerHTML = navHTML;
 
         // Ustawienie domyślnej zakładki (np. Media) po załadowaniu menu
         if (settings.length > 0) {
@@ -106,6 +126,8 @@ export async function initApp() {
             console.warn("[APP] Brak zalogowanego użytkownika.");
             return;
         }
+
+        console.log('[APP] Zalogowany użytkownik:', user.email);
 
         // 1. Pobierz dane podstawowe
         const [profileRes, configRes] = await Promise.all([
@@ -136,6 +158,9 @@ export async function initApp() {
             ...p,
             potential_definitions: window.getPotentialData(p.potential)
         }));
+
+        console.log('[APP] Drużyna załadowana:', window.gameState.team?.team_name);
+        console.log('[APP] Graczy załadowanych:', window.gameState.players?.length);
 
         // UI Updates dla nagłówka
         const teamName = window.gameState.team?.team_name || "Twoja Drużyna";
@@ -168,7 +193,13 @@ export async function switchTab(tabId) {
     if (activeBtn) activeBtn.classList.add('active');
 
     const { team, players } = window.gameState;
-    if (!team) return;
+    if (!team) {
+        console.warn('[SWITCHTAB] Brak danych drużyny!');
+        return;
+    }
+
+    console.log('[SWITCHTAB] Team:', team?.team_name);
+    console.log('[SWITCHTAB] Players:', players?.length);
 
     switch (tabId) {
         case 'm-roster': renderRosterView(team, players); break;
@@ -179,9 +210,10 @@ export async function switchTab(tabId) {
         case 'm-schedule': 
             ScheduleView.render(tabId, window.userTeamId); 
             break;
-        case 'm-league': renderLeagueView(team, players); break; // DODANO: moduł League
+        case 'm-league': renderLeagueView(team, players); break;
         case 'm-admin': 
-            // DODANO: Obsługa panelu admina
+            console.log('[SWITCHTAB] Przełączam na panel admina');
+            console.log('[SWITCHTAB] userEmail:', JSON.parse(localStorage.getItem('supabase.auth.token'))?.currentSession?.user?.email);
             await renderAdminView(team, players); 
             break;
     }
@@ -191,12 +223,23 @@ export async function switchTab(tabId) {
  * DODANO: Funkcja do renderowania panelu admina
  */
 async function renderAdminView(team, players) {
+    console.log('[ADMIN] renderAdminView wywołany');
+    
     const container = document.getElementById('m-admin');
-    if (!container) return;
+    if (!container) {
+        console.error('[ADMIN] Nie znaleziono kontenera m-admin');
+        return;
+    }
+    
+    console.log('[ADMIN] Kontener znaleziony');
     
     // Sprawdź czy użytkownik jest adminem
     const userEmail = JSON.parse(localStorage.getItem('supabase.auth.token'))?.currentSession?.user?.email;
     const adminEmails = ['strubbe23@gmail.com', 'admin@ebl.com', 'info.ebl.game@gmail.com'];
+    
+    console.log('[ADMIN] Email użytkownika:', userEmail);
+    console.log('[ADMIN] Lista adminów:', adminEmails);
+    console.log('[ADMIN] Czy jest adminem?', userEmail && adminEmails.includes(userEmail.toLowerCase()));
     
     if (!userEmail || !adminEmails.includes(userEmail.toLowerCase())) {
         container.innerHTML = `
@@ -204,6 +247,7 @@ async function renderAdminView(team, players) {
                 <h2 style="color: #ef4444;">❌ Brak uprawnień</h2>
                 <p style="color: #64748b;">Nie masz dostępu do panelu administracyjnego.</p>
                 <p>Twój email: ${userEmail || 'niezalogowany'}</p>
+                <p>Wymagane emaile: ${adminEmails.join(', ')}</p>
             </div>
         `;
         return;
@@ -211,20 +255,24 @@ async function renderAdminView(team, players) {
     
     // Pobierz dane admina z bazy
     try {
-        const { data: stats } = await supabaseClient
-            .from('admin_stats')
-            .select('*')
-            .single();
+        // Pokaż ładowanie
+        container.innerHTML = `
+            <div style="padding: 30px; text-align: center;">
+                <h2 style="color: #1a237e;">⚙️ Ładowanie panelu admina...</h2>
+                <p style="color: #64748b;">Proszę czekać</p>
+            </div>
+        `;
         
-        const { data: users } = await supabaseClient
-            .from('profiles')
-            .select('count')
-            .single();
+        // Pobierz dane asynchronicznie
+        const [statsRes, usersRes, teamsRes] = await Promise.allSettled([
+            supabaseClient.from('admin_stats').select('*').single(),
+            supabaseClient.from('profiles').select('count').single(),
+            supabaseClient.from('teams').select('count').single()
+        ]);
         
-        const { data: teams } = await supabaseClient
-            .from('teams')
-            .select('count')
-            .single();
+        const stats = statsRes.status === 'fulfilled' ? statsRes.value.data : null;
+        const users = usersRes.status === 'fulfilled' ? usersRes.value.data : null;
+        const teams = teamsRes.status === 'fulfilled' ? teamsRes.value.data : null;
         
         container.innerHTML = `
             <div style="padding: 20px;">
@@ -278,10 +326,13 @@ async function renderAdminView(team, players) {
                         <p><strong>Team Name:</strong> ${team?.team_name || 'brak'}</p>
                         <p><strong>Current Week:</strong> ${window.gameState.currentWeek}</p>
                         <p><strong>Players:</strong> ${players?.length || 0}</p>
+                        <p><strong>Admin:</strong> TAK</p>
                     </div>
                 </div>
             </div>
         `;
+        
+        console.log('[ADMIN] Panel admina wyrenderowany pomyślnie');
         
     } catch (error) {
         console.error("[ADMIN] Błąd ładowania panelu:", error);
@@ -289,6 +340,12 @@ async function renderAdminView(team, players) {
             <div style="padding: 50px; text-align: center;">
                 <h2 style="color: #ef4444;">❌ Błąd ładowania panelu</h2>
                 <p style="color: #64748b;">${error.message}</p>
+                <div style="margin-top: 20px; padding: 10px; background: #f3f4f6; border-radius: 6px; text-align: left;">
+                    <strong>Debug info:</strong><br>
+                    Email: ${userEmail}<br>
+                    Team: ${team?.team_name || 'brak'}<br>
+                    Error: ${error.toString()}
+                </div>
                 <button onclick="location.reload()" 
                         style="background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 8px; margin-top: 20px;">
                     Odśwież stronę
@@ -406,6 +463,7 @@ function initAdminConsole() {
             console.log("Players:", window.gameState.players.length);
             console.log("Current Week:", window.gameState.currentWeek);
             console.log("Token:", localStorage.getItem('supabase.auth.token'));
+            console.log("User Email:", JSON.parse(localStorage.getItem('supabase.auth.token'))?.currentSession?.user?.email);
             console.log("========================");
         },
         
@@ -510,7 +568,7 @@ function initAdminConsole() {
         console.log("  __ADMIN.open()    - to samo");
         console.log("  __ADMIN.status()  - status aplikacji");
         console.log("  __ADMIN.updateSalaries() - aktualizuj pensje");
-        console.log("  __ADMIN.updateMarketValues() - aktualizuj wartości"); // DODANO
+        console.log("  __ADMIN.updateMarketValues() - aktualizuj wartości");
         console.log("  __ADMIN.testConnection() - test bazy");
         console.log("  __ADMIN.clearCache() - wyczyść cache");
         console.log("");
