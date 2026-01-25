@@ -180,6 +180,121 @@ export async function switchTab(tabId) {
             ScheduleView.render(tabId, window.userTeamId); 
             break;
         case 'm-league': renderLeagueView(team, players); break; // DODANO: moduł League
+        case 'm-admin': 
+            // DODANO: Obsługa panelu admina
+            await renderAdminView(team, players); 
+            break;
+    }
+}
+
+/**
+ * DODANO: Funkcja do renderowania panelu admina
+ */
+async function renderAdminView(team, players) {
+    const container = document.getElementById('m-admin');
+    if (!container) return;
+    
+    // Sprawdź czy użytkownik jest adminem
+    const userEmail = JSON.parse(localStorage.getItem('supabase.auth.token'))?.currentSession?.user?.email;
+    const adminEmails = ['strubbe23@gmail.com', 'admin@ebl.com', 'info.ebl.game@gmail.com'];
+    
+    if (!userEmail || !adminEmails.includes(userEmail.toLowerCase())) {
+        container.innerHTML = `
+            <div style="padding: 50px; text-align: center;">
+                <h2 style="color: #ef4444;">❌ Brak uprawnień</h2>
+                <p style="color: #64748b;">Nie masz dostępu do panelu administracyjnego.</p>
+                <p>Twój email: ${userEmail || 'niezalogowany'}</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Pobierz dane admina z bazy
+    try {
+        const { data: stats } = await supabaseClient
+            .from('admin_stats')
+            .select('*')
+            .single();
+        
+        const { data: users } = await supabaseClient
+            .from('profiles')
+            .select('count')
+            .single();
+        
+        const { data: teams } = await supabaseClient
+            .from('teams')
+            .select('count')
+            .single();
+        
+        container.innerHTML = `
+            <div style="padding: 20px;">
+                <h1 style="color: #1a237e; margin-bottom: 20px;">🔧 Panel Administracyjny</h1>
+                <p style="color: #64748b; margin-bottom: 30px;">Witaj, ${userEmail}</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <h3 style="color: #3b82f6;">👥 Użytkownicy</h3>
+                        <p style="font-size: 2rem; font-weight: bold; color: #1a237e;">${users?.count || 0}</p>
+                    </div>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <h3 style="color: #10b981;">🏀 Drużyny</h3>
+                        <p style="font-size: 2rem; font-weight: bold; color: #1a237e;">${teams?.count || 0}</p>
+                    </div>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <h3 style="color: #f59e0b;">💰 Saldo</h3>
+                        <p style="font-size: 2rem; font-weight: bold; color: #1a237e;">${stats?.total_cash || 0} $</p>
+                    </div>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                    <h3 style="color: #1a237e; margin-bottom: 15px;">📊 Szybkie akcje</h3>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="window.__ADMIN.testConnection()" 
+                                style="background: #3b82f6; color: white; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer;">
+                            🔌 Test bazy danych
+                        </button>
+                        <button onclick="window.__ADMIN.updateSalaries()" 
+                                style="background: #10b981; color: white; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer;">
+                            💰 Aktualizuj pensje
+                        </button>
+                        <button onclick="window.__ADMIN.updateMarketValues()" 
+                                style="background: #f59e0b; color: white; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer;">
+                            📈 Aktualizuj wartości
+                        </button>
+                        <button onclick="window.__ADMIN.clearCache()" 
+                                style="background: #ef4444; color: white; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer;">
+                            🧹 Wyczyść cache
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <h3 style="color: #1a237e; margin-bottom: 15px;">ℹ️ Informacje debugowania</h3>
+                    <div style="font-family: monospace; background: #f3f4f6; padding: 15px; border-radius: 6px;">
+                        <p><strong>Email:</strong> ${userEmail}</p>
+                        <p><strong>Team ID:</strong> ${team?.id || 'brak'}</p>
+                        <p><strong>Team Name:</strong> ${team?.team_name || 'brak'}</p>
+                        <p><strong>Current Week:</strong> ${window.gameState.currentWeek}</p>
+                        <p><strong>Players:</strong> ${players?.length || 0}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error("[ADMIN] Błąd ładowania panelu:", error);
+        container.innerHTML = `
+            <div style="padding: 50px; text-align: center;">
+                <h2 style="color: #ef4444;">❌ Błąd ładowania panelu</h2>
+                <p style="color: #64748b;">${error.message}</p>
+                <button onclick="location.reload()" 
+                        style="background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 8px; margin-top: 20px;">
+                    Odśwież stronę
+                </button>
+            </div>
+        `;
     }
 }
 
