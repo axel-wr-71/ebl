@@ -10,7 +10,7 @@ export function initAdminPanel() {
     // Lista adminów (tutaj możesz dodać swoje emaile)
     const adminEmails = [
         'strubbe23@gmail.com',
-        
+        'admin@ebl.online.alex'
     ];
     
     if (userEmail && adminEmails.includes(userEmail.toLowerCase())) {
