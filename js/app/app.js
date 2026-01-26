@@ -6,9 +6,10 @@ import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 import { renderMediaView } from './media_view.js'; 
 import { renderLeagueView } from './league_view.js';
-import { renderArenaView } from './arena_view.js'; // DODANO: Nowy import
+import { renderArenaView } from './arena_view.js';
 import { ScheduleView } from './schedule_view.js';
 import { RosterActions } from './roster_actions.js';
+import { renderMyClubView } from './myclub_view.js'; // DODANO: Nowy import dla My Club
 
 // Rejestracja globalna
 window.RosterActions = RosterActions;
@@ -312,8 +313,11 @@ export async function switchTab(tabId) {
         case 'm-finances': 
             if (!isAdmin) renderFinancesView(team, players); 
             break;
-        case 'm-arena': // DODANO: Obsługa widoku Arena
+        case 'm-arena': 
             if (!isAdmin) renderArenaView(team, players);
+            break;
+        case 'm-myclub': // DODANO: Obsługa widoku My Club
+            if (!isAdmin) renderMyClubView(team, players);
             break;
         case 'm-schedule': 
             if (!isAdmin) ScheduleView.render(tabId, window.userTeamId); 
@@ -676,5 +680,4 @@ window.switchTab = switchTab;
 
 // BEZPIECZNY START: Czekamy na załadowanie DOM i modułów
 document.addEventListener('DOMContentLoaded', () => {
-    initApp();
-});
+    initApp());
