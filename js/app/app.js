@@ -1,4 +1,3 @@
-
 // js/app/app.js
 import { supabaseClient, checkAdminPermissions } from '../auth.js';
 import { renderRosterView } from './roster_view.js';
@@ -7,6 +6,7 @@ import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 import { renderMediaView } from './media_view.js'; 
 import { renderLeagueView } from './league_view.js';
+import { renderArenaView } from './arena_view.js'; // DODANO: Nowy import
 import { ScheduleView } from './schedule_view.js';
 import { RosterActions } from './roster_actions.js';
 
@@ -311,6 +311,9 @@ export async function switchTab(tabId) {
             break;
         case 'm-finances': 
             if (!isAdmin) renderFinancesView(team, players); 
+            break;
+        case 'm-arena': // DODANO: Obsługa widoku Arena
+            if (!isAdmin) renderArenaView(team, players);
             break;
         case 'm-schedule': 
             if (!isAdmin) ScheduleView.render(tabId, window.userTeamId); 
