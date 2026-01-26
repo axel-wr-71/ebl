@@ -667,21 +667,30 @@ function renderSecuritySettings() {
     `;
 }
 
+
 /**
- * Pobiera ustawienia użytkownika
+ * Pobiera ustawienia użytkownika z obsługą błędów
  */
 async function fetchUserSettings() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return null;
-    
-    const { data, error } = await supabaseClient
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-    
-    if (error) return null;
-    return data;
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return null;
+        
+        const { data, error } = await supabaseClient
+            .from('user_settings')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+        
+        if (error) {
+            console.warn("[PLAYER SETTINGS] Brak tabeli user_settings:", error.message);
+            return null;
+        }
+        return data;
+    } catch (error) {
+        console.warn("[PLAYER SETTINGS] Błąd pobierania ustawień:", error.message);
+        return null;
+    }
 }
 
 /**
