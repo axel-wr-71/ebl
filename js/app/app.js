@@ -47,6 +47,27 @@ async function fetchPotentialDefinitions() {
 }
 
 /**
+ * Funkcja pomocnicza do pobierania statystyk modułu
+ */
+function getModuleStats(moduleKey) {
+    // Tymczasowa implementacja - zwraca puste stringi
+    // W przyszłości można tu dodać logikę zliczania np. nowych wiadomości, zadań itp.
+    const stats = {
+        'm-roster': window.gameState.players?.length || 0,
+        'm-training': '0',
+        'm-market': '0',
+        'm-media': '0',
+        'm-finances': '0',
+        'm-arena': '0',
+        'm-myclub': '0',
+        'm-schedule': '0',
+        'm-league': '0'
+    };
+    
+    return stats[moduleKey] || '0';
+}
+
+/**
  * DYNAMICZNE MENU
  */
 async function loadDynamicNavigation() {
@@ -75,24 +96,26 @@ async function loadDynamicNavigation() {
         // Sprawdź czy użytkownik jest adminem
         const isAdmin = window.gameState.isAdmin || false;
 
-        // Jeśli jest adminem, dodajemy zakładkę admina na końcu
+        // Generuj menu z kartami
         let navHTML = settings.map(s => `
-            <button class="btn-tab" 
-                    data-tab="${s.app_modules.module_key}" 
-                    onclick="switchTab('${s.app_modules.module_key}')">
-                <span class="tab-icon">${s.app_modules.icon || ''}</span>
-                <span class="tab-label">${s.app_modules.display_name}</span>
-            </button>
+            <div class="nav-card" onclick="switchTab('${s.app_modules.module_key}')">
+                <div class="nav-card-icon">${s.app_modules.icon || '📊'}</div>
+                <div class="nav-card-content">
+                    <div class="nav-card-title">${s.app_modules.display_name}</div>
+                    <div class="nav-card-badge">${getModuleStats(s.app_modules.module_key)}</div>
+                </div>
+            </div>
         `).join('');
 
         if (isAdmin) {
             navHTML += `
-                <button class="btn-tab" 
-                        data-tab="m-admin" 
-                        onclick="switchTab('m-admin')">
-                    <span class="tab-icon">🔧</span>
-                    <span class="tab-label">Admin</span>
-                </button>
+                <div class="nav-card" onclick="switchTab('m-admin')">
+                    <div class="nav-card-icon">🔧</div>
+                    <div class="nav-card-content">
+                        <div class="nav-card-title">Admin</div>
+                        <div class="nav-card-badge">⚙️</div>
+                    </div>
+                </div>
             `;
             console.log('[ADMIN] Zakładka Admin dodana do menu');
         }
@@ -103,11 +126,11 @@ async function loadDynamicNavigation() {
         if (settings.length > 0) {
             if (isAdmin) {
                 // Admin - ustaw na panel admina
-                switchTab('m-admin');
+                setTimeout(() => switchTab('m-admin'), 100);
             } else {
                 // Zwykły użytkownik - pierwsza zakładka z ustawień
                 const firstTab = settings[0].app_modules.module_key;
-                switchTab(firstTab);
+                setTimeout(() => switchTab(firstTab), 100);
             }
         }
 
@@ -272,13 +295,13 @@ export async function switchTab(tabId) {
     console.log("[NAV] Przełączam na:", tabId);
     
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.nav-card').forEach(b => b.classList.remove('active'));
     
     const targetTab = document.getElementById(tabId);
     if (targetTab) targetTab.classList.add('active');
     
-    const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
-    if (activeBtn) activeBtn.classList.add('active');
+    const activeCard = document.querySelector(`.nav-card[onclick*="${tabId}"]`);
+    if (activeCard) activeCard.classList.add('active');
 
     const { team, players, isAdmin } = window.gameState;
     
