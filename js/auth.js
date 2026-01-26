@@ -40,7 +40,7 @@ export async function checkAdminPermissions() {
             return { hasAccess: false, reason: "profile_error", error: error.message };
         }
         
-        // Sprawdź warunki admina
+        // Sprawdź warunki admina - tylko role i team_id, BEZ HASŁA
         const isAdminRole = profile.role === 'admin';
         const isAdminFlag = profile.is_admin === true;
         const hasNoTeam = profile.team_id === null;
@@ -51,6 +51,7 @@ export async function checkAdminPermissions() {
         const hasAccess = (isAdminRole || isAdminFlag) && hasNoTeam;
         
         if (hasAccess) {
+            console.log("[AUTH] Użytkownik ma dostęp admina");
             return { 
                 hasAccess: true, 
                 user: user, 
@@ -58,6 +59,7 @@ export async function checkAdminPermissions() {
                 reason: "admin_access_granted"
             };
         } else {
+            console.log("[AUTH] Użytkownik NIE ma dostępu admina");
             return { 
                 hasAccess: false, 
                 reason: "insufficient_permissions",
@@ -77,46 +79,27 @@ export async function checkAdminPermissions() {
 }
 
 /**
- * Walidacja hasła admina
+ * Walidacja hasła admina - NIE UŻYWANA, tylko dla kompatybilności
  */
 export async function validateAdminPassword(password) {
-    try {
-        // Hasło admina - w produkcji użyj zmiennych środowiskowych
-        const adminPassword = "NBA2024!ADMIN"; // Hasło admina
-        
-        if (password === adminPassword) {
-            return { valid: true, message: "Hasło poprawne" };
-        } else {
-            return { valid: false, message: "Nieprawidłowe hasło" };
-        }
-        
-    } catch (error) {
-        console.error("[AUTH] Błąd walidacji hasła:", error);
-        return { valid: false, message: "Błąd systemu podczas walidacji" };
-    }
+    // Ta funkcja nie jest już używana w głównej weryfikacji
+    // Zachowana tylko dla kompatybilności z innymi modułami
+    console.log("[AUTH] validateAdminPassword wywołana, ale nie używana w głównej weryfikacji");
+    return { valid: false, message: "Weryfikacja hasłem wyłączona" };
 }
 
 /**
  * Funkcje pomocnicze dla sesji admina
  */
 export function isAdminSessionValid() {
-    const verified = sessionStorage.getItem('admin_verified');
-    const timestamp = sessionStorage.getItem('admin_verified_timestamp');
-    
-    if (!verified || !timestamp) {
-        return false;
-    }
-    
-    const sessionAge = Date.now() - parseInt(timestamp);
-    const SESSION_DURATION = 30 * 60 * 1000; // 30 minut
-    
-    return sessionAge < SESSION_DURATION;
+    // Sprawdzamy bezpośrednio czy użytkownik ma uprawnienia admina w bazie
+    // Nie używamy sesji, bo sprawdzamy za każdym razem
+    return false; // Zawsze wymagaj ponownej weryfikacji
 }
 
 export function resetAdminSession() {
-    sessionStorage.removeItem('admin_verified');
-    sessionStorage.removeItem('admin_verified_timestamp');
-    localStorage.removeItem('admin_blocked_until');
+    // Nic nie rób - nie mamy sesji admina
+    console.log("[AUTH] resetAdminSession - nic nie robię");
 }
 
 // ==================== FUNKCJE POMOCNICZE ====================
