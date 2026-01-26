@@ -1,3 +1,4 @@
+
 // js/app/app.js
 import { supabaseClient, checkAdminPermissions } from '../auth.js';
 import { renderRosterView } from './roster_view.js';
@@ -295,34 +296,35 @@ export async function switchTab(tabId) {
     console.log('[SWITCHTAB] Team:', team?.team_name);
     console.log('[SWITCHTAB] Players:', players?.length);
 
-  switch (tabId) {
-    case 'm-roster': 
-        if (!isAdmin) renderRosterView(team, players); 
-        break;
-    case 'm-training': 
-        if (!isAdmin) renderTrainingView(team, players); 
-        break;
-    case 'm-market': 
-        if (!isAdmin) renderMarketView(team, players); 
-        break;
-    case 'm-media': 
-        if (!isAdmin) renderMediaView(team, players); 
-        break;
-    case 'm-finances': 
-        if (!isAdmin) renderFinancesView(team, players); 
-        break;
-    case 'm-schedule': 
-        if (!isAdmin) ScheduleView.render(tabId, window.userTeamId); 
-        break;
-    case 'm-league': 
-        if (!isAdmin) renderLeagueView(team, players); 
-        break;
-    case 'm-admin': 
-        console.log('[SWITCHTAB] Przełączam na panel admina');
-        await renderAdminView(team, players); 
-        break;
-    default:
-        console.warn('[SWITCHTAB] Nieznana zakładka:', tabId);
+    switch (tabId) {
+        case 'm-roster': 
+            if (!isAdmin) renderRosterView(team, players); 
+            break;
+        case 'm-training': 
+            if (!isAdmin) renderTrainingView(team, players); 
+            break;
+        case 'm-market': 
+            if (!isAdmin) renderMarketView(team, players); 
+            break;
+        case 'm-media': 
+            if (!isAdmin) renderMediaView(team, players); 
+            break;
+        case 'm-finances': 
+            if (!isAdmin) renderFinancesView(team, players); 
+            break;
+        case 'm-schedule': 
+            if (!isAdmin) ScheduleView.render(tabId, window.userTeamId); 
+            break;
+        case 'm-league': 
+            if (!isAdmin) renderLeagueView(team, players); 
+            break;
+        case 'm-admin': 
+            console.log('[SWITCHTAB] Przełączam na panel admina');
+            await renderAdminView(team, players); 
+            break;
+        default:
+            console.warn('[SWITCHTAB] Nieznana zakładka:', tabId);
+    }
 }
 
 /**
@@ -455,9 +457,6 @@ async function renderAdminView(team, players) {
     }
 }
 
-// ============================================
-// PANEL ADMINA - DOSTĘP PRZEZ KONSOLĘ
-// ============================================
 
 /**
  * Inicjalizacja konsoli admina
