@@ -227,3 +227,138 @@ header {
         border-radius: 12px;
     }
 }
+
+/* Style dla modułu finansów */
+.finances-modern-wrapper {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.finances-header {
+    background: linear-gradient(135deg, #1a237e, #3949ab);
+    color: white;
+    padding: 25px 30px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.finances-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.finances-header p {
+    margin: 5px 0 0 0;
+    color: #bbdefb;
+    font-size: 0.9rem;
+}
+
+.btn-finance-secondary {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.finances-section {
+    padding: 25px 0;
+}
+
+.finance-stat-card {
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stat-icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.stat-title {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.finances-section-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+}
+
+.finances-section-card h3 {
+    margin-top: 0;
+    color: #1a237e;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.transactions-table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+.transactions-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.transactions-table th {
+    background: #f3f4f6;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+}
+
+.transactions-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.transactions-table tr:hover {
+    background: #f9fafb;
+}
+
+.finances-footer {
+    padding: 20px 0;
+    color: #64748b;
+    text-align: center;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 20px;
+}
