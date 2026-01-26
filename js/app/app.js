@@ -3,8 +3,7 @@ import { supabaseClient, checkAdminPermissions } from '../auth.js';
 import { renderRosterView } from './roster_view.js';
 import { renderTrainingView } from './training_view.js';
 import { renderMarketView } from './market_view.js';
-// UPEWNIJ SIĘ ŻE TA LINIA JEST POPRAWNA:
-import { renderFinancesView } from '../finances/finances_view.js';
+import { renderFinancesView } from './finances_view.js';
 import { renderMediaView } from './media_view.js'; 
 import { renderLeagueView } from './league_view.js';
 import { ScheduleView } from './schedule_view.js';
@@ -18,22 +17,6 @@ window.gameState = {
     players: [],
     currentWeek: 0,
     isAdmin: false
-};
-
-// DODANO: Globalna funkcja dla finansów
-window.loadFinancialData = async function() {
-    console.log('[FINANCES] Loading financial data from global function...');
-    
-    // Zrób to asynchronicznie, aby nie blokować interfejsu
-    setTimeout(async () => {
-        if (typeof renderFinancesView === 'function') {
-            // Wywołaj renderFinancesView z aktualnymi danymi
-            const { team, players } = window.gameState;
-            await renderFinancesView(team, players);
-        } else {
-            console.error('[FINANCES] renderFinancesView is not a function');
-        }
-    }, 100);
 };
 
 /**
@@ -326,11 +309,7 @@ export async function switchTab(tabId) {
             if (!isAdmin) renderMediaView(team, players); 
             break;
         case 'm-finances': 
-            // ZMIANA: Dodano obsługę finansów dla nie-adminów
-            if (!isAdmin) {
-                console.log('[SWITCHTAB] Przełączam na finanse');
-                await renderFinancesView(team, players);
-            } 
+            if (!isAdmin) renderFinancesView(team, players); 
             break;
         case 'm-schedule': 
             if (!isAdmin) ScheduleView.render(tabId, window.userTeamId); 
