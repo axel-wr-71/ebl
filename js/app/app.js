@@ -680,4 +680,4 @@ window.switchTab = switchTab;
 
 // BEZPIECZNY START: Czekamy na załadowanie DOM i modułów
 document.addEventListener('DOMContentLoaded', () => {
-    initApp());
+    initApp();
