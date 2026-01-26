@@ -398,46 +398,89 @@ function renderLegendaryMoments(history) {
     }).join('');
 }
 
+// Szukaj funkcji async fetchClubHistory i zastąp ją:
+
 /**
- * Pobiera historię klubu
+ * Pobiera historię klubu z obsługą błędów
  */
 async function fetchClubHistory(teamId) {
-    const { data, error } = await supabaseClient
-        .from('club_history')
-        .select('*')
-        .eq('team_id', teamId)
-        .order('event_date', { ascending: false })
-        .limit(20);
-    
-    if (error) throw error;
-    return data || [];
+    try {
+        const { data, error } = await supabaseClient
+            .from('club_history')
+            .select('*')
+            .eq('team_id', teamId)
+            .order('event_date', { ascending: false })
+            .limit(20);
+        
+        if (error) {
+            console.warn("[CLUB HISTORY] Brak tabeli club_history:", error.message);
+            return [];
+        }
+        return data || [];
+    } catch (error) {
+        console.warn("[CLUB HISTORY] Błąd pobierania historii:", error.message);
+        return [];
+    }
 }
 
 /**
- * Pobiera trofea klubu
+ * Pobiera trofea klubu z obsługą błędów
  */
 async function fetchClubTrophies(teamId) {
-    const { data, error } = await supabaseClient
-        .from('club_trophies')
-        .select('*')
-        .eq('team_id', teamId)
-        .order('obtained_date', { ascending: false });
-    
-    if (error) throw error;
-    return data || [];
+    try {
+        const { data, error } = await supabaseClient
+            .from('club_trophies')
+            .select('*')
+            .eq('team_id', teamId)
+            .order('obtained_date', { ascending: false });
+        
+        if (error) {
+            console.warn("[CLUB HISTORY] Brak tabeli club_trophies:", error.message);
+            return [];
+        }
+        return data || [];
+    } catch (error) {
+        console.warn("[CLUB HISTORY] Błąd pobierania trofeów:", error.message);
+        return [];
+    }
 }
 
 /**
- * Pobiera historię transferów
+ * Pobiera historię transferów z obsługą błędów
  */
 async function fetchTransferHistory(teamId) {
-    const { data, error } = await supabaseClient
-        .from('transfers')
-        .select('*')
-        .or(`from_team_id.eq.${teamId},to_team_id.eq.${teamId}`)
-        .order('transfer_date', { ascending: false })
-        .limit(50);
-    
-    if (error) throw error;
-    return data || [];
+    try {
+        // Najpierw spróbuj z transfers
+        let { data, error } = await supabaseClient
+            .from('transfers')
+            .select('*')
+            .or(`from_team_id.eq.${teamId},to_team_id.eq.${teamId}`)
+            .order('transfer_date', { ascending: false })
+            .limit(50);
+        
+        // Jeśli tabela transfers nie istnieje, spróbuj transfer_market
+        if (error && error.code === 'PGRST205') {
+            console.log("[CLUB HISTORY] Próbuję tabeli transfer_market...");
+            const result = await supabaseClient
+                .from('transfer_market')
+                .select('*')
+                .or(`from_team_id.eq.${teamId},to_team_id.eq.${teamId}`)
+                .order('created_at', { ascending: false })
+                .limit(50);
+            
+            data = result.data;
+            error = result.error;
+        }
+        
+        if (error) {
+            console.warn("[CLUB HISTORY] Błąd pobierania transferów:", error.message);
+            return [];
+        }
+        
+        return data || [];
+        
+    } catch (error) {
+        console.warn("[CLUB HISTORY] Błąd pobierania transferów:", error.message);
+        return [];
+    }
 }
