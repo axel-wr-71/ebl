@@ -9,7 +9,7 @@ import { renderLeagueView } from './league_view.js';
 import { renderArenaView } from './arena_view.js';
 import { ScheduleView } from './schedule_view.js';
 import { RosterActions } from './roster_actions.js';
-import { renderMyClubView } from './myclub_view.js'; // DODANO: Nowy import dla My Club
+import { renderMyClubView } from './myclub_view.js'; 
 
 // Rejestracja globalna
 window.RosterActions = RosterActions;
@@ -681,3 +681,4 @@ window.switchTab = switchTab;
 // BEZPIECZNY START: Czekamy na załadowanie DOM i modułów
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
+});
