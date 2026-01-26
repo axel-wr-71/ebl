@@ -1,9 +1,5 @@
 // js/app/myclub_view.js
 import { supabaseClient } from '../auth.js';
-import { renderClubHistory } from './club_history.js';
-import { renderClubCustomization } from './club_customization.js';
-import { renderClubStatistics } from './club_statistics.js';
-import { renderPlayerSettings } from './player_settings.js';
 
 let currentClubData = null;
 let clubHistory = [];
@@ -34,7 +30,7 @@ export async function renderMyClubView(team, players) {
     `;
     
     try {
-        // Pobierz wszystkie dane klubu
+        // Pobierz wszystkie dane klubu z obsługą błędów dla brakujących tabel
         const [
             clubData, 
             historyData, 
@@ -44,20 +40,20 @@ export async function renderMyClubView(team, players) {
             customizationData,
             transfersHistory
         ] = await Promise.all([
-            fetchClubData(team.id),
-            fetchClubHistory(team.id),
-            fetchClubTrophies(team.id),
-            fetchClubStatistics(team.id),
-            fetchFanComments(team.id),
-            fetchClubCustomization(team.id),
-            fetchTransferHistory(team.id)
+            fetchClubData(team.id).catch(() => null),
+            fetchClubHistory(team.id).catch(() => []),
+            fetchClubTrophies(team.id).catch(() => []),
+            fetchClubStatistics(team.id).catch(() => ({})),
+            fetchFanComments(team.id).catch(() => []),
+            fetchClubCustomization(team.id).catch(() => null),
+            fetchTransferHistory(team.id).catch(() => [])
         ]);
         
-        currentClubData = clubData;
-        clubHistory = historyData;
-        clubTrophies = trophiesData;
+        currentClubData = clubData || team;
+        clubHistory = historyData || [];
+        clubTrophies = trophiesData || [];
         clubStats = statsData || {};
-        fanComments = commentsData;
+        fanComments = commentsData || [];
         teamBalance = team.balance || 0;
         
         // Renderuj główny widok
@@ -65,13 +61,13 @@ export async function renderMyClubView(team, players) {
             container, 
             team, 
             players, 
-            clubData, 
-            historyData, 
-            trophiesData, 
-            statsData, 
-            commentsData,
+            clubData || team, 
+            historyData || [], 
+            trophiesData || [], 
+            statsData || {}, 
+            commentsData || [],
             customizationData,
-            transfersHistory
+            transfersHistory || []
         );
         
     } catch (error) {
@@ -87,7 +83,15 @@ function renderClubContent(container, team, players, clubData, history, trophies
     console.log("[MY CLUB] Renderowanie zawartości klubu...");
     
     // Parsuj statystyki klubu
-    const clubStats = typeof team.club_stats === 'string' ? JSON.parse(team.club_stats) : (team.club_stats || {});
+    const clubStats = typeof team.club_stats === 'string' ? JSON.parse(team.club_stats) : (team.club_stats || {
+        seasons_played: 1,
+        total_wins: 0,
+        total_losses: 0,
+        championships: 0,
+        fan_base: 1000,
+        club_value: 1000000
+    });
+    
     const winRate = clubStats.total_wins + clubStats.total_losses > 0 
         ? (clubStats.total_wins / (clubStats.total_wins + clubStats.total_losses) * 100).toFixed(1) 
         : 0;
@@ -186,11 +190,11 @@ function renderClubContent(container, team, players, clubData, history, trophies
                         </div>
                         
                         <div id="transfer-history-chart">
-                            ${renderTransferHistoryChart(transfers)}
+                            ${renderTransferHistoryChart(transfers, team.id)}
                         </div>
                         
                         <div id="transfer-history-table">
-                            ${renderTransferHistoryTable(transfers.slice(0, 5))}
+                            ${renderTransferHistoryTable(transfers.slice(0, 5), team.id)}
                         </div>
                     </div>
                 </div>
@@ -328,87 +332,169 @@ async function fetchClubData(teamId) {
  * Pobiera historię klubu
  */
 async function fetchClubHistory(teamId) {
-    const { data, error } = await supabaseClient
-        .from('club_history')
-        .select('*')
-        .eq('team_id', teamId)
-        .order('event_date', { ascending: false })
-        .limit(10);
-    
-    if (error) throw error;
-    return data || [];
+    try {
+        const { data, error } = await supabaseClient
+            .from('club_history')
+            .select('*')
+            .eq('team_id', teamId)
+            .order('event_date', { ascending: false })
+            .limit(10);
+        
+        if (error) {
+            console.warn("[MY CLUB] Brak tabeli club_history:", error.message);
+            return [];
+        }
+        return data || [];
+    } catch (error) {
+        console.warn("[MY CLUB] Błąd pobierania historii:", error.message);
+        return [];
+    }
 }
 
 /**
  * Pobiera trofea klubu
  */
 async function fetchClubTrophies(teamId) {
-    const { data, error } = await supabaseClient
-        .from('club_trophies')
-        .select('*')
-        .eq('team_id', teamId)
-        .order('obtained_date', { ascending: false });
-    
-    if (error) throw error;
-    return data || [];
+    try {
+        const { data, error } = await supabaseClient
+            .from('club_trophies')
+            .select('*')
+            .eq('team_id', teamId)
+            .order('obtained_date', { ascending: false });
+        
+        if (error) {
+            console.warn("[MY CLUB] Brak tabeli club_trophies:", error.message);
+            return [];
+        }
+        return data || [];
+    } catch (error) {
+        console.warn("[MY CLUB] Błąd pobierania trofeów:", error.message);
+        return [];
+    }
 }
 
 /**
  * Pobiera statystyki klubu
  */
 async function fetchClubStatistics(teamId) {
-    const { data, error } = await supabaseClient
-        .from('team_stats')
-        .select('*')
-        .eq('team_id', teamId)
-        .single();
-    
-    if (error) return null;
-    return data;
+    try {
+        // Najpierw spróbuj z tabeli team_stats
+        const { data: statsData, error: statsError } = await supabaseClient
+            .from('team_stats')
+            .select('*')
+            .eq('team_id', teamId)
+            .single();
+        
+        if (!statsError && statsData) {
+            return statsData;
+        }
+        
+        // Jeśli brak tabeli team_stats, użyj danych z teams.club_stats
+        const { data: teamData, error: teamError } = await supabaseClient
+            .from('teams')
+            .select('club_stats')
+            .eq('id', teamId)
+            .single();
+        
+        if (teamError) return {};
+        
+        if (teamData?.club_stats) {
+            return typeof teamData.club_stats === 'string' 
+                ? JSON.parse(teamData.club_stats)
+                : teamData.club_stats;
+        }
+        
+        return {};
+        
+    } catch (error) {
+        console.warn("[MY CLUB] Błąd pobierania statystyk:", error.message);
+        return {};
+    }
 }
 
 /**
  * Pobiera komentarze fanów
  */
 async function fetchFanComments(teamId) {
-    const { data, error } = await supabaseClient
-        .from('fan_comments')
-        .select('*')
-        .eq('team_id', teamId)
-        .order('comment_date', { ascending: false })
-        .limit(5);
-    
-    if (error) throw error;
-    return data || [];
+    try {
+        const { data, error } = await supabaseClient
+            .from('fan_comments')
+            .select('*')
+            .eq('team_id', teamId)
+            .order('comment_date', { ascending: false })
+            .limit(5);
+        
+        if (error) {
+            console.warn("[MY CLUB] Brak tabeli fan_comments:", error.message);
+            return [];
+        }
+        return data || [];
+    } catch (error) {
+        console.warn("[MY CLUB] Błąd pobierania komentarzy:", error.message);
+        return [];
+    }
 }
 
 /**
  * Pobiera personalizację klubu
  */
 async function fetchClubCustomization(teamId) {
-    const { data, error } = await supabaseClient
-        .from('club_customization')
-        .select('*')
-        .eq('team_id', teamId)
-        .single();
-    
-    if (error) return null;
-    return data;
+    try {
+        const { data, error } = await supabaseClient
+            .from('club_customization')
+            .select('*')
+            .eq('team_id', teamId)
+            .single();
+        
+        if (error) {
+            console.warn("[MY CLUB] Brak tabeli club_customization:", error.message);
+            return null;
+        }
+        return data;
+    } catch (error) {
+        console.warn("[MY CLUB] Błąd pobierania personalizacji:", error.message);
+        return null;
+    }
 }
 
 /**
- * Pobiera historię transferów
+ * Pobiera historię transferów - WERSJA Z OBSŁUGĄ BŁĘDÓW
  */
 async function fetchTransferHistory(teamId) {
-    const { data, error } = await supabaseClient
-        .from('transfers')
-        .select('*, players:player_id(name, position), from_team:from_team_id(team_name), to_team:to_team_id(team_name)')
-        .or(`from_team_id.eq.${teamId},to_team_id.eq.${teamId}`)
-        .order('transfer_date', { ascending: false })
-        .limit(20);
-    
-    if (error) throw error;
-    return data || [];
+    try {
+        // Spróbuj pobrać z tabeli transfers
+        let { data, error } = await supabaseClient
+            .from('transfers')
+            .select('*, players!inner(name, position), teams!transfers_from_team_id_fkey!inner(team_name), teams!transfers_to_team_id_fkey!inner(team_name)')
+            .or(`from_team_id.eq.${teamId},to_team_id.eq.${teamId}`)
+            .order('transfer_date', { ascending: false })
+            .limit(20);
+        
+        // Jeśli tabela transfers nie istnieje, spróbuj z transfer_market
+        if (error && error.code === 'PGRST205') {
+            console.log("[MY CLUB] Próbuję tabeli transfer_market...");
+            const result = await supabaseClient
+                .from('transfer_market')
+                .select('*, players!inner(name, position)')
+                .or(`from_team_id.eq.${teamId},to_team_id.eq.${teamId}`)
+                .order('created_at', { ascending: false })
+                .limit(20);
+            
+            data = result.data;
+            error = result.error;
+        }
+        
+        if (error) {
+            console.warn("[MY CLUB] Błąd pobierania transferów:", error.message);
+            return [];
+        }
+        
+        return data || [];
+        
+    } catch (error) {
+        console.warn("[MY CLUB] Błąd pobierania transferów:", error.message);
+        return [];
+    }
 }
 
 /**
@@ -416,13 +502,33 @@ async function fetchTransferHistory(teamId) {
  */
 function renderClubHistoryTimeline(history) {
     if (!history || history.length === 0) {
-        return `
-            <div style="text-align: center; padding: 30px; color: #64748b;">
-                <div style="font-size: 2rem; margin-bottom: 10px;">📜</div>
-                <p>Brak zapisanej historii klubu</p>
-                <p style="font-size: 0.85rem; margin-top: 5px;">Twórz historię swoimi decyzjami!</p>
-            </div>
-        `;
+        // Symulacja domyślnych wydarzeń
+        const defaultEvents = [
+            {
+                event_date: new Date().toISOString(),
+                event_type: 'other',
+                title: 'Założenie klubu',
+                description: 'Rozpoczęcie przygody z EBL'
+            }
+        ];
+        
+        return defaultEvents.map(event => {
+            const eventDate = new Date(event.event_date);
+            return `
+                <div style="display: flex; gap: 15px; padding: 15px 0; border-bottom: 1px solid #f1f5f9;">
+                    <div style="flex-shrink: 0; width: 40px; height: 40px; background: #64748b; 
+                                color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+                                font-size: 1.2rem; font-weight: 700;">
+                        📝
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; color: #1a237e; margin-bottom: 5px;">${event.title}</div>
+                        <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 8px;">${eventDate.toLocaleDateString('pl-PL')}</div>
+                        <div style="font-size: 0.9rem; color: #475569; line-height: 1.4;">${event.description}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
     
     const eventIcons = {
@@ -455,9 +561,6 @@ function renderClubHistoryTimeline(history) {
                     <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 8px;">${eventDate.toLocaleDateString('pl-PL')}</div>
                     <div style="font-size: 0.9rem; color: #475569; line-height: 1.4;">${event.description || 'Brak opisu'}</div>
                 </div>
-                <div style="flex-shrink: 0; display: flex; gap: 3px;">
-                    ${Array.from({length: event.importance_level || 1}).map(() => '⭐').join('')}
-                </div>
             </div>
         `;
     }).join('');
@@ -466,7 +569,7 @@ function renderClubHistoryTimeline(history) {
 /**
  * Renderuje wykres historii transferów
  */
-function renderTransferHistoryChart(transfers) {
+function renderTransferHistoryChart(transfers, teamId) {
     if (!transfers || transfers.length === 0) {
         return `
             <div style="text-align: center; padding: 20px; color: #64748b;">
@@ -476,8 +579,8 @@ function renderTransferHistoryChart(transfers) {
     }
     
     // Grupuj transfery według typu
-    const transfersIn = transfers.filter(t => t.to_team_id === window.userTeamId);
-    const transfersOut = transfers.filter(t => t.from_team_id === window.userTeamId);
+    const transfersIn = transfers.filter(t => t.to_team_id === teamId);
+    const transfersOut = transfers.filter(t => t.from_team_id === teamId);
     
     return `
         <div style="display: flex; justify-content: space-around; margin-bottom: 25px;">
@@ -497,13 +600,14 @@ function renderTransferHistoryChart(transfers) {
         
         <div style="height: 100px; display: flex; align-items: flex-end; gap: 5px;">
             ${transfers.slice(0, 8).map(transfer => {
-                const transferDate = new Date(transfer.transfer_date);
+                const transferDate = new Date(transfer.transfer_date || transfer.created_at || new Date());
                 const month = transferDate.getMonth();
                 const height = 30 + Math.random() * 70; // Symulacja danych
+                const isIncoming = transfer.to_team_id === teamId;
                 
                 return `
                     <div style="flex: 1; text-align: center;">
-                        <div style="height: ${height}px; background: ${transfer.to_team_id === window.userTeamId ? '#10b981' : '#ef4444'}; 
+                        <div style="height: ${height}px; background: ${isIncoming ? '#10b981' : '#ef4444'}; 
                                 border-radius: 4px 4px 0 0; margin-bottom: 5px;"></div>
                         <div style="font-size: 0.7rem; color: #64748b;">${['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie'][month]}</div>
                     </div>
@@ -516,8 +620,15 @@ function renderTransferHistoryChart(transfers) {
 /**
  * Renderuje tabelę historii transferów
  */
-function renderTransferHistoryTable(transfers) {
-    if (!transfers || transfers.length === 0) return '';
+function renderTransferHistoryTable(transfers, teamId) {
+    if (!transfers || transfers.length === 0) {
+        return `
+            <div style="text-align: center; padding: 30px; color: #64748b;">
+                <p>Brak danych o transferach</p>
+                <p style="font-size: 0.85rem;">Transfery pojawią się po dokonanych transakcjach</p>
+            </div>
+        `;
+    }
     
     return `
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 20px;">
@@ -531,10 +642,10 @@ function renderTransferHistoryTable(transfers) {
             </thead>
             <tbody>
                 ${transfers.map(transfer => {
-                    const transferDate = new Date(transfer.transfer_date);
-                    const isIncoming = transfer.to_team_id === window.userTeamId;
+                    const transferDate = new Date(transfer.transfer_date || transfer.created_at || new Date());
+                    const isIncoming = transfer.to_team_id === teamId;
                     const playerName = transfer.players?.name || 'Unknown Player';
-                    const otherTeam = isIncoming ? transfer.from_team?.team_name : transfer.to_team?.team_name;
+                    const transferFee = transfer.transfer_fee || transfer.price || 0;
                     
                     return `
                         <tr style="border-bottom: 1px solid #f1f5f9;" 
@@ -543,7 +654,7 @@ function renderTransferHistoryTable(transfers) {
                             <td style="padding: 12px 15px; color: #475569;">${transferDate.toLocaleDateString('pl-PL')}</td>
                             <td style="padding: 12px 15px;">
                                 <div style="font-weight: 600; color: #1a237e;">${playerName}</div>
-                                <div style="font-size: 0.8rem; color: #64748b;">${isIncoming ? 'Z ' : 'Do '}${otherTeam}</div>
+                                <div style="font-size: 0.8rem; color: #64748b;">${transfer.players?.position || 'N/A'}</div>
                             </td>
                             <td style="padding: 12px 15px;">
                                 <span style="padding: 4px 8px; background: ${isIncoming ? '#d1fae5' : '#fee2e2'}; 
@@ -552,7 +663,7 @@ function renderTransferHistoryTable(transfers) {
                                 </span>
                             </td>
                             <td style="padding: 12px 15px; font-weight: 700; color: #e65100;">
-                                ${transfer.transfer_fee ? `$${transfer.transfer_fee.toLocaleString()}` : 'Wolny transfer'}
+                                ${transferFee > 0 ? `$${transferFee.toLocaleString()}` : 'Wolny transfer'}
                             </td>
                         </tr>
                     `;
@@ -592,10 +703,12 @@ function renderTrophiesGrid(trophies) {
         'league': '🏆',
         'cup': '🥇',
         'playoff': '🎖️',
-        'individual': '⭐'
+        'individual': '⭐',
+        'championship': '🏆'
     };
     
     return trophies.map(trophy => {
+        const season = trophy.season || trophy.obtained_date?.substring(0,4) || '2023';
         return `
             <div style="text-align: center; cursor: pointer;" onclick="showTrophyDetail('${trophy.id}')"
                  onmouseover="this.style.transform='scale(1.1)'; this.style.transition='transform 0.2s';"
@@ -603,9 +716,9 @@ function renderTrophiesGrid(trophies) {
                 <div style="width: 60px; height: 60px; background: #fef3c7; border-radius: 50%; margin: 0 auto 5px; 
                             display: flex; align-items: center; justify-content: center; font-size: 1.8rem; 
                             border: 2px solid #f59e0b;">
-                    ${trophyIcons[trophy.trophy_type] || '🏆'}
+                    ${trophyIcons[trophy.trophy_type] || trophyIcons[trophy.achievement_type] || '🏆'}
                 </div>
-                <div style="font-size: 0.75rem; color: #475569; font-weight: 600;">${trophy.season}</div>
+                <div style="font-size: 0.75rem; color: #475569; font-weight: 600;">${season}</div>
             </div>
         `;
     }).join('');
@@ -617,13 +730,34 @@ function renderTrophiesGrid(trophies) {
 function renderFanComments(comments) {
     if (!comments || comments.length === 0) {
         // Symuluj komentarze jeśli brak
-        return `
-            <div style="text-align: center; padding: 20px; color: #64748b;">
-                <div style="font-size: 2rem; margin-bottom: 10px;">📢</div>
-                <p>Brak komentarzy fanów</p>
-                <p style="font-size: 0.85rem;">Zagraj kilka meczów aby pojawiły się opinie!</p>
-            </div>
-        `;
+        const simulatedComments = [
+            { fan_name: 'Jan Kowalski', comment_text: 'Świetny sezon, oby tak dalej! Trzymam kciuki!', sentiment: 'positive', likes: 42 },
+            { fan_name: 'Anna Nowak', comment_text: 'Potrzebujemy wzmocnień w obronie przed następnym sezonem.', sentiment: 'neutral', likes: 15 },
+            { fan_name: 'Michał Wiśniewski', comment_text: 'MVP drużyny zasługuje na podwyżkę!', sentiment: 'positive', likes: 28 }
+        ];
+        
+        const sentimentColors = {
+            'positive': '#d1fae5',
+            'neutral': '#f1f5f9',
+            'negative': '#fee2e2'
+        };
+        
+        return simulatedComments.map(comment => {
+            return `
+                <div style="background: ${sentimentColors[comment.sentiment]}; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <div style="font-weight: 600; color: #1a237e;">${comment.fan_name}</div>
+                        <div style="font-size: 0.8rem; color: #64748b;">${new Date().toLocaleDateString('pl-PL')}</div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #475569; line-height: 1.4;">${comment.comment_text}</div>
+                    ${comment.likes > 0 ? `
+                        <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                            <span style="font-size: 0.8rem; color: #64748b;">❤️ ${comment.likes}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
     }
     
     const sentimentColors = {
@@ -692,19 +826,19 @@ function showError(container, message) {
  * Globalne funkcje dla akcji użytkownika
  */
 window.showFullHistory = function() {
-    alert("Pełna historia klubu - w budowie!");
+    alert("Pełna historia klubu - funkcja w budowie!");
 };
 
 window.showAllTransfers = function() {
-    alert("Pełna historia transferów - w budowie!");
+    alert("Pełna historia transferów - funkcja w budowie!");
 };
 
 window.showAllTrophies = function() {
-    alert("Wszystkie trofea - w budowie!");
+    alert("Wszystkie trofea - funkcja w budowie!");
 };
 
 window.showTrophyDetail = function(trophyId) {
-    alert(`Szczegóły trofeum ${trophyId} - w budowie!`);
+    alert(`Szczegóły trofeum ${trophyId} - funkcja w budowie!`);
 };
 
 window.changeClubLogo = async function() {
@@ -729,7 +863,7 @@ window.changeClubColor = function(colorType) {
     
     if (color && /^#[0-9A-F]{6}$/i.test(color)) {
         alert(`Kolor ${colorType} zmieniony na ${color}!`);
-        // Tutaj logika aktualizacji w bazie
+        // Tutaj logika aktualizacji w bazie danych
     } else if (color) {
         alert("Nieprawidłowy format koloru! Użyj formatu HEX (#RRGGBB)");
     }
@@ -741,7 +875,8 @@ window.exportClubData = function(teamId) {
         history: clubHistory,
         trophies: clubTrophies,
         stats: clubStats,
-        comments: fanComments
+        comments: fanComments,
+        exportDate: new Date().toISOString()
     };
     
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -755,5 +890,5 @@ window.exportClubData = function(teamId) {
 };
 
 window.openPlayerSettingsModal = function() {
-    alert("Modal ustawień gracza - w budowie!");
+    alert("Modal ustawień gracza - funkcja w budowie!");
 };
