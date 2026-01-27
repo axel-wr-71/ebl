@@ -1,765 +1,1238 @@
-import { supabaseClient } from '../auth.js';
-
-export async function renderMediaView(team, players) {
-    const container = document.getElementById('m-media');
-    if (!container) return;
-
-    container.innerHTML = `
-        <div class="media-view">
-            <div class="media-header">
-                <h1><i class="fas fa-newspaper"></i> Media & Public Relations</h1>
-                <p class="subtitle">Zarządzaj personelem medialnym i generuj newsy klubowe</p>
-            </div>
-
-            <!-- Sekcja Personelu Medialnego -->
-            <div class="media-section">
-                <h2><i class="fas fa-user-tie"></i> Twój Personel Medialny</h2>
-                <div class="media-staff-container" id="media-staff-list">
-                    <div class="loading-spinner">Ładowanie personelu...</div>
-                </div>
-            </div>
-
-            <!-- Generator Newsów -->
-            <div class="media-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-bullhorn"></i> Generator Newsów Klubowych</h2>
-                    <div class="section-actions">
-                        <button class="btn btn-primary" id="generate-all-news">
-                            <i class="fas fa-magic"></i> Wygeneruj wszystkie newsy
-                        </button>
-                    </div>
-                </div>
-
-                <div class="news-generator-categories">
-                    <div class="category-card" data-category="match_result">
-                        <div class="category-icon">
-                            <i class="fas fa-basketball-ball"></i>
-                        </div>
-                        <div class="category-info">
-                            <h3>Wyniki spotkań</h3>
-                            <p>Relacje z ostatnich meczów ligowych i pucharowych</p>
-                        </div>
-                        <button class="btn btn-sm btn-outline generate-category-btn">
-                            Generuj
-                        </button>
-                    </div>
-
-                    <div class="category-card" data-category="transfer">
-                        <div class="category-icon">
-                            <i class="fas fa-exchange-alt"></i>
-                        </div>
-                        <div class="category-info">
-                            <h3>Transfery</h3>
-                            <p>Informacje o transferach w całej lidze</p>
-                        </div>
-                        <button class="btn btn-sm btn-outline generate-category-btn">
-                            Generuj
-                        </button>
-                    </div>
-
-                    <div class="category-card" data-category="staff_purchase">
-                        <div class="category-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="category-info">
-                            <h3>Zakup personelu</h3>
-                            <p>Zmiany w sztabach szkoleniowych klubów</p>
-                        </div>
-                        <button class="btn btn-sm btn-outline generate-category-btn">
-                            Generuj
-                        </button>
-                    </div>
-
-                    <div class="category-card" data-category="promotion_relegation">
-                        <div class="category-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <div class="category-info">
-                            <h3>Awanse & Spadki</h3>
-                            <p>Analiza walki o utrzymanie i awans</p>
-                        </div>
-                        <button class="btn btn-sm btn-outline generate-category-btn">
-                            Generuj
-                        </button>
-                    </div>
-
-                    <div class="category-card" data-category="fan_satisfaction">
-                        <div class="category-icon">
-                            <i class="fas fa-heart"></i>
-                        </div>
-                        <div class="category-info">
-                            <h3>Zadowolenie kibiców</h3>
-                            <p>Nastroje na trybunach w całej lidze</p>
-                        </div>
-                        <button class="btn btn-sm btn-outline generate-category-btn">
-                            Generuj
-                        </button>
-                    </div>
-                </div>
-
-                <div class="generator-progress" id="generator-progress" style="display: none;">
-                    <div class="progress-bar">
-                        <div class="progress-fill"></div>
-                    </div>
-                    <div class="progress-text">Generowanie newsów...</div>
-                </div>
-
-                <div class="generator-options">
-                    <h3>Opcje generowania</h3>
-                    <div class="options-grid">
-                        <label class="option-checkbox">
-                            <input type="checkbox" id="option-all-teams" checked>
-                            <span>Dla wszystkich klubów w lidze</span>
-                        </label>
-                        <label class="option-checkbox">
-                            <input type="checkbox" id="option-skip-existing" checked>
-                            <span>Pomiń już istniejące newsy</span>
-                        </label>
-                        <label class="option-checkbox">
-                            <input type="checkbox" id="option-high-importance">
-                            <span>Tylko ważne newsy (znaczenie ≥3)</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Ostatnie wygenerowane newsy -->
-            <div class="media-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-history"></i> Ostatnio wygenerowane newsy</h2>
-                    <button class="btn btn-sm btn-outline" id="refresh-news">
-                        <i class="fas fa-sync"></i> Odśwież
-                    </button>
-                </div>
-                <div class="recent-news-container" id="recent-news">
-                    <div class="loading-spinner">Ładowanie newsów...</div>
-                </div>
-            </div>
-
-            <!-- Statystyki mediów -->
-            <div class="media-section">
-                <h2><i class="fas fa-chart-bar"></i> Statystyki medialne</h2>
-                <div class="media-stats-grid" id="media-stats">
-                    <div class="loading-spinner">Ładowanie statystyk...</div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Inicjalizacja
-    await loadMediaStaff(team.id);
-    await loadRecentNews(team.id);
-    await loadMediaStats(team.id);
-    setupEventListeners(team);
+/* media_view.css */
+/* Podstawowe style dla obu trybów */
+.media-view, .admin-media-view, .player-media-view {
+    min-height: 100vh;
+    padding: 20px;
 }
 
-/**
- * Ładuje personel medialny
- */
-async function loadMediaStaff(teamId) {
-    try {
-        const { data, error } = await supabaseClient
-            .from('staff')
-            .select('*')
-            .eq('team_id', teamId)
-            .eq('role', 'media')
-            .order('skill', { ascending: false });
+/* ===== STYLE DLA ADMINÓW ===== */
+.admin-media-view {
+    background: #f8fafc;
+}
 
-        if (error) throw error;
+.admin-header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+}
 
-        const container = document.getElementById('media-staff-list');
-        
-        if (!data || data.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-user-slash fa-3x"></i>
-                    <h3>Brak personelu medialnego</h3>
-                    <p>Nie masz jeszcze zatrudnionych pracowników mediów.</p>
-                    <button class="btn btn-primary" onclick="switchTab('m-staff')">
-                        <i class="fas fa-external-link-alt"></i> Przejdź do zakupu personelu
-                    </button>
-                </div>
-            `;
-            return;
-        }
+.admin-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: translate(30%, -30%);
+}
 
-        container.innerHTML = data.map(staff => `
-            <div class="staff-card">
-                <div class="staff-header">
-                    <div class="staff-avatar">
-                        <i class="fas fa-microphone-alt"></i>
-                    </div>
-                    <div class="staff-info">
-                        <h3>${staff.name}</h3>
-                        <div class="staff-role">
-                            <span class="role-badge">${getMediaRoleName(staff.specialization)}</span>
-                            <span class="skill-level">Poziom: ${staff.skill}/10</span>
-                        </div>
-                    </div>
-                    <div class="staff-salary">
-                        <i class="fas fa-coins"></i>
-                        ${staff.salary.toLocaleString()} PLN/tydz
-                    </div>
-                </div>
-                
-                <div class="staff-stats">
-                    <div class="stat-item">
-                        <span class="stat-label">Wydajność:</span>
-                        <div class="stat-bar">
-                            <div class="stat-fill" style="width: ${staff.skill * 10}%"></div>
-                        </div>
-                        <span class="stat-value">${staff.skill * 10}%</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Zasięg newsów:</span>
-                        <span class="stat-value">+${calculateNewsReach(staff.skill)}%</span>
-                    </div>
-                </div>
+.admin-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #1e3a8a;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9em;
+    margin-bottom: 15px;
+    animation: pulse 2s infinite;
+}
 
-                <div class="staff-actions">
-                    <button class="btn btn-sm btn-outline btn-train-staff" data-id="${staff.id}">
-                        <i class="fas fa-graduation-cap"></i> Szkolenie
-                    </button>
-                    <button class="btn btn-sm btn-danger btn-fire-staff" data-id="${staff.id}">
-                        <i class="fas fa-user-times"></i> Zwolnij
-                    </button>
-                </div>
-            </div>
-        `).join('');
-    } catch (err) {
-        console.error('Błąd ładowania personelu:', err);
-        document.getElementById('media-staff-list').innerHTML = `
-            <div class="error-state">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>Błąd ładowania personelu: ${err.message}</p>
-            </div>
-        `;
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(251, 191, 36, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+}
+
+.admin-media-view .media-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.admin-media-view .filter-bar {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.search-input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: all 0.3s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-select {
+    padding: 10px 15px;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    background: white;
+    font-size: 1em;
+    min-width: 180px;
+}
+
+.category-card.admin {
+    display: flex;
+    align-items: center;
+    padding: 25px;
+    background: white;
+    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s;
+    gap: 25px;
+    margin-bottom: 20px;
+}
+
+.category-card.admin:hover {
+    border-color: #3b82f6;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+}
+
+.category-card.admin .category-icon {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2em;
+    color: white;
+    flex-shrink: 0;
+}
+
+.category-stats {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #64748b;
+}
+
+.category-stats .stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.category-actions {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.importance-select {
+    padding: 5px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: white;
+    font-size: 0.9em;
+    min-width: 120px;
+}
+
+.generator-settings {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 25px 0;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.setting-item {
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.setting-item label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.setting-item small {
+    color: #64748b;
+    font-size: 0.85em;
+}
+
+.system-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.management-panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+.management-card {
+    text-align: center;
+    padding: 25px 20px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s;
+}
+
+.management-card:hover {
+    border-color: #3b82f6;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+}
+
+.management-card i {
+    font-size: 2.5em;
+    color: #3b82f6;
+    margin-bottom: 15px;
+}
+
+.management-card h4 {
+    margin: 10px 0;
+    color: #1e293b;
+}
+
+.management-card p {
+    color: #64748b;
+    font-size: 0.9em;
+    margin-bottom: 15px;
+}
+
+/* ===== STYLE DLA GRACZY ===== */
+.player-media-view {
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.media-hero {
+    position: relative;
+    height: 400px;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 40px;
+}
+
+.hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)),
+                url('https://images.unsplash.com/photo-1546519638-68e109498ffc?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+    background-size: cover;
+    background-position: center;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(59, 130, 246, 0.8), rgba(139, 92, 246, 0.8));
+    mix-blend-mode: overlay;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 60px 40px;
+    color: white;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 3.5em;
+    font-weight: 800;
+    margin-bottom: 20px;
+    line-height: 1.2;
+}
+
+.hero-title .highlight {
+    background: linear-gradient(90deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 2px 10px rgba(96, 165, 250, 0.3);
+}
+
+.hero-subtitle {
+    font-size: 1.3em;
+    opacity: 0.9;
+    margin-bottom: 40px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.stat-bubble {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 20px 30px;
+    border-radius: 15px;
+    text-align: center;
+    min-width: 140px;
+    transition: transform 0.3s;
+}
+
+.stat-bubble:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.stat-bubble i {
+    font-size: 2em;
+    display: block;
+    margin-bottom: 10px;
+    color: #93c5fd;
+}
+
+.stat-bubble span {
+    display: block;
+    font-size: 2em;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stat-bubble small {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+/* Featured Section */
+.featured-section {
+    margin-bottom: 50px;
+    position: relative;
+}
+
+.featured-section .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.featured-section h2 {
+    font-size: 1.8em;
+    color: #1e293b;
+}
+
+.featured-section h2 i {
+    color: #f59e0b;
+    margin-right: 10px;
+}
+
+.carousel-nav {
+    display: flex;
+    gap: 10px;
+}
+
+.carousel-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #e5e7eb;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.carousel-btn:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    transform: scale(1.1);
+}
+
+.featured-carousel {
+    position: relative;
+    height: 400px;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.carousel-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.5s ease;
+}
+
+.carousel-slide {
+    min-width: 100%;
+    height: 100%;
+    position: relative;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.carousel-slide.active {
+    opacity: 1;
+}
+
+.slide-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-size: cover;
+    background-position: center;
+    transform: scale(1.1);
+    transition: transform 5s ease;
+}
+
+.carousel-slide.active .slide-background {
+    transform: scale(1);
+}
+
+.slide-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.4));
+}
+
+.slide-content {
+    position: relative;
+    z-index: 2;
+    color: white;
+    padding: 60px;
+    max-width: 600px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.slide-category {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 500;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.slide-title {
+    font-size: 2.5em;
+    font-weight: 700;
+    margin-bottom: 20px;
+    line-height: 1.2;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.slide-excerpt {
+    font-size: 1.1em;
+    opacity: 0.9;
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+.slide-meta {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95em;
+    opacity: 0.9;
+}
+
+.meta-logo {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.read-more-btn {
+    align-self: flex-start;
+    padding: 12px 25px;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.read-more-btn:hover {
+    background: white;
+    color: #1e293b;
+    transform: translateX(10px);
+}
+
+.carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.carousel-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.carousel-dot.active {
+    background: #3b82f6;
+    transform: scale(1.2);
+}
+
+/* Content Grid */
+.media-content-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    margin-bottom: 50px;
+}
+
+.content-card, .sidebar-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 25px;
+}
+
+.card-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3, .card-header h4 {
+    margin: 0;
+    color: #1e293b;
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-tab {
+    padding: 8px 16px;
+    border: 1px solid #e5e7eb;
+    background: #f8fafc;
+    border-radius: 20px;
+    color: #64748b;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.filter-tab.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.news-feed {
+    padding: 20px;
+}
+
+.news-feed-item {
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+    transition: background-color 0.3s;
+}
+
+.news-feed-item:hover {
+    background: #f8fafc;
+}
+
+.news-item-header {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.news-item-category {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    flex-shrink: 0;
+}
+
+.news-item-category.match_result { background: #dbeafe; color: #1d4ed8; }
+.news-item-category.transfer { background: #f0f9ff; color: #0369a1; }
+.news-item-category.staff_purchase { background: #fef3c7; color: #92400e; }
+.news-item-category.promotion_relegation { background: #dcfce7; color: #166534; }
+.news-item-category.fan_satisfaction { background: #ffe4e6; color: #be123c; }
+
+.news-item-title {
+    font-size: 1.1em;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #1e293b;
+}
+
+.news-item-meta {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    font-size: 0.85em;
+    color: #64748b;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.meta-logo-sm {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.importance-1 { color: #94a3b8; }
+.importance-2 { color: #64748b; }
+.importance-3 { color: #3b82f6; }
+.importance-4 { color: #f59e0b; }
+.importance-5 { color: #ef4444; }
+
+.news-item-excerpt {
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.news-item-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-text {
+    background: none;
+    border: none;
+    color: #3b82f6;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.btn-text:hover {
+    background: #eff6ff;
+}
+
+.news-stats {
+    display: flex;
+    gap: 15px;
+    color: #94a3b8;
+    font-size: 0.9em;
+}
+
+.news-stats span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Sidebar Cards */
+.sidebar-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 25px;
+}
+
+.sidebar-card .card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.standings-list {
+    padding: 20px;
+}
+
+.standing-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.standing-row:last-child {
+    border-bottom: none;
+}
+
+.standing-position {
+    width: 30px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.standing-team {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.team-logo-xs {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.team-name {
+    font-size: 0.95em;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+.standing-stats {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.standing-stats .stat {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.stat-diff {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.stat-diff.positive {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.stat-diff.negative {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.top-players {
+    padding: 20px;
+}
+
+.top-player {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.top-player:last-child {
+    border-bottom: none;
+}
+
+.player-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1.2em;
+    flex-shrink: 0;
+}
+
+.player-info {
+    flex: 1;
+}
+
+.player-name {
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.player-details {
+    display: flex;
+    gap: 10px;
+    font-size: 0.85em;
+    color: #64748b;
+    margin-bottom: 5px;
+}
+
+.player-team {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.85em;
+    color: #94a3b8;
+}
+
+.social-feed {
+    padding: 20px;
+}
+
+.social-post {
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+.social-post:last-child {
+    margin-bottom: 0;
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+
+.post-header i {
+    font-size: 1.2em;
+}
+
+.post-header span {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.post-header small {
+    margin-left: auto;
+    color: #94a3b8;
+}
+
+.social-post p {
+    color: #475569;
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.post-stats {
+    display: flex;
+    gap: 15px;
+    color: #94a3b8;
+    font-size: 0.85em;
+}
+
+.social-image {
+    margin-top: 10px;
+}
+
+.image-placeholder {
+    width: 100%;
+    height: 150px;
+    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2em;
+}
+
+.see-all-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+    transition: gap 0.3s;
+}
+
+.see-all-link:hover {
+    gap: 10px;
+}
+
+/* Multimedia Section */
+.multimedia-section {
+    margin-bottom: 50px;
+}
+
+.multimedia-section .section-header {
+    margin-bottom: 25px;
+}
+
+.multimedia-section h2 {
+    font-size: 1.8em;
+    color: #1e293b;
+}
+
+.multimedia-section h2 i {
+    color: #8b5cf6;
+    margin-right: 10px;
+}
+
+.multimedia-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.video-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s;
+}
+
+.video-card:hover {
+    transform: translateY(-5px);
+}
+
+.video-thumbnail {
+    position: relative;
+    height: 180px;
+    overflow: hidden;
+}
+
+.thumbnail-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s;
+}
+
+.video-card:hover .thumbnail-img {
+    transform: scale(1.05);
+}
+
+.play-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3b82f6;
+    font-size: 1.5em;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.play-button:hover {
+    background: white;
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.video-info {
+    padding: 20px;
+}
+
+.video-info h4 {
+    margin: 0 0 10px 0;
+    color: #1e293b;
+    font-size: 1.1em;
+}
+
+.video-info p {
+    color: #64748b;
+    font-size: 0.9em;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.video-meta {
+    display: flex;
+    gap: 15px;
+    color: #94a3b8;
+    font-size: 0.85em;
+}
+
+.gallery-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.gallery-preview {
+    flex: 1;
+    position: relative;
+    height: 150px;
+}
+
+.gallery-item {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+.gallery-item.active {
+    opacity: 1;
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gallery-info {
+    flex: 1;
+}
+
+.gallery-info h4 {
+    margin: 0 0 10px 0;
+    color: #1e293b;
+}
+
+.gallery-info p {
+    color: #64748b;
+    font-size: 0.9em;
+    margin-bottom: 15px;
+}
+
+.gallery-nav {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.gallery-nav button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #e5e7eb;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.gallery-nav button:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.gallery-counter {
+    font-weight: 600;
+    color: #475569;
+}
+
+/* Newsletter Section */
+.newsletter-section {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    color: white;
+    margin-bottom: 50px;
+}
+
+.newsletter-content {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.newsletter-icon {
+    font-size: 4em;
+    color: rgba(255, 255, 255, 0.2);
+}
+
+.newsletter-text h3 {
+    font-size: 2em;
+    margin-bottom: 10px;
+}
+
+.newsletter-text p {
+    font-size: 1.1em;
+    opacity: 0.9;
+    margin-bottom: 20px;
+}
+
+.newsletter-form {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.newsletter-input {
+    flex: 1;
+    padding: 15px 20px;
+    border: none;
+    border-radius: 25px;
+    font-size: 1em;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.newsletter-input:focus {
+    outline: none;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+.newsletter-btn {
+    padding: 15px 30px;
+    border-radius: 25px;
+    border: none;
+    background: #fbbf24;
+    color: #1e3a8a;
+    font-weight: 600;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.newsletter-btn:hover {
+    background: #f59e0b;
+    transform: translateY(-2px);
+}
+
+/* Responsywność */
+@media (max-width: 1024px) {
+    .media-content-grid {
+        grid-template-columns: 1fr;
     }
-}
-
-/**
- * Ładuje ostatnie newsy
- */
-async function loadRecentNews(teamId) {
-    try {
-        const { data, error } = await supabaseClient
-            .from('club_news')
-            .select(`
-                *,
-                team:teams(team_name, logo_url)
-            `)
-            .eq('team_id', teamId)
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-        if (error) throw error;
-
-        const container = document.getElementById('recent-news');
-        
-        if (!data || data.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-newspaper fa-2x"></i>
-                    <p>Nie wygenerowano jeszcze żadnych newsów.</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = data.map(news => `
-            <div class="news-item" data-category="${news.category}">
-                <div class="news-header">
-                    <span class="news-category ${news.category}">
-                        ${getCategoryIcon(news.category)} ${getCategoryName(news.category)}
-                    </span>
-                    <span class="news-date">Tydzień ${news.week}, Sezon ${news.season}</span>
-                    <span class="news-importance importance-${news.importance}">
-                        ${'★'.repeat(news.importance)}${'☆'.repeat(5-news.importance)}
-                    </span>
-                </div>
-                <h4 class="news-title">${news.title}</h4>
-                <p class="news-content">${news.content}</p>
-                <div class="news-footer">
-                    <div class="news-views">
-                        <i class="fas fa-eye"></i> ${news.views} wyświetleń
-                    </div>
-                    <div class="news-team">
-                        <img src="${news.team.logo_url || '/default-logo.png'}" 
-                             alt="${news.team.team_name}" 
-                             class="team-logo-sm">
-                        ${news.team.team_name}
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    } catch (err) {
-        console.error('Błąd ładowania newsów:', err);
-    }
-}
-
-/**
- * Ładuje statystyki medialne
- */
-async function loadMediaStats(teamId) {
-    try {
-        const { data: statsData, error: statsError } = await supabaseClient
-            .from('club_news')
-            .select('category, importance, views')
-            .eq('team_id', teamId);
-
-        if (statsError) throw statsError;
-
-        // Oblicz statystyki
-        const totalNews = statsData.length;
-        const totalViews = statsData.reduce((sum, news) => sum + (news.views || 0), 0);
-        const avgImportance = totalNews > 0 
-            ? (statsData.reduce((sum, news) => sum + news.importance, 0) / totalNews).toFixed(1)
-            : 0;
-
-        const categoryCounts = statsData.reduce((acc, news) => {
-            acc[news.category] = (acc[news.category] || 0) + 1;
-            return acc;
-        }, {});
-
-        const container = document.getElementById('media-stats');
-        container.innerHTML = `
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-file-alt"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">${totalNews}</div>
-                    <div class="stat-label">Wszystkich newsów</div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-eye"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">${totalViews.toLocaleString()}</div>
-                    <div class="stat-label">Łącznych wyświetleń</div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-star"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">${avgImportance}</div>
-                    <div class="stat-label">Śr. znaczenie</div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-chart-pie"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">${Object.keys(categoryCounts).length}</div>
-                    <div class="stat-label">Kategorii</div>
-                </div>
-            </div>
-        `;
-    } catch (err) {
-        console.error('Błąd ładowania statystyk:', err);
-    }
-}
-
-/**
- * Generator newsów
- */
-async function generateNewsForCategory(team, category, options = {}) {
-    const allTeams = options.allTeams || false;
-    const skipExisting = options.skipExisting || false;
-    const highImportance = options.highImportance || false;
-
-    try {
-        let teamsToProcess = [];
-        
-        if (allTeams) {
-            // Pobierz wszystkie drużyny z ligi użytkownika
-            const { data: leagueTeams, error: leagueError } = await supabaseClient
-                .from('teams')
-                .select('id, team_name, league_id')
-                .eq('league_id', team.league_id);
-
-            if (leagueError) throw leagueError;
-            teamsToProcess = leagueTeams;
-        } else {
-            teamsToProcess = [team];
-        }
-
-        const currentWeek = window.gameState.currentWeek;
-        const currentSeason = new Date().getFullYear();
-        const generatedNews = [];
-
-        // Sprawdź czy już istnieją newsy dla tego tygodnia (jeśli opcja włączona)
-        let existingNews = [];
-        if (skipExisting && teamsToProcess.length > 0) {
-            const { data: existing } = await supabaseClient
-                .from('club_news')
-                .select('team_id, category')
-                .eq('week', currentWeek)
-                .eq('season', currentSeason)
-                .eq('category', category)
-                .in('team_id', teamsToProcess.map(t => t.id));
-
-            existingNews = existing || [];
-        }
-
-        for (const club of teamsToProcess) {
-            // Sprawdź czy news już istnieje
-            if (skipExisting && existingNews.some(n => 
-                n.team_id === club.id && n.category === category)) {
-                continue;
-            }
-
-            // Generuj news
-            const news = await generateSingleNews(club, category, {
-                week: currentWeek,
-                season: currentSeason,
-                highImportance
-            });
-
-            if (news) {
-                generatedNews.push(news);
-            }
-        }
-
-        // Zapisz newsy do bazy
-        if (generatedNews.length > 0) {
-            const { error } = await supabaseClient
-                .from('club_news')
-                .insert(generatedNews);
-
-            if (error) throw error;
-
-            // Pokaz sukces
-            showNotification(`Wygenerowano ${generatedNews.length} newsów w kategorii ${getCategoryName(category)}`, 'success');
-        } else {
-            showNotification('Nie wygenerowano nowych newsów (wszystkie już istnieją)', 'info');
-        }
-
-        return generatedNews;
-
-    } catch (err) {
-        console.error('Błąd generowania newsów:', err);
-        showNotification('Błąd generowania newsów: ' + err.message, 'error');
-        return [];
-    }
-}
-
-/**
- * Generuje pojedynczy news
- */
-async function generateSingleNews(club, category, options) {
-    const templates = getNewsTemplates(category);
-    const template = templates[Math.floor(Math.random() * templates.length)];
     
-    // Losowe znaczenie (1-5)
-    let importance = Math.floor(Math.random() * 5) + 1;
-    if (options.highImportance) {
-        importance = Math.max(3, importance);
+    .hero-title {
+        font-size: 2.8em;
     }
-
-    // Uzupełnij treść danymi klubowymi
-    let content = template.content;
-    
-    // Dodaj dynamiczne dane w zależności od kategorii
-    switch (category) {
-        case 'match_result':
-            content = await populateMatchData(content, club.id);
-            break;
-        case 'transfer':
-            content = await populateTransferData(content, club.id);
-            break;
-        case 'staff_purchase':
-            content = await populateStaffData(content, club.id);
-            break;
-        case 'promotion_relegation':
-            content = await populateLeagueData(content, club.id);
-            break;
-        case 'fan_satisfaction':
-            content = await populateFanData(content, club.id);
-            break;
-    }
-
-    return {
-        team_id: club.id,
-        title: template.title.replace('{team}', club.team_name),
-        content: content,
-        category: category,
-        week: options.week,
-        season: options.season,
-        importance: importance,
-        created_by: window.userId // Zakładając że mamy globalny userId
-    };
 }
 
-/**
- * Ustawia event listeners
- */
-function setupEventListeners(team) {
-    // Przycisk generowania wszystkich newsów
-    document.getElementById('generate-all-news')?.addEventListener('click', async () => {
-        const allTeams = document.getElementById('option-all-teams').checked;
-        const skipExisting = document.getElementById('option-skip-existing').checked;
-        const highImportance = document.getElementById('option-high-importance').checked;
-
-        const categories = [
-            'match_result',
-            'transfer', 
-            'staff_purchase',
-            'promotion_relegation',
-            'fan_satisfaction'
-        ];
-
-        const progressBar = document.getElementById('generator-progress');
-        const progressFill = progressBar.querySelector('.progress-fill');
-        const progressText = progressBar.querySelector('.progress-text');
-
-        progressBar.style.display = 'block';
-        
-        let generatedTotal = 0;
-        
-        for (let i = 0; i < categories.length; i++) {
-            const category = categories[i];
-            progressFill.style.width = `${((i) / categories.length) * 100}%`;
-            progressText.textContent = `Generowanie: ${getCategoryName(category)}...`;
-            
-            const news = await generateNewsForCategory(team, category, {
-                allTeams,
-                skipExisting,
-                highImportance
-            });
-            
-            generatedTotal += news.length;
-            
-            await new Promise(resolve => setTimeout(resolve, 500)); // Małe opóźnienie dla UX
-        }
-
-        progressFill.style.width = '100%';
-        progressText.textContent = `Gotowe! Wygenerowano ${generatedTotal} newsów.`;
-
-        // Odśwież widok
-        setTimeout(async () => {
-            progressBar.style.display = 'none';
-            await loadRecentNews(team.id);
-            await loadMediaStats(team.id);
-        }, 2000);
-    });
-
-    // Przyciski generowania per kategoria
-    document.querySelectorAll('.generate-category-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const card = e.target.closest('.category-card');
-            const category = card.dataset.category;
-            
-            const allTeams = document.getElementById('option-all-teams').checked;
-            const skipExisting = document.getElementById('option-skip-existing').checked;
-            const highImportance = document.getElementById('option-high-importance').checked;
-
-            await generateNewsForCategory(team, category, {
-                allTeams,
-                skipExisting,
-                highImportance
-            });
-
-            // Odśwież widok
-            await loadRecentNews(team.id);
-            await loadMediaStats(team.id);
-        });
-    });
-
-    // Przycisk odświeżania newsów
-    document.getElementById('refresh-news')?.addEventListener('click', async () => {
-        await loadRecentNews(team.id);
-        await loadMediaStats(team.id);
-        showNotification('Newsy odświeżone', 'success');
-    });
-}
-
-/**
- * Pomocnicze funkcje
- */
-function getMediaRoleName(specialization) {
-    const roles = {
-        'journalist': 'Dziennikarz',
-        'pr_manager': 'PR Manager',
-        'social_media': 'Social Media',
-        'photographer': 'Fotograf',
-        'analyst': 'Analityk mediów'
-    };
-    return roles[specialization] || specialization;
-}
-
-function getCategoryIcon(category) {
-    const icons = {
-        'match_result': '🏀',
-        'transfer': '🔄',
-        'staff_purchase': '👥',
-        'promotion_relegation': '📈',
-        'fan_satisfaction': '❤️'
-    };
-    return icons[category] || '📰';
-}
-
-function getCategoryName(category) {
-    const names = {
-        'match_result': 'Wynik spotkania',
-        'transfer': 'Transfer',
-        'staff_purchase': 'Personel',
-        'promotion_relegation': 'Awans/Spadek',
-        'fan_satisfaction': 'Kibice'
-    };
-    return names[category] || category;
-}
-
-function calculateNewsReach(skill) {
-    return Math.floor(skill * 1.5); // +1.5% na poziom umiejętności
-}
-
-/**
- * Szablony newsów
- */
-function getNewsTemplates(category) {
-    const templates = {
-        'match_result': [
-            {
-                title: '{team} pokonuje rywala!',
-                content: 'W emocjonującym meczu {team} odniósł ważne zwycięstwo. Kluczową rolę odegrał {player}, który zdobył {points} punktów.'
-            },
-            {
-                title: 'Porażka {team} w ważnym meczu',
-                content: 'Niestety, tym razem {team} musiał uznać wyższość rywala. Kibice mają nadzieję na poprawę w kolejnych spotkaniach.'
-            }
-        ],
-        'transfer': [
-            {
-                title: 'Bombowy transfer {team}!',
-                content: '{team} dokonał spektakularnego transferu. Do klubu dołącza {player}, który ma wzmocnić {position}.'
-            },
-            {
-                title: 'Młodzieżowiec w {team}',
-                content: 'Klub postawił na młodość! Do pierwszego zespołu dołącza utalentowany {player}.'
-            }
-        ],
-        'staff_purchase': [
-            {
-                title: 'Nowy specjalista w {team}',
-                content: '{team} zatrudnił nowego {role}. To posunięcie ma poprawić {aspect} w klubie.'
-            }
-        ],
-        'promotion_relegation': [
-            {
-                title: 'Walka o awans dla {team}',
-                content: '{team} jest coraz bliżej celu! Po {round} kolejkach klub zajmuje {position} miejsce.'
-            },
-            {
-                title: '{team} walczy o utrzymanie',
-                content: 'Sytuacja {team} jest trudna. Klub musi zebrać się w sobie, by uniknąć spadku.'
-            }
-        ],
-        'fan_satisfaction': [
-            {
-                title: 'Kibice {team} zadowoleni',
-                content: 'Po ostatnich wynikach, kibice {team} są pełni optymizmu. Na trybunach panuje doskonała atmosfera.'
-            },
-            {
-                title: 'Nerwy wśród kibiców {team}',
-                content: 'Kibice {team} wyrażają niezadowolenie z ostatnich wyników. Domagają się zmian w zespole.'
-            }
-        ]
-    };
-
-    return templates[category] || [{ title: 'News', content: 'Treść newsa.' }];
-}
-
-/**
- * Funkcje do uzupełniania danych
- */
-async function populateMatchData(template, teamId) {
-    // Pobierz ostatnie mecze drużyny
-    try {
-        const { data: matches, error } = await supabaseClient
-            .from('matches')
-            .select('*')
-            .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-            .order('match_date', { ascending: false })
-            .limit(1);
-
-        if (!error && matches && matches.length > 0) {
-            const match = matches[0];
-            return template
-                .replace('{player}', 'kapitan drużyny')
-                .replace('{points}', match.home_score || '0');
-        }
-    } catch (err) {
-        console.error('Błąd pobierania meczów:', err);
+@media (max-width: 768px) {
+    .admin-media-view .filter-bar {
+        flex-direction: column;
     }
     
-    return template.replace('{player}', 'gracz').replace('{points}', 'kilka');
-}
-
-async function populateTransferData(template, teamId) {
-    // Można dodać logikę pobierania ostatnich transferów
-    return template.replace('{player}', 'nowy zawodnik').replace('{position}', 'atak');
-}
-
-async function populateStaffData(template, teamId) {
-    return template.replace('{role}', 'specjalista').replace('{aspect}', 'wyniki');
-}
-
-async function populateLeagueData(template, teamId) {
-    // Pobierz pozycję w lidze
-    try {
-        const { data: standing, error } = await supabaseClient
-            .from('league_standings')
-            .select('position')
-            .eq('team_id', teamId)
-            .eq('season', new Date().getFullYear())
-            .single();
-
-        if (!error && standing) {
-            return template.replace('{position}', `${standing.position}.`);
-        }
-    } catch (err) {
-        console.error('Błąd pobierania tabeli:', err);
+    .category-card.admin {
+        flex-direction: column;
+        text-align: center;
     }
     
-    return template.replace('{position}', 'środkowe').replace('{round}', 'kilku');
+    .category-actions {
+        margin-left: 0;
+        align-items: center;
+    }
+    
+    .hero-stats {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .featured-carousel {
+        height: 300px;
+    }
+    
+    .slide-content {
+        padding: 30px;
+    }
+    
+    .slide-title {
+        font-size: 1.8em;
+    }
 }
 
-async function populateFanData(template, teamId) {
-    // Można dodać logikę obliczania zadowolenia kibiców
-    return template;
-}
-
-/**
- * Pokazuje powiadomienie
- */
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-        <span>${message}</span>
-        <button class="notification-close">&times;</button>
-    `;
-
-    document.body.appendChild(notification);
-
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 5000);
-
-    // Close button
-    notification.querySelector('.notification-close').addEventListener('click', () => {
-        notification.remove();
-    });
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 2em;
+    }
+    
+    .featured-carousel {
+        height: 250px;
+    }
+    
+    .multimedia-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .newsletter-form {
+        flex-direction: column;
+    }
 }
