@@ -18,8 +18,8 @@ export function calculatePlayerDynamicWage(player) {
 
     // 2. BONUS ZA POTENCJAŁ
     if (age < 26) {
-        if (pot >= 95) baseWage += 40000;
-        else if (pot >= 88) baseWage += 15000;
+        if (pot >= 95) baseWage += 4000;
+        else if (pot >= 88) baseWage += 1500;
         
         const ceilingGap = pot - ovr;
         if (ceilingGap > 15) baseWage += 5000;
@@ -35,7 +35,7 @@ export function calculatePlayerDynamicWage(player) {
 
     // 4. LIMITY
     if (finalWage > 250000) finalWage = 250000;
-    if (finalWage < 2000) finalWage = 2000;
+    if (finalWage < 3500) finalWage = 3500;
 
     return Math.floor(finalWage);
 }
