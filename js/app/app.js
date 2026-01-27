@@ -11,6 +11,7 @@ import { ScheduleView } from './schedule_view.js';
 import { RosterActions } from './roster_actions.js';
 import { renderMyClubView } from './myclub_view.js';
 import { renderNationalCupView } from './nationalcup_view.js'; // NOWY IMPORT
+import { renderStaffView } from './staff_view.js'; // NOWY IMPORT - DODANE
 
 // Rejestracja globalna
 window.RosterActions = RosterActions;
@@ -68,7 +69,8 @@ function getModuleStats(moduleKey) {
         'm-myclub': '0',
         'm-schedule': '0',
         'm-league': '0',
-        'm-nationalcup': window.gameState.nationalCupData ? '🏆' : '0' // Statystyka dla pucharu
+        'm-nationalcup': window.gameState.nationalCupData ? '🏆' : '0', // Statystyka dla pucharu
+        'm-staff': '👥' // NOWA STATYSTYKA DLA PERSONELU
     };
     
     return stats[moduleKey] || '0';
@@ -542,6 +544,9 @@ export async function switchTab(tabId) {
             break;
         case 'm-nationalcup': // NOWA ZAKŁADKA
             if (!isAdmin) renderNationalCupView(team, players, window.gameState.nationalCupData); 
+            break;
+        case 'm-staff': // NOWA ZAKŁADKA - PERSONEL
+            if (!isAdmin) renderStaffView(team, players); 
             break;
         case 'm-admin': 
             console.log('[SWITCHTAB] Przełączam na panel admina');
