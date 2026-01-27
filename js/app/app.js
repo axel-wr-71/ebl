@@ -9,7 +9,8 @@ import { renderLeagueView } from './league_view.js';
 import { renderArenaView } from './arena_view.js';
 import { ScheduleView } from './schedule_view.js';
 import { RosterActions } from './roster_actions.js';
-import { renderMyClubView } from './myclub_view.js'; 
+import { renderMyClubView } from './myclub_view.js';
+import { renderNationalCupView } from './nationalcup_view.js'; // NOWY IMPORT
 
 // Rejestracja globalna
 window.RosterActions = RosterActions;
@@ -18,7 +19,9 @@ window.gameState = {
     team: null,
     players: [],
     currentWeek: 0,
-    isAdmin: false
+    isAdmin: false,
+    countryData: null,
+    nationalCupData: null
 };
 
 // Zmienna do przechowywania ostatnio wybranej zakładki
@@ -64,10 +67,176 @@ function getModuleStats(moduleKey) {
         'm-arena': '0',
         'm-myclub': '0',
         'm-schedule': '0',
-        'm-league': '0'
+        'm-league': '0',
+        'm-nationalcup': window.gameState.nationalCupData ? '🏆' : '0' // Statystyka dla pucharu
     };
     
     return stats[moduleKey] || '0';
+}
+
+/**
+ * Pobiera dane kraju drużyny (z ligi)
+ */
+async function fetchCountryData(teamId) {
+    try {
+        const { data: teamData, error: teamError } = await supabaseClient
+            .from('teams')
+            .select('league_id')
+            .eq('id', teamId)
+            .single();
+            
+        if (teamError) throw teamError;
+        
+        if (teamData?.league_id) {
+            // Pobierz dane ligi (z krajem)
+            const { data: leagueData, error: leagueError } = await supabaseClient
+                .from('leagues')
+                .select('id, country')
+                .eq('id', teamData.league_id)
+                .single();
+                
+            if (leagueError) throw leagueError;
+            
+            if (leagueData) {
+                window.gameState.countryData = {
+                    id: leagueData.id,
+                    name: leagueData.country,
+                    // Możesz dodać więcej pól z tabeli leagues jeśli są potrzebne
+                };
+                return window.gameState.countryData;
+            }
+        }
+        return null;
+    } catch (err) {
+        console.error("[APP] Błąd pobierania danych kraju:", err);
+        return null;
+    }
+}
+
+/**
+ * Pobiera dane pucharu narodowego dla drużyny
+ */
+async function fetchNationalCupData(teamId) {
+    try {
+        // Pobierz ligę drużyny (drużyna należy do ligi, liga ma kraj)
+        const { data: teamData, error: teamError } = await supabaseClient
+            .from('teams')
+            .select('league_id')
+            .eq('id', teamId)
+            .single();
+            
+        if (teamError || !teamData?.league_id) {
+            console.log("[APP] Drużyna nie ma przypisanej ligi");
+            return null;
+        }
+        
+        // Pobierz dane ligi (w tym kraj)
+        const { data: leagueData, error: leagueError } = await supabaseClient
+            .from('leagues')
+            .select('id, country')
+            .eq('id', teamData.league_id)
+            .single();
+            
+        if (leagueError || !leagueData) {
+            console.log("[APP] Błąd pobierania danych ligi");
+            return null;
+        }
+        
+        // Zapisz dane kraju w gameState
+        window.gameState.countryData = {
+            id: leagueData.id,
+            name: leagueData.country,
+        };
+        
+        // Pobierz bieżący sezon
+        const { data: configRes } = await supabaseClient
+            .from('game_config')
+            .select('value')
+            .eq('key', 'current_season')
+            .single();
+        
+        const currentSeason = configRes?.value || new Date().getFullYear();
+        
+        // Znajdź aktywny puchar dla tej ligi
+        const { data: cupData, error: cupError } = await supabaseClient
+            .from('national_cups')
+            .select('*')
+            .eq('league_id', leagueData.id)
+            .eq('season', currentSeason)
+            .eq('is_active', true)
+            .single();
+            
+        if (cupError || !cupData) {
+            console.log("[APP] Brak aktywnego pucharu dla tej ligi");
+            return null;
+        }
+        
+        // Pobierz dane pucharu
+        const { data: roundsData, error: roundsError } = await supabaseClient
+            .from('national_cup_rounds')
+            .select('*')
+            .eq('cup_id', cupData.id)
+            .order('round_number', { ascending: true });
+            
+        if (roundsError) throw roundsError;
+        
+        // Pobierz mecze pucharowe
+        const roundIds = roundsData.map(r => r.id);
+        const { data: matchesData, error: matchesError } = await supabaseClient
+            .from('matches')
+            .select(`
+                *,
+                home_team:teams!matches_home_team_id_fkey (team_name, logo_url, city),
+                away_team:teams!matches_away_team_id_fkey (team_name, logo_url, city)
+            `)
+            .eq('match_type', 'Puchar')
+            .eq('cup_id', cupData.id)
+            .in('cup_round_id', roundIds)
+            .order('cup_round_id', { ascending: true })
+            .order('match_date', { ascending: true });
+            
+        if (matchesError) throw matchesError;
+        
+        // Sprawdź czy drużyna bierze udział
+        const { data: participantData, error: participantError } = await supabaseClient
+            .from('national_cup_participants')
+            .select('*')
+            .eq('cup_id', cupData.id)
+            .eq('team_id', teamId)
+            .single();
+            
+        if (participantError) {
+            console.log("[APP] Drużyna nie bierze udziału w pucharze");
+            return null;
+        }
+        
+        // Pobierz wszystkich uczestników
+        const { data: allParticipants, error: participantsError } = await supabaseClient
+            .from('national_cup_participants')
+            .select(`
+                *,
+                team:teams (team_name, logo_url)
+            `)
+            .eq('cup_id', cupData.id);
+            
+        if (participantsError) throw participantsError;
+        
+        const cupInfo = {
+            cup: cupData,
+            participant: participantData,
+            rounds: roundsData,
+            matches: matchesData,
+            allParticipants: allParticipants,
+            currentRound: cupData.current_round
+        };
+        
+        window.gameState.nationalCupData = cupInfo;
+        return cupInfo;
+        
+    } catch (err) {
+        console.error("[APP] Błąd pobierania danych pucharu:", err);
+        return null;
+    }
 }
 
 /**
@@ -205,8 +374,14 @@ async function loadRegularUserData(userId) {
 
         // 2. Pobierz definicje potencjałów
         await fetchPotentialDefinitions();
+        
+        // 3. Pobierz dane kraju (z ligi)
+        await fetchCountryData(teamId);
+        
+        // 4. Pobierz dane pucharu narodowego (jeśli istnieją)
+        await fetchNationalCupData(teamId);
 
-        // 3. Pobierz dane drużyny i zawodników
+        // 5. Pobierz dane drużyny i zawodników
         const [teamRes, playersRes] = await Promise.all([
             supabaseClient.from('teams').select('*').eq('id', teamId).single(),
             supabaseClient.from('players').select('*').eq('team_id', teamId)
@@ -220,6 +395,8 @@ async function loadRegularUserData(userId) {
 
         console.log('[APP] Drużyna załadowana:', window.gameState.team?.team_name);
         console.log('[APP] Graczy załadowanych:', window.gameState.players?.length);
+        console.log('[APP] Kraj drużyny:', window.gameState.countryData?.name);
+        console.log('[APP] Status pucharu:', window.gameState.nationalCupData ? 'Aktywny' : 'Nieaktywny');
 
         // UI Updates dla nagłówka
         const teamName = window.gameState.team?.team_name || "Twoja Drużyna";
@@ -317,7 +494,7 @@ export async function switchTab(tabId) {
     const activeCard = document.querySelector(`.nav-card[onclick*="${tabId}"]`);
     if (activeCard) activeCard.classList.add('active');
 
-    const { team, players, isAdmin } = window.gameState;
+    const { team, players, isAdmin, nationalCupData } = window.gameState;
     
     // Dla admina specjalne traktowanie
     if (isAdmin && tabId === 'm-admin') {
@@ -333,6 +510,7 @@ export async function switchTab(tabId) {
 
     console.log('[SWITCHTAB] Team:', team?.team_name);
     console.log('[SWITCHTAB] Players:', players?.length);
+    console.log('[SWITCHTAB] National Cup:', nationalCupData ? 'Dane dostępne' : 'Brak danych');
 
     switch (tabId) {
         case 'm-roster': 
@@ -353,7 +531,7 @@ export async function switchTab(tabId) {
         case 'm-arena': 
             if (!isAdmin) renderArenaView(team, players);
             break;
-        case 'm-myclub': // DODANO: Obsługa widoku My Club
+        case 'm-myclub': 
             if (!isAdmin) renderMyClubView(team, players);
             break;
         case 'm-schedule': 
@@ -361,6 +539,9 @@ export async function switchTab(tabId) {
             break;
         case 'm-league': 
             if (!isAdmin) renderLeagueView(team, players); 
+            break;
+        case 'm-nationalcup': // NOWA ZAKŁADKA
+            if (!isAdmin) renderNationalCupView(team, players, window.gameState.nationalCupData); 
             break;
         case 'm-admin': 
             console.log('[SWITCHTAB] Przełączam na panel admina');
