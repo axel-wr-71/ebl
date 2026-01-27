@@ -340,7 +340,281 @@ function initAdminEventListeners() {
     if (exportLogBtn) exportLogBtn.addEventListener('click', exportAdminLog);
 }
 
+// ===== FUNKCJE HANDLERÓW KART =====
+
+/**
+ * Obsługa kliknięcia w karty statystyk
+ */
+function handleStatCardClick(event) {
+    const card = event.currentTarget;
+    const action = card.getAttribute('data-card-action');
+    const cardName = card.querySelector('.stat-title').textContent;
+    
+    console.log(`[ADMIN] Kliknięto kartę: ${cardName} (akcja: ${action})`);
+    
+    // Dodaj log
+    addAdminLog(`Wybrano sekcję: ${cardName}`, 'info');
+    
+    // Animacja kliknięcia
+    card.style.transform = 'translateY(0) scale(0.98)';
+    setTimeout(() => {
+        card.style.transform = '';
+    }, 200);
+    
+    // Przewiń do odpowiedniej sekcji
+    switch(action) {
+        case 'management':
+            // Przewiń do sekcji ekonomii (najbliższej dostępnej)
+            document.querySelector('.admin-section:nth-of-type(1)')?.scrollIntoView({ behavior: 'smooth' });
+            break;
+        case 'economy':
+            // Sekcja ekonomii jest pierwsza
+            document.querySelector('.admin-section:nth-of-type(1)')?.scrollIntoView({ behavior: 'smooth' });
+            break;
+        case 'statistics':
+            // Przewiń do statystyk systemu
+            document.querySelector('#system-stats')?.scrollIntoView({ behavior: 'smooth' });
+            break;
+        case 'system':
+            // Przewiń do szybkich akcji (druga sekcja)
+            document.querySelector('.admin-section:nth-of-type(2)')?.scrollIntoView({ behavior: 'smooth' });
+            break;
+        default:
+            // Domyślnie pokaż alert z informacją
+            showCardInfoModal(action, cardName);
+            break;
+    }
+}
+
+/**
+ * Pokazuje modal z informacją o karcie
+ */
+function showCardInfoModal(action, cardName) {
+    const messages = {
+        'management': 'Sekcja zarządzania graczami i drużynami - dostępna wkrótce!',
+        'economy': 'Sekcja ekonomii - już dostępna powyżej',
+        'statistics': 'Statystyki systemu - wyświetlane poniżej',
+        'system': 'Szybkie akcje systemowe - dostępne poniżej'
+    };
+    
+    const message = messages[action] || `Sekcja "${cardName}" jest w trakcie rozwoju.`;
+    
+    // Utwórz prosty modal
+    const modalHTML = `
+        <div class="admin-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; display:flex; justify-content:center; align-items:center;">
+            <div style="background:white; border-radius:12px; padding:25px; width:90%; max-width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+                <h3 style="margin-top:0; color:#1a237e; font-weight:800; display:flex; align-items:center; gap:10px;">
+                    <span>ℹ️</span> ${cardName}
+                </h3>
+                <p style="color:#334155; font-size:0.95rem; margin-bottom:20px;">${message}</p>
+                <button id="btn-close-modal" style="background:#3b82f6; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:600; cursor:pointer; width:100%;">
+                    Zamknij
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Dodaj modal do body
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Obsługa zamknięcia
+    const modal = document.querySelector('.admin-modal-overlay');
+    const closeBtn = document.getElementById('btn-close-modal');
+    
+    closeBtn.addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+}
+
 // ===== FUNKCJE ADMINISTRACYJNE =====
+
+/**
+ * Aktualizacja pensji tylko dla bieżącej drużyny
+ */
+async function handleSingleTeamUpdate() {
+    const teamId = window.currentUser?.team_id;
+    
+    if (!teamId) {
+        addAdminLog('Nie znaleziono ID drużyny użytkownika', 'error');
+        alert('Nie można zidentyfikować Twojej drużyny. Zaloguj się ponownie.');
+        return;
+    }
+    
+    if (!confirm('Czy chcesz zaktualizować pensje tylko dla graczy w Twojej drużynie?')) {
+        return;
+    }
+    
+    addAdminLog(`Rozpoczynam aktualizację pensji dla drużyny ID: ${teamId}...`, 'warning');
+    
+    try {
+        // Pobierz graczy z drużyny
+        const { data: players, error } = await supabaseClient
+            .from('players')
+            .select('*')
+            .eq('team_id', teamId);
+            
+        if (error) throw error;
+        
+        if (!players || players.length === 0) {
+            addAdminLog('Brak graczy w drużynie do aktualizacji', 'warning');
+            alert('Twoja drużyna nie ma żadnych graczy.');
+            return;
+        }
+        
+        // Oblicz nowe pensje dla każdego gracza
+        const updates = [];
+        for (const player of players) {
+            const newWage = calculatePlayerDynamicWage(player);
+            updates.push({
+                id: player.id,
+                salary: newWage,
+                last_salary_update: new Date().toISOString()
+            });
+        }
+        
+        // Zaktualizuj w bazie danych
+        const { data, error: updateError } = await supabaseClient
+            .from('players')
+            .upsert(updates, { onConflict: 'id' });
+            
+        if (updateError) throw updateError;
+        
+        // Pokaż wynik
+        const resultDiv = document.getElementById('salary-update-result');
+        if (resultDiv) {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div style="background: #d1fae5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 15px; color: #065f46;">
+                    <strong>✅ Sukces:</strong> Zaktualizowano pensje dla Twojej drużyny<br>
+                    <strong>Zaktualizowano:</strong> ${updates.length} graczy<br>
+                    <strong>Drużyna:</strong> ${teamId}
+                </div>
+            `;
+            addAdminLog(`Zaktualizowano pensje ${updates.length} graczy w drużynie ${teamId}`, 'success');
+        }
+        
+        await loadSystemStats();
+        
+    } catch (error) {
+        addAdminLog(`Błąd aktualizacji drużyny: ${error.message}`, 'error');
+        alert(`❌ Błąd: ${error.message}`);
+    }
+}
+
+/**
+ * Obsługa szybkich akcji
+ */
+async function handleQuickAction(action) {
+    console.log(`[ADMIN] Szybka akcja: ${action}`);
+    
+    // Dodaj log rozpoczęcia
+    addAdminLog(`Rozpoczynam akcję: ${action}`, 'warning');
+    
+    switch(action) {
+        case 'clear-cache':
+            // Wyczyść localStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            addAdminLog('Cache przeglądarki wyczyszczony', 'success');
+            alert('Cache przeglądarki został wyczyszczony.');
+            break;
+            
+        case 'recalculate-stats':
+            // Przelicz statystyki systemu
+            await loadSystemStats();
+            addAdminLog('Statystyki systemu przeliczone', 'success');
+            alert('Statystyki systemu zostały przeliczone.');
+            break;
+            
+        case 'fix-players':
+            // Napraw brakujące dane graczy
+            await fixPlayersData();
+            break;
+            
+        case 'check-db':
+            // Sprawdź połączenie z bazą
+            await checkDatabaseConnection();
+            break;
+            
+        case 'refresh-stats':
+            // Odśwież statystyki
+            await loadSystemStats();
+            addAdminLog('Statystyki odświeżone', 'success');
+            break;
+            
+        default:
+            addAdminLog(`Nieznana akcja: ${action}`, 'error');
+            break;
+    }
+}
+
+/**
+ * Naprawia brakujące dane graczy
+ */
+async function fixPlayersData() {
+    addAdminLog('Rozpoczynam naprawę danych graczy...', 'warning');
+    
+    try {
+        // Znajdź graczy z brakującymi pensjami
+        const { data: players, error } = await supabaseClient
+            .from('players')
+            .select('id, salary, rating')
+            .or('salary.is.null,salary.lte.0');
+            
+        if (error) throw error;
+        
+        if (!players || players.length === 0) {
+            addAdminLog('Nie znaleziono graczy do naprawy', 'success');
+            alert('Wszyscy gracze mają poprawne dane.');
+            return;
+        }
+        
+        // Ustaw domyślne pensje w oparciu o rating
+        const updates = players.map(player => ({
+            id: player.id,
+            salary: player.rating ? Math.round(player.rating * 10000) : 50000,
+            last_salary_update: new Date().toISOString()
+        }));
+        
+        const { data, error: updateError } = await supabaseClient
+            .from('players')
+            .upsert(updates, { onConflict: 'id' });
+            
+        if (updateError) throw updateError;
+        
+        addAdminLog(`Naprawiono ${updates.length} graczy z brakującymi pensjami`, 'success');
+        alert(`Naprawiono dane ${updates.length} graczy.`);
+        
+        await loadSystemStats();
+        
+    } catch (error) {
+        addAdminLog(`Błąd naprawy graczy: ${error.message}`, 'error');
+        alert(`❌ Błąd: ${error.message}`);
+    }
+}
+
+/**
+ * Sprawdza połączenie z bazą danych
+ */
+async function checkDatabaseConnection() {
+    addAdminLog('Sprawdzanie połączenia z bazą danych...', 'info');
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('players')
+            .select('id', { count: 'exact', head: true });
+            
+        if (error) throw error;
+        
+        addAdminLog('Połączenie z bazą danych: AKTYWNE ✅', 'success');
+        alert('Połączenie z bazą danych jest aktywne.');
+        
+    } catch (error) {
+        addAdminLog(`Błąd połączenia z bazą: ${error.message}`, 'error');
+        alert(`❌ Błąd połączenia: ${error.message}`);
+    }
+}
 
 async function handleUpdateSalaries() {
     addAdminLog('Rozpoczynam aktualizację pensji...', 'warning');
@@ -687,6 +961,15 @@ function injectAdminStyles() {
         .algorithm-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .admin-modal-overlay {
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     `;
     
